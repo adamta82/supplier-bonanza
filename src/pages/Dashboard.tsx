@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { TrendingUp, ShoppingCart, Award, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -140,11 +140,11 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData} layout="vertical">
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={chartData} layout="vertical" margin={{ left: 20, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}K`} />
-                  <YAxis type="category" dataKey="name" width={120} />
+                  <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 12 }} />
                   <Tooltip formatter={(value: number) => `₪${value.toLocaleString()}`} />
                   <Bar dataKey="amount" fill="hsl(217, 71%, 45%)" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -161,13 +161,18 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             {pieData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={350}>
                 <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ name, value }) => `${name}: ${value}`}>
+                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={40} label={({ name, value, x, y }) => (
+                    <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={12} fill="hsl(220, 40%, 13%)">
+                      {`${name}: ${value}`}
+                    </text>
+                  )}>
                     {pieData.map((_, i) => (
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
                   <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
