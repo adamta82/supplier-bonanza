@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Plus, Trash2, Pencil } from "lucide-react";
+import { formatDate } from "@/lib/formatDate";
 
 const bonusTypeLabels: Record<string, string> = {
   annual_target: "שנתי/תקופתי (יעדים)",
@@ -376,7 +377,7 @@ export default function Agreements() {
                     </TableCell>
                     <TableCell>
                       {a.period_start && a.period_end
-                        ? `${a.period_start} - ${a.period_end}`
+                        ? `${formatDate(a.period_start)} - ${formatDate(a.period_end)}`
                         : periodLabels[a.period_type] || "-"}
                     </TableCell>
                     <TableCell className="text-sm">
