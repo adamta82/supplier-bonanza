@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { formatDate } from "@/lib/formatDate";
 
 export default function Transactions() {
   const queryClient = useQueryClient();
@@ -197,7 +198,7 @@ export default function Transactions() {
                 transactions?.map((t: any) => (
                   <TableRow key={t.id}>
                     <TableCell className="font-medium"><Link to={`/suppliers/${t.supplier_id}`} className="text-primary hover:underline">{t.suppliers?.name}</Link></TableCell>
-                    <TableCell>{t.transaction_date}</TableCell>
+                    <TableCell>{formatDate(t.transaction_date)}</TableCell>
                     <TableCell>{t.description || "-"}</TableCell>
                     <TableCell>₪{t.total_value.toLocaleString()}</TableCell>
                     <TableCell className="text-success font-medium">₪{t.bonus_value.toLocaleString()}</TableCell>

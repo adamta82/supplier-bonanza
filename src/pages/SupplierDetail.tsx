@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowRight, TrendingUp, ShoppingCart, Award, Target } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { formatDate } from "@/lib/formatDate";
 
 const bonusTypeLabels: Record<string, string> = {
   annual_target: "שנתי/תקופתי (יעדים)",
@@ -334,7 +335,7 @@ export default function SupplierDetail() {
                   ) : agreements?.map((a: any) => (
                     <TableRow key={a.id}>
                       <TableCell><Badge variant="secondary">{bonusTypeLabels[a.bonus_type] || a.bonus_type}</Badge></TableCell>
-                      <TableCell className="text-sm">{a.period_start && a.period_end ? `${a.period_start} - ${a.period_end}` : "-"}</TableCell>
+                      <TableCell className="text-sm">{a.period_start && a.period_end ? `${formatDate(a.period_start)} - ${formatDate(a.period_end)}` : "-"}</TableCell>
                       <TableCell className="text-sm">
                         {a.bonus_tiers?.length > 0
                           ? a.bonus_tiers.sort((x: any, y: any) => x.tier_order - y.tier_order).map((t: any) => `₪${t.target_value.toLocaleString()} → ${t.bonus_percentage}%`).join(" | ")
@@ -371,7 +372,7 @@ export default function SupplierDetail() {
                     <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">אין רכישות</TableCell></TableRow>
                   ) : filteredPurchases.slice(0, 50).map((r: any) => (
                     <TableRow key={r.id}>
-                      <TableCell>{r.order_date || "-"}</TableCell>
+                      <TableCell>{formatDate(r.order_date)}</TableCell>
                       <TableCell>{r.order_number || "-"}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{r.item_description || r.item_code || "-"}</TableCell>
                       <TableCell>{r.category || "-"}</TableCell>
@@ -404,7 +405,7 @@ export default function SupplierDetail() {
                     <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">אין מכירות</TableCell></TableRow>
                   ) : filteredSales.slice(0, 50).map((r: any) => (
                     <TableRow key={r.id}>
-                      <TableCell>{r.sale_date || "-"}</TableCell>
+                      <TableCell>{formatDate(r.sale_date)}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{r.item_description || r.item_code || "-"}</TableCell>
                       <TableCell>{r.customer_name || "-"}</TableCell>
                       <TableCell>{r.quantity || "-"}</TableCell>
@@ -436,7 +437,7 @@ export default function SupplierDetail() {
                     <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground">אין בונוסים</TableCell></TableRow>
                   ) : filteredBonuses.map((b: any) => (
                     <TableRow key={b.id}>
-                      <TableCell>{b.transaction_date}</TableCell>
+                      <TableCell>{formatDate(b.transaction_date)}</TableCell>
                       <TableCell><Badge variant="secondary">{bonusTypeLabels[b.bonus_agreements?.bonus_type] || "-"}</Badge></TableCell>
                       <TableCell className="max-w-[200px] truncate">{b.description || "-"}</TableCell>
                       <TableCell>₪{(b.total_value || 0).toLocaleString()}</TableCell>
