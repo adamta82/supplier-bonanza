@@ -278,7 +278,7 @@ export default function SupplierDetail() {
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="pt-4 pb-4 text-center">
             <TrendingUp className="w-5 h-5 mx-auto mb-1 text-primary" />
-            <div className="text-xs text-muted-foreground">WE LOVE</div>
+            <div className="text-xs text-muted-foreground">רווח וילוב</div>
             <div className="text-lg font-bold text-primary">₪{weLoveProfit.toLocaleString()}</div>
           </CardContent>
         </Card>
@@ -299,7 +299,7 @@ export default function SupplierDetail() {
                 <Bar dataKey="purchases" name="מחזור קניות" fill="hsl(217, 71%, 45%)" radius={[2, 2, 0, 0]} />
                 <Bar dataKey="sales" name="מחזור מכירות" fill="hsl(142, 71%, 45%)" radius={[2, 2, 0, 0]} />
                 <Bar dataKey="profit" name="רווח ישיר" fill="hsl(45, 93%, 47%)" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="weLove" name="WE LOVE" fill="hsl(280, 60%, 50%)" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="weLove" name="רווח וילוב" fill="hsl(280, 60%, 50%)" radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

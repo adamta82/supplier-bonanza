@@ -111,7 +111,7 @@ export default function Reports() {
       {chartData.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>רווחיות לפי ספק - ישיר מול WE LOVE</CardTitle>
+            <CardTitle>רווחיות לפי ספק - ישיר מול וילוב</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={350}>
@@ -122,7 +122,7 @@ export default function Reports() {
                 <Tooltip formatter={(value: number) => `₪${value.toLocaleString()}`} />
                 <Legend />
                 <Bar dataKey="directProfit" name="רווח ישיר" fill="hsl(217, 71%, 45%)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="weLoveProfit" name="רווח WE LOVE" fill="hsl(142, 71%, 40%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="weLoveProfit" name="רווח וילוב" fill="hsl(142, 71%, 40%)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -144,8 +144,8 @@ export default function Reports() {
                 <TableHead>רווח ישיר</TableHead>
                 <TableHead>% ישיר</TableHead>
                 <TableHead>סה"כ בונוסים</TableHead>
-                <TableHead>רווח WE LOVE</TableHead>
-                <TableHead>% WE LOVE</TableHead>
+                <TableHead>רווח וילוב</TableHead>
+                <TableHead>% וילוב</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
