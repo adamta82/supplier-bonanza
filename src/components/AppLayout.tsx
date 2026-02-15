@@ -21,7 +21,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col border-l border-sidebar-border">
         <div className="p-6 border-b border-sidebar-border">
           <h1 className="text-xl font-bold text-sidebar-primary">
-            💰 WE LOVE Profit
+            💰 WE LOVE
           </h1>
           <p className="text-xs text-sidebar-foreground/60 mt-1">ניהול בונוסים ורווחיות</p>
         </div>
