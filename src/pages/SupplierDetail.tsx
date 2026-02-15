@@ -526,7 +526,7 @@ export default function SupplierDetail() {
                   ) : filteredBonuses.map((b: any) => (
                     <TableRow key={b.id}>
                       <TableCell>{formatDate(b.transaction_date)}</TableCell>
-                      <TableCell><Badge variant="secondary">{bonusTypeLabels[b.bonus_agreements?.bonus_type] || "-"}</Badge></TableCell>
+                      <TableCell><Badge variant="secondary">{bonusTypeLabels[b.bonus_agreements?.bonus_type] || "עסקה"}</Badge></TableCell>
                       <TableCell className="max-w-[200px] truncate">{b.description || "-"}</TableCell>
                       <TableCell>₪{(b.total_value || 0).toLocaleString()}</TableCell>
                       <TableCell className="font-semibold text-primary">₪{(b.bonus_value || 0).toLocaleString()}</TableCell>
