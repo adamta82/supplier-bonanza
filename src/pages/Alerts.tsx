@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -86,6 +87,7 @@ export default function Alerts() {
 
       return {
         id: agreement.id,
+        supplierId: agreement.supplier_id,
         supplierName,
         currentVolume,
         nextTarget: nextTier.target_value,
@@ -127,7 +129,11 @@ export default function Alerts() {
                   <div className="flex items-center gap-3">
                     {alert.urgency === "high" && <AlertTriangle className="w-5 h-5 text-warning" />}
                     <div>
-                      <h3 className="font-bold text-lg">{alert.supplierName}</h3>
+                      <h3 className="font-bold text-lg">
+                        <Link to={`/suppliers/${alert.supplierId}`} className="hover:underline text-primary">
+                          {alert.supplierName}
+                        </Link>
+                      </h3>
                       <p className="text-sm text-muted-foreground">
                         מדרגה נוכחית: {alert.currentPercentage}% | מדרגה הבאה: {alert.nextPercentage}%
                       </p>
