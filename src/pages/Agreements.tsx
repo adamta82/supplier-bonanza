@@ -383,9 +383,39 @@ export default function Agreements() {
                        a.series_name ? `סדרה: ${a.series_name}` : "הכל"}
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => { if (confirm("למחוק הסכם?")) deleteMutation.mutate(a.id); }}>
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" onClick={() => {
+                          setEditId(a.id);
+                          setForm({
+                            supplier_id: a.supplier_id,
+                            bonus_type: a.bonus_type,
+                            period_type: a.period_type || "annual",
+                            period_start: a.period_start || "",
+                            period_end: a.period_end || "",
+                            vat_included: a.vat_included || false,
+                            target_type: a.target_type || "amount",
+                            category_filter: a.category_filter || "",
+                            category_mode: a.category_mode || "all",
+                            fixed_amount: a.fixed_amount?.toString() || "",
+                            fixed_percentage: a.fixed_percentage?.toString() || "",
+                            series_name: a.series_name || "",
+                            notes: a.notes || "",
+                          });
+                          setTiers(
+                            a.bonus_tiers?.length > 0
+                              ? a.bonus_tiers
+                                  .sort((x: any, y: any) => x.tier_order - y.tier_order)
+                                  .map((t: any) => ({ target_value: t.target_value.toString(), bonus_percentage: t.bonus_percentage.toString() }))
+                              : [{ target_value: "", bonus_percentage: "" }]
+                          );
+                          setIsOpen(true);
+                        }}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => { if (confirm("למחוק הסכם?")) deleteMutation.mutate(a.id); }}>
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))

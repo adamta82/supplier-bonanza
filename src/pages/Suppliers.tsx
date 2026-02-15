@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -171,7 +172,9 @@ export default function Suppliers() {
               ) : (
                 filtered?.map((s) => (
                   <TableRow key={s.id}>
-                    <TableCell className="font-medium">{s.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link to={`/suppliers/${s.id}`} className="text-primary hover:underline">{s.name}</Link>
+                    </TableCell>
                     <TableCell>{s.supplier_number || "-"}</TableCell>
                     <TableCell>{s.payment_terms || "-"}</TableCell>
                     <TableCell>{s.shotef || "-"}</TableCell>
