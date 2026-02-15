@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowRight, TrendingUp, ShoppingCart, Award, Target } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { formatDate } from "@/lib/formatDate";
 
@@ -420,7 +421,94 @@ export default function SupplierDetail() {
         </TabsContent>
 
         <TabsContent value="bonuses">
+          {/* Agreement progress cards */}
+          <div className="space-y-4 mb-4">
+            {agreements?.filter((a: any) => a.is_active || a.period_end).map((agreement: any) => {
+              const today = new Date().toISOString().slice(0, 10);
+              const periodEnded = agreement.period_end && agreement.period_end < today;
+              
+              // Calculate volume for this agreement
+              const agrPurchases = (purchases || []).filter((p: any) => p.supplier_id === id);
+              let volume = agrPurchases.reduce((s: number, p: any) => s + (p.total_amount || 0), 0);
+              const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target);
+              volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
+
+              // Check if bonus was received (has transaction_bonus for this agreement)
+              const hasReceivedBonus = (bonuses || []).some((b: any) => b.agreement_id === agreement.id);
+
+              // Determine status
+              let status: string;
+              let statusVariant: "default" | "secondary" | "destructive" | "outline";
+              if (hasReceivedBonus) {
+                status = "התקבל";
+                statusVariant = "default";
+              } else if (periodEnded) {
+                status = "ממתין לגבייה";
+                statusVariant = "destructive";
+              } else {
+                status = "פעיל";
+                statusVariant = "secondary";
+              }
+
+              // Tiers progress
+              const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
+              const highestTier = sortedTiers[sortedTiers.length - 1];
+              const progress = highestTier ? Math.min((volume / highestTier.target_value) * 100, 100) : 0;
+
+              // Current achieved tier
+              let achievedTier = null;
+              for (let i = sortedTiers.length - 1; i >= 0; i--) {
+                if (volume >= sortedTiers[i].target_value) { achievedTier = sortedTiers[i]; break; }
+              }
+
+              return (
+                <Card key={agreement.id}>
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">{bonusTypeLabels[agreement.bonus_type] || agreement.bonus_type}</Badge>
+                        {agreement.period_start && agreement.period_end && (
+                          <span className="text-xs text-muted-foreground">{formatDate(agreement.period_start)} - {formatDate(agreement.period_end)}</span>
+                        )}
+                      </div>
+                      <Badge variant={statusVariant}>{status}</Badge>
+                    </div>
+
+                    {sortedTiers.length > 0 && (
+                      <>
+                        <div className="flex items-center justify-between text-sm">
+                          <span>התקדמות: ₪{volume.toLocaleString()} / ₪{highestTier?.target_value.toLocaleString()}</span>
+                          <span className="font-bold">{progress.toFixed(0)}%</span>
+                        </div>
+                        <Progress value={progress} className="h-2" />
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          {sortedTiers.map((tier: any, i: number) => (
+                            <span key={i} className={`px-2 py-0.5 rounded-full ${volume >= tier.target_value ? "bg-primary/20 text-primary font-semibold" : "bg-muted text-muted-foreground"}`}>
+                              ₪{tier.target_value.toLocaleString()} → {tier.bonus_percentage}%
+                            </span>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {agreement.fixed_percentage && (
+                      <div className="text-sm">בונוס קבוע: {agreement.fixed_percentage}%</div>
+                    )}
+                    {agreement.fixed_amount && (
+                      <div className="text-sm">בונוס קבוע: ₪{agreement.fixed_amount.toLocaleString()}</div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+            {(!agreements || agreements.length === 0) && (
+              <Card><CardContent className="py-6 text-center text-muted-foreground">אין הסכמי בונוס</CardContent></Card>
+            )}
+          </div>
+
+          {/* Existing bonus transactions table */}
           <Card>
+            <CardHeader><CardTitle className="text-base">עסקאות בונוס</CardTitle></CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
