@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 
 export default function Transactions() {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({
     supplier_id: "",
     transaction_date: new Date().toISOString().split("T")[0],
@@ -24,6 +25,12 @@ export default function Transactions() {
     items_detail: "",
     counts_toward_target: true,
   });
+
+  const resetForm = () => {
+    setIsOpen(false);
+    setEditId(null);
+    setForm({ supplier_id: "", transaction_date: new Date().toISOString().split("T")[0], description: "", total_value: "", bonus_value: "", items_detail: "", counts_toward_target: true });
+  };
 
   const { data: suppliers } = useQuery({
     queryKey: ["suppliers"],
@@ -46,7 +53,7 @@ export default function Transactions() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("transaction_bonuses").insert({
+      const payload = {
         supplier_id: form.supplier_id,
         transaction_date: form.transaction_date,
         description: form.description || null,
@@ -54,14 +61,19 @@ export default function Transactions() {
         bonus_value: parseFloat(form.bonus_value),
         items_detail: form.items_detail || null,
         counts_toward_target: form.counts_toward_target,
-      });
-      if (error) throw error;
+      };
+      if (editId) {
+        const { error } = await supabase.from("transaction_bonuses").update(payload).eq("id", editId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("transaction_bonuses").insert(payload);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transaction-bonuses"] });
-      toast.success("בונוס עסקה נוסף");
-      setIsOpen(false);
-      setForm({ supplier_id: "", transaction_date: new Date().toISOString().split("T")[0], description: "", total_value: "", bonus_value: "", items_detail: "", counts_toward_target: true });
+      toast.success(editId ? "עסקה עודכנה" : "בונוס עסקה נוסף");
+      resetForm();
     },
     onError: () => toast.error("שגיאה"),
   });
@@ -74,20 +86,35 @@ export default function Transactions() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transaction-bonuses"] });
       toast.success("נמחק");
+      resetForm();
     },
   });
+
+  const openEdit = (t: any) => {
+    setEditId(t.id);
+    setForm({
+      supplier_id: t.supplier_id,
+      transaction_date: t.transaction_date,
+      description: t.description || "",
+      total_value: t.total_value.toString(),
+      bonus_value: t.bonus_value.toString(),
+      items_detail: t.items_detail || "",
+      counts_toward_target: t.counts_toward_target ?? true,
+    });
+    setIsOpen(true);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">בונוס עסקה</h1>
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(open) => { if (!open) resetForm(); else setIsOpen(true); }}>
           <DialogTrigger asChild>
             <Button><Plus className="w-4 h-4 ml-2" />הוסף עסקה</Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>בונוס עסקה חדש</DialogTitle>
+              <DialogTitle>{editId ? "עריכת עסקה" : "בונוס עסקה חדש"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-4">
               <div>
@@ -128,8 +155,20 @@ export default function Transactions() {
                 <Label>נספר ליעד שנתי</Label>
               </div>
               <Button type="submit" className="w-full" disabled={saveMutation.isPending || !form.supplier_id}>
-                {saveMutation.isPending ? "שומר..." : "שמור"}
+                {saveMutation.isPending ? "שומר..." : editId ? "עדכן עסקה" : "שמור"}
               </Button>
+              {editId && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  className="w-full"
+                  onClick={() => { if (confirm("למחוק את העסקה?")) deleteMutation.mutate(editId); }}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="w-4 h-4 ml-2" />
+                  {deleteMutation.isPending ? "מוחק..." : "מחק עסקה"}
+                </Button>
+              )}
             </form>
           </DialogContent>
         </Dialog>
@@ -164,8 +203,8 @@ export default function Transactions() {
                     <TableCell className="text-success font-medium">₪{t.bonus_value.toLocaleString()}</TableCell>
                     <TableCell>{t.counts_toward_target ? "✓" : "✗"}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => { if (confirm("למחוק?")) deleteMutation.mutate(t.id); }}>
-                        <Trash2 className="w-4 h-4 text-destructive" />
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
+                        <Pencil className="w-4 h-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
