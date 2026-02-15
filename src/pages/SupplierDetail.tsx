@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowRight, TrendingUp, ShoppingCart, Award, Target } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 const bonusTypeLabels: Record<string, string> = {
   annual_target: "שנתי/תקופתי (יעדים)",
@@ -136,22 +136,32 @@ export default function SupplierDetail() {
   const weLoveProfit = totalDirectProfit + totalBonusValue;
 
   const monthlyData = useMemo(() => {
-    const map: Record<string, { purchases: number; sales: number; profit: number }> = {};
-    (purchases || []).forEach((r) => {
+    const map: Record<string, { purchases: number; sales: number; profit: number; weLove: number }> = {};
+    const fp = filteredPurchases;
+    const fs = filteredSales;
+    const fb = filteredBonuses;
+    fp.forEach((r) => {
       const m = r.order_date?.slice(0, 7) || "unknown";
-      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0 };
+      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, weLove: 0 };
       map[m].purchases += r.total_amount || 0;
     });
-    (sales || []).forEach((r) => {
+    fs.forEach((r) => {
       const m = r.sale_date?.slice(0, 7) || "unknown";
-      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0 };
+      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, weLove: 0 };
       map[m].sales += (r.sale_price || 0) * (r.quantity || 0);
       map[m].profit += r.profit_direct || 0;
     });
+    fb.forEach((r) => {
+      const m = r.transaction_date?.slice(0, 7) || "unknown";
+      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, weLove: 0 };
+      map[m].weLove += r.bonus_value || 0;
+    });
+    // Add profit to weLove for total
+    Object.values(map).forEach((v) => { v.weLove += v.profit; });
     return Object.entries(map)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, v]) => ({ month, ...v }));
-  }, [purchases, sales]);
+  }, [filteredPurchases, filteredSales, filteredBonuses]);
 
   const months = useMemo(() => {
     const now = new Date();
@@ -277,17 +287,19 @@ export default function SupplierDetail() {
       {/* Monthly chart */}
       {monthlyData.length > 0 && (
         <Card>
-          <CardHeader><CardTitle>ביצועים חודשיים</CardTitle></CardHeader>
+          <CardHeader><CardTitle>ביצועים {filterMode === "all" ? "חודשיים" : "לפי תקופה"}</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={280}>
               <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(v: number) => `₪${v.toLocaleString()}`} />
-                <Bar dataKey="purchases" name="רכישות" fill="hsl(217, 71%, 45%)" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="sales" name="מכירות" fill="hsl(142, 71%, 45%)" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="profit" name="רווח" fill="hsl(45, 93%, 47%)" radius={[2, 2, 0, 0]} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="purchases" name="מחזור קניות" fill="hsl(217, 71%, 45%)" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="sales" name="מחזור מכירות" fill="hsl(142, 71%, 45%)" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="profit" name="רווח ישיר" fill="hsl(45, 93%, 47%)" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="weLove" name="WE LOVE" fill="hsl(280, 60%, 50%)" radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
