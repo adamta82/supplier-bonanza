@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -156,7 +157,7 @@ export default function Transactions() {
               ) : (
                 transactions?.map((t: any) => (
                   <TableRow key={t.id}>
-                    <TableCell className="font-medium">{t.suppliers?.name}</TableCell>
+                    <TableCell className="font-medium"><Link to={`/suppliers/${t.supplier_id}`} className="text-primary hover:underline">{t.suppliers?.name}</Link></TableCell>
                     <TableCell>{t.transaction_date}</TableCell>
                     <TableCell>{t.description || "-"}</TableCell>
                     <TableCell>₪{t.total_value.toLocaleString()}</TableCell>

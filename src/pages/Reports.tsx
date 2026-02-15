@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -86,6 +87,7 @@ export default function Reports() {
     const weLoveProfit = directProfit + totalBonus;
 
     return {
+      id: supplier.id,
       name: supplier.name,
       purchaseVolume,
       totalSales,
@@ -152,7 +154,7 @@ export default function Reports() {
               ) : (
                 supplierReport.map((s) => (
                   <TableRow key={s.name}>
-                    <TableCell className="font-medium">{s.name}</TableCell>
+                    <TableCell className="font-medium"><Link to={`/suppliers/${s.id}`} className="text-primary hover:underline">{s.name}</Link></TableCell>
                     <TableCell>₪{s.purchaseVolume.toLocaleString()}</TableCell>
                     <TableCell>₪{s.totalSales.toLocaleString()}</TableCell>
                     <TableCell className={s.directProfit >= 0 ? "text-success" : "text-destructive"}>₪{s.directProfit.toLocaleString()}</TableCell>

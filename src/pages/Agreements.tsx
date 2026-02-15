@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -356,7 +357,7 @@ export default function Agreements() {
               ) : (
                 agreements?.map((a: any) => (
                   <TableRow key={a.id}>
-                    <TableCell className="font-medium">{a.suppliers?.name}</TableCell>
+                    <TableCell className="font-medium"><Link to={`/suppliers/${a.supplier_id}`} className="text-primary hover:underline">{a.suppliers?.name}</Link></TableCell>
                     <TableCell>
                       <Badge variant="secondary">{bonusTypeLabels[a.bonus_type] || a.bonus_type}</Badge>
                     </TableCell>
