@@ -99,7 +99,13 @@ export default function Alerts() {
       };
     })
     .filter(Boolean)
-    .sort((a: any, b: any) => b.progress - a.progress);
+    .sort((a: any, b: any) => {
+      // Sort by period_end: nearest first, nulls last
+      if (a.periodEnd && b.periodEnd) return a.periodEnd.localeCompare(b.periodEnd);
+      if (a.periodEnd && !b.periodEnd) return -1;
+      if (!a.periodEnd && b.periodEnd) return 1;
+      return b.progress - a.progress;
+    });
 
   return (
     <div className="space-y-6">
