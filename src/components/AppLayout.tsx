@@ -3,16 +3,16 @@ import { LayoutDashboard, Users, FileText, Upload, BarChart3, AlertTriangle, Tre
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { path: "/", label: "דשבורד", icon: LayoutDashboard },
-  { path: "/suppliers", label: "ספקים", icon: Users },
-  { path: "/agreements", label: "הסכמי בונוסים", icon: FileText },
-  { path: "/transactions", label: "בונוס עסקה", icon: TrendingUp },
-  { path: "/upload", label: "העלאת נתונים", icon: Upload },
-  { path: "/reports", label: "דוחות ורווחיות", icon: BarChart3 },
-  { path: "/alerts", label: "התראות יעדים", icon: AlertTriangle },
-];
+{ path: "/", label: "דשבורד", icon: LayoutDashboard },
+{ path: "/suppliers", label: "ספקים", icon: Users },
+{ path: "/agreements", label: "הסכמי בונוסים", icon: FileText },
+{ path: "/transactions", label: "בונוס עסקה", icon: TrendingUp },
+{ path: "/upload", label: "העלאת נתונים", icon: Upload },
+{ path: "/reports", label: "דוחות ורווחיות", icon: BarChart3 },
+{ path: "/alerts", label: "התראות יעדים", icon: AlertTriangle }];
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+
+export default function AppLayout({ children }: {children: React.ReactNode;}) {
   const location = useLocation();
 
   return (
@@ -21,7 +21,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col border-l border-sidebar-border">
         <div className="p-6 border-b border-sidebar-border">
           <h1 className="text-xl font-bold text-sidebar-primary">
-            💰 WE LOVE
+            💰 ZABILO  MARGIN 
           </h1>
           <p className="text-xs text-sidebar-foreground/60 mt-1">ניהול בונוסים ורווחיות</p>
         </div>
@@ -34,15 +34,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 to={item.path}
                 className={cn(
                   "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-colors",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-primary font-medium"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                )}
-              >
+                  isActive ?
+                  "bg-sidebar-accent text-sidebar-primary font-medium" :
+                  "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                )}>
+
                 <item.icon className="w-5 h-5" />
                 {item.label}
-              </Link>
-            );
+              </Link>);
+
           })}
         </nav>
       </aside>
@@ -53,6 +53,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </main>
-    </div>
-  );
+    </div>);
+
 }
