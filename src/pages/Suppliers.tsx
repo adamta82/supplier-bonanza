@@ -180,14 +180,9 @@ export default function Suppliers() {
                     <TableCell>{s.shotef || "-"}</TableCell>
                     <TableCell className="max-w-[200px] truncate">{s.notes || "-"}</TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => { if (confirm("למחוק את הספק?")) deleteMutation.mutate(s.id); }}>
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </div>
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
