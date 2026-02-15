@@ -268,7 +268,7 @@ export default function SupplierDetail() {
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="pt-4 pb-4 text-center">
             <TrendingUp className="w-5 h-5 mx-auto mb-1 text-primary" />
-            <div className="text-xs text-muted-foreground">WE LOVE Profit</div>
+            <div className="text-xs text-muted-foreground">WE LOVE</div>
             <div className="text-lg font-bold text-primary">₪{weLoveProfit.toLocaleString()}</div>
           </CardContent>
         </Card>
