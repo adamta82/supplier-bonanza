@@ -158,7 +158,6 @@ export default function SupplierDetail() {
       if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, weLove: 0 };
       map[m].weLove += r.bonus_value || 0;
     });
-    // Add profit to weLove for total
     Object.values(map).forEach((v) => { v.weLove += v.profit; });
     return Object.entries(map)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -179,73 +178,114 @@ export default function SupplierDetail() {
     return [`${y}-Q1`, `${y}-Q2`, `${y}-Q3`, `${y}-Q4`, `${y - 1}-Q1`, `${y - 1}-Q2`, `${y - 1}-Q3`, `${y - 1}-Q4`];
   }, []);
 
+  // Calculate bonus value for an agreement
+  const calcAgreementBonusValue = (agreement: any) => {
+    const today = new Date().toISOString().slice(0, 10);
+    
+    // For transaction type - sum bonus_value from linked transaction_bonuses
+    if (agreement.bonus_type === "transaction") {
+      const linkedBonuses = (bonuses || []).filter((b: any) => b.agreement_id === agreement.id);
+      return linkedBonuses.reduce((s: number, b: any) => s + (b.bonus_value || 0), 0);
+    }
+
+    // For target-based agreements - calculate based on purchase volume
+    const agrPurchases = (purchases || []).filter((p: any) => {
+      if (!p.order_date) return false;
+      if (agreement.period_start && p.order_date < agreement.period_start) return false;
+      if (agreement.period_end && p.order_date > agreement.period_end) return false;
+      return true;
+    });
+    let volume = agrPurchases.reduce((s: number, p: any) => s + (p.total_amount || 0), 0);
+    
+    // Add transaction bonuses that count toward target
+    const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
+    volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
+
+    // Fixed percentage
+    if (agreement.fixed_percentage) {
+      return volume * (agreement.fixed_percentage / 100);
+    }
+
+    // Fixed amount
+    if (agreement.fixed_amount) {
+      return agreement.fixed_amount;
+    }
+
+    // Tiered
+    const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
+    let achievedTier = null;
+    for (let i = sortedTiers.length - 1; i >= 0; i--) {
+      if (volume >= sortedTiers[i].target_value) { achievedTier = sortedTiers[i]; break; }
+    }
+    if (achievedTier) {
+      return volume * (achievedTier.bonus_percentage / 100);
+    }
+    return 0;
+  };
+
+  // Get agreement status
+  const getAgreementStatus = (agreement: any) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const hasReceivedBonus = (bonuses || []).some((b: any) => b.agreement_id === agreement.id);
+    const periodEnded = agreement.period_end && agreement.period_end < today;
+
+    if (hasReceivedBonus) {
+      return { label: "התקבל", variant: "default" as const };
+    } else if (periodEnded) {
+      return { label: "צריך לקבל", variant: "destructive" as const };
+    }
+    return { label: "פעיל", variant: "secondary" as const };
+  };
+
   if (!supplier) return <div className="text-center py-12 text-muted-foreground">טוען...</div>;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Link to="/suppliers">
-          <Button variant="ghost" size="icon"><ArrowRight className="w-5 h-5" /></Button>
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold">{supplier.name}</h1>
-          <p className="text-muted-foreground text-sm">
-            {supplier.supplier_number && `מס׳ ספק: ${supplier.supplier_number}`}
-            {supplier.payment_terms && ` | ${supplier.payment_terms}`}
-            {supplier.shotef && ` | שוטף ${supplier.shotef}`}
-          </p>
+      {/* Header with filter combined */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <Link to="/suppliers">
+            <Button variant="ghost" size="icon"><ArrowRight className="w-5 h-5" /></Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold">{supplier.name}</h1>
+            <p className="text-muted-foreground text-sm">
+              {supplier.supplier_number && `מס׳ ספק: ${supplier.supplier_number}`}
+              {supplier.shotef != null && ` | שוטף ${supplier.shotef}`}
+              {(supplier as any).obligo != null && ` | אובליגו: ₪${Number((supplier as any).obligo).toLocaleString()}`}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={filterMode} onValueChange={(v) => setFilterMode(v as FilterMode)}>
+            <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">הכל</SelectItem>
+              <SelectItem value="month">חודש</SelectItem>
+              <SelectItem value="quarter">רבעון</SelectItem>
+              <SelectItem value="custom">תאריכים</SelectItem>
+            </SelectContent>
+          </Select>
+          {filterMode === "month" && (
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>{months.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+            </Select>
+          )}
+          {filterMode === "quarter" && (
+            <Select value={selectedQuarter} onValueChange={setSelectedQuarter}>
+              <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>{quarters.map((q) => <SelectItem key={q} value={q}>{q}</SelectItem>)}</SelectContent>
+            </Select>
+          )}
+          {filterMode === "custom" && (
+            <>
+              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[140px] h-8 text-xs" />
+              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[140px] h-8 text-xs" />
+            </>
+          )}
         </div>
       </div>
-
-      {/* Date filter */}
-      <Card>
-        <CardContent className="pt-4 pb-4">
-          <div className="flex flex-wrap items-end gap-3">
-            <div>
-              <Label className="text-xs">סינון לפי</Label>
-              <Select value={filterMode} onValueChange={(v) => setFilterMode(v as FilterMode)}>
-                <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">הכל</SelectItem>
-                  <SelectItem value="month">חודש</SelectItem>
-                  <SelectItem value="quarter">רבעון</SelectItem>
-                  <SelectItem value="custom">תאריכים</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {filterMode === "month" && (
-              <div>
-                <Label className="text-xs">חודש</Label>
-                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                  <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>{months.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            )}
-            {filterMode === "quarter" && (
-              <div>
-                <Label className="text-xs">רבעון</Label>
-                <Select value={selectedQuarter} onValueChange={setSelectedQuarter}>
-                  <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>{quarters.map((q) => <SelectItem key={q} value={q}>{q}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            )}
-            {filterMode === "custom" && (
-              <>
-                <div>
-                  <Label className="text-xs">מתאריך</Label>
-                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[160px]" />
-                </div>
-                <div>
-                  <Label className="text-xs">עד תאריך</Label>
-                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[160px]" />
-                </div>
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -286,6 +326,79 @@ export default function SupplierDetail() {
         </Card>
       </div>
 
+      {/* Agreements section - prominent at top */}
+      <div className="space-y-3">
+        <h2 className="text-xl font-bold">הסכמי בונוס</h2>
+        {agreements && agreements.length > 0 ? (
+          agreements.map((agreement: any) => {
+            const status = getAgreementStatus(agreement);
+            const bonusValue = calcAgreementBonusValue(agreement);
+            const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
+            const highestTier = sortedTiers[sortedTiers.length - 1];
+
+            // Calculate volume for progress
+            const agrPurchases = (purchases || []).filter((p: any) => {
+              if (!p.order_date) return false;
+              if (agreement.period_start && p.order_date < agreement.period_start) return false;
+              if (agreement.period_end && p.order_date > agreement.period_end) return false;
+              return true;
+            });
+            let volume = agrPurchases.reduce((s: number, p: any) => s + (p.total_amount || 0), 0);
+            const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
+            volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
+            const progress = highestTier ? Math.min((volume / highestTier.target_value) * 100, 100) : 0;
+
+            return (
+              <Card key={agreement.id}>
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">{bonusTypeLabels[agreement.bonus_type] || agreement.bonus_type}</Badge>
+                      {agreement.period_start && agreement.period_end && (
+                        <span className="text-xs text-muted-foreground">{formatDate(agreement.period_start)} - {formatDate(agreement.period_end)}</span>
+                      )}
+                      {agreement.category_mode === "include_only" && <span className="text-xs text-muted-foreground">רק: {agreement.category_filter}</span>}
+                      {agreement.category_mode === "exclude" && <span className="text-xs text-muted-foreground">חוץ מ: {agreement.category_filter}</span>}
+                      {agreement.series_name && <span className="text-xs text-muted-foreground">סדרה: {agreement.series_name}</span>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-primary">₪{bonusValue.toLocaleString()}</span>
+                      <Badge variant={status.variant}>{status.label}</Badge>
+                    </div>
+                  </div>
+
+                  {sortedTiers.length > 0 && (
+                    <>
+                      <div className="flex items-center justify-between text-sm">
+                        <span>התקדמות: ₪{volume.toLocaleString()} / ₪{highestTier?.target_value.toLocaleString()}</span>
+                        <span className="font-bold">{progress.toFixed(0)}%</span>
+                      </div>
+                      <Progress value={progress} className="h-2" />
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        {sortedTiers.map((tier: any, i: number) => (
+                          <span key={i} className={`px-2 py-0.5 rounded-full ${volume >= tier.target_value ? "bg-primary/20 text-primary font-semibold" : "bg-muted text-muted-foreground"}`}>
+                            ₪{tier.target_value.toLocaleString()} → {tier.bonus_percentage}%
+                          </span>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {agreement.fixed_percentage && !sortedTiers.length && (
+                    <div className="text-sm">בונוס קבוע: {agreement.fixed_percentage}%</div>
+                  )}
+                  {agreement.fixed_amount && !sortedTiers.length && (
+                    <div className="text-sm">בונוס קבוע: ₪{agreement.fixed_amount.toLocaleString()}</div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })
+        ) : (
+          <Card><CardContent className="py-6 text-center text-muted-foreground">אין הסכמי בונוס</CardContent></Card>
+        )}
+      </div>
+
       {/* Monthly chart */}
       {monthlyData.length > 0 && (
         <Card>
@@ -308,51 +421,13 @@ export default function SupplierDetail() {
         </Card>
       )}
 
-      {/* Tabs */}
-      <Tabs defaultValue="agreements" dir="rtl">
+      {/* Tabs - without agreements (moved to top) */}
+      <Tabs defaultValue="purchases" dir="rtl">
         <TabsList>
-          <TabsTrigger value="agreements">הסכמים ({agreements?.length || 0})</TabsTrigger>
           <TabsTrigger value="purchases">רכישות ({filteredPurchases.length})</TabsTrigger>
           <TabsTrigger value="sales">מכירות ({filteredSales.length})</TabsTrigger>
           <TabsTrigger value="bonuses">בונוסים ({filteredBonuses.length})</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="agreements">
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>סוג</TableHead>
-                    <TableHead>תקופה</TableHead>
-                    <TableHead>מדרגות/ערכים</TableHead>
-                    <TableHead>קטגוריה</TableHead>
-                    <TableHead>סטטוס</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {agreements?.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground">אין הסכמים</TableCell></TableRow>
-                  ) : agreements?.map((a: any) => (
-                    <TableRow key={a.id}>
-                      <TableCell><Badge variant="secondary">{bonusTypeLabels[a.bonus_type] || a.bonus_type}</Badge></TableCell>
-                      <TableCell className="text-sm">{a.period_start && a.period_end ? `${formatDate(a.period_start)} - ${formatDate(a.period_end)}` : "-"}</TableCell>
-                      <TableCell className="text-sm">
-                        {a.bonus_tiers?.length > 0
-                          ? a.bonus_tiers.sort((x: any, y: any) => x.tier_order - y.tier_order).map((t: any) => `₪${t.target_value.toLocaleString()} → ${t.bonus_percentage}%`).join(" | ")
-                          : a.fixed_percentage ? `${a.fixed_percentage}%` : a.fixed_amount ? `₪${a.fixed_amount.toLocaleString()}` : "-"}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {a.category_mode === "include_only" ? `רק: ${a.category_filter}` : a.category_mode === "exclude" ? `חוץ מ: ${a.category_filter}` : a.series_name ? `סדרה: ${a.series_name}` : "הכל"}
-                      </TableCell>
-                      <TableCell><Badge variant={a.is_active ? "default" : "outline"}>{a.is_active ? "פעיל" : "לא פעיל"}</Badge></TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="purchases">
           <Card>
@@ -421,92 +496,6 @@ export default function SupplierDetail() {
         </TabsContent>
 
         <TabsContent value="bonuses">
-          {/* Agreement progress cards */}
-          <div className="space-y-4 mb-4">
-            {agreements?.filter((a: any) => a.is_active || a.period_end).map((agreement: any) => {
-              const today = new Date().toISOString().slice(0, 10);
-              const periodEnded = agreement.period_end && agreement.period_end < today;
-              
-              // Calculate volume for this agreement
-              const agrPurchases = (purchases || []).filter((p: any) => p.supplier_id === id);
-              let volume = agrPurchases.reduce((s: number, p: any) => s + (p.total_amount || 0), 0);
-              const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target);
-              volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
-
-              // Check if bonus was received (has transaction_bonus for this agreement)
-              const hasReceivedBonus = (bonuses || []).some((b: any) => b.agreement_id === agreement.id);
-
-              // Determine status
-              let status: string;
-              let statusVariant: "default" | "secondary" | "destructive" | "outline";
-              if (hasReceivedBonus) {
-                status = "התקבל";
-                statusVariant = "default";
-              } else if (periodEnded) {
-                status = "ממתין לגבייה";
-                statusVariant = "destructive";
-              } else {
-                status = "פעיל";
-                statusVariant = "secondary";
-              }
-
-              // Tiers progress
-              const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
-              const highestTier = sortedTiers[sortedTiers.length - 1];
-              const progress = highestTier ? Math.min((volume / highestTier.target_value) * 100, 100) : 0;
-
-              // Current achieved tier
-              let achievedTier = null;
-              for (let i = sortedTiers.length - 1; i >= 0; i--) {
-                if (volume >= sortedTiers[i].target_value) { achievedTier = sortedTiers[i]; break; }
-              }
-
-              return (
-                <Card key={agreement.id}>
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary">{bonusTypeLabels[agreement.bonus_type] || agreement.bonus_type}</Badge>
-                        {agreement.period_start && agreement.period_end && (
-                          <span className="text-xs text-muted-foreground">{formatDate(agreement.period_start)} - {formatDate(agreement.period_end)}</span>
-                        )}
-                      </div>
-                      <Badge variant={statusVariant}>{status}</Badge>
-                    </div>
-
-                    {sortedTiers.length > 0 && (
-                      <>
-                        <div className="flex items-center justify-between text-sm">
-                          <span>התקדמות: ₪{volume.toLocaleString()} / ₪{highestTier?.target_value.toLocaleString()}</span>
-                          <span className="font-bold">{progress.toFixed(0)}%</span>
-                        </div>
-                        <Progress value={progress} className="h-2" />
-                        <div className="flex flex-wrap gap-2 text-xs">
-                          {sortedTiers.map((tier: any, i: number) => (
-                            <span key={i} className={`px-2 py-0.5 rounded-full ${volume >= tier.target_value ? "bg-primary/20 text-primary font-semibold" : "bg-muted text-muted-foreground"}`}>
-                              ₪{tier.target_value.toLocaleString()} → {tier.bonus_percentage}%
-                            </span>
-                          ))}
-                        </div>
-                      </>
-                    )}
-
-                    {agreement.fixed_percentage && (
-                      <div className="text-sm">בונוס קבוע: {agreement.fixed_percentage}%</div>
-                    )}
-                    {agreement.fixed_amount && (
-                      <div className="text-sm">בונוס קבוע: ₪{agreement.fixed_amount.toLocaleString()}</div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-            {(!agreements || agreements.length === 0) && (
-              <Card><CardContent className="py-6 text-center text-muted-foreground">אין הסכמי בונוס</CardContent></Card>
-            )}
-          </div>
-
-          {/* Existing bonus transactions table */}
           <Card>
             <CardHeader><CardTitle className="text-base">עסקאות בונוס</CardTitle></CardHeader>
             <CardContent className="p-0">
