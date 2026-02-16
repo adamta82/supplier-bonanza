@@ -15,7 +15,7 @@ import { Plus, Trash2, Pencil } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
 
 const bonusTypeLabels: Record<string, string> = {
-  annual_target: "שנתי/תקופתי (יעדים)",
+  annual_target: "יעדים",
   marketing: "שיווק",
   transaction: "עסקה",
   annual_fixed: "שנתי קבוע",
