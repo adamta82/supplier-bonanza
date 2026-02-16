@@ -241,6 +241,7 @@ export type Database = {
           id: string
           name: string
           notes: string | null
+          obligo: number | null
           payment_terms: string | null
           shotef: number | null
           supplier_number: string | null
@@ -251,6 +252,7 @@ export type Database = {
           id?: string
           name: string
           notes?: string | null
+          obligo?: number | null
           payment_terms?: string | null
           shotef?: number | null
           supplier_number?: string | null
@@ -261,6 +263,7 @@ export type Database = {
           id?: string
           name?: string
           notes?: string | null
+          obligo?: number | null
           payment_terms?: string | null
           shotef?: number | null
           supplier_number?: string | null

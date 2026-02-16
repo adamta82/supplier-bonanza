@@ -1,11 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { TrendingUp, ShoppingCart, Award, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
-
-const COLORS = ["hsl(217, 71%, 45%)", "hsl(38, 92%, 50%)", "hsl(142, 71%, 40%)", "hsl(0, 72%, 51%)", "hsl(280, 60%, 50%)"];
 
 export default function Dashboard() {
   const { data: suppliers } = useQuery({
@@ -43,39 +40,16 @@ export default function Dashboard() {
     },
   });
 
-  // Calculate totals
   const totalPurchases = purchases?.reduce((sum, p) => sum + (p.total_amount || 0), 0) || 0;
   const totalTransactionBonus = transactionBonuses?.reduce((sum, t) => sum + (t.bonus_value || 0), 0) || 0;
   const activeAgreements = agreements?.length || 0;
 
-  // Purchases by supplier for chart
+  // Purchases by supplier for supplier cards
   const purchasesBySupplier = purchases?.reduce((acc, p) => {
     const name = p.supplier_name || "לא ידוע";
     acc[name] = (acc[name] || 0) + (p.total_amount || 0);
     return acc;
   }, {} as Record<string, number>);
-
-  const chartData = Object.entries(purchasesBySupplier || {})
-    .map(([name, amount]) => ({ name, amount }))
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 10);
-
-  // Bonus type distribution
-  const bonusTypeLabels: Record<string, string> = {
-    annual_target: "שנתי/יעדים",
-    marketing: "שיווק",
-    transaction: "עסקה",
-    annual_fixed: "שנתי קבוע",
-    network: "רשתי",
-  };
-
-  const bonusByType = agreements?.reduce((acc, a) => {
-    const label = bonusTypeLabels[a.bonus_type] || a.bonus_type;
-    acc[label] = (acc[label] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const pieData = Object.entries(bonusByType || {}).map(([name, value]) => ({ name, value }));
 
   return (
     <div className="space-y-6">
@@ -132,56 +106,37 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>מחזור רכישות לפי ספק</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={chartData} layout="vertical" margin={{ left: 20, right: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}K`} />
-                  <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(value: number) => `₪${value.toLocaleString()}`} />
-                  <Bar dataKey="amount" fill="hsl(217, 71%, 45%)" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-muted-foreground text-center py-12">אין נתוני רכישות עדיין. העלה קובץ Excel כדי לראות נתונים.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>התפלגות בונוסים לפי סוג</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {pieData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={350}>
-                <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={40} label={({ name, value, x, y }) => (
-                    <text x={x} y={y} textAnchor="middle" dominantBaseline="central" fontSize={12} fill="hsl(220, 40%, 13%)">
-                      {`${name}: ${value}`}
-                    </text>
-                  )}>
-                    {pieData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-muted-foreground text-center py-12">אין הסכמי בונוסים עדיין.</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      {/* Suppliers grid */}
+      <Card>
+        <CardHeader>
+          <CardTitle>ספקים</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {suppliers && suppliers.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {suppliers.map((s: any) => (
+                <Link
+                  key={s.id}
+                  to={`/suppliers/${s.id}`}
+                  className="block p-4 rounded-lg border bg-card hover:border-primary hover:shadow-md transition-all"
+                >
+                  <div className="font-semibold text-base mb-1">{s.name}</div>
+                  {s.supplier_number && (
+                    <div className="text-xs text-muted-foreground">מס׳ {s.supplier_number}</div>
+                  )}
+                  {purchasesBySupplier?.[s.name] ? (
+                    <div className="text-sm font-medium mt-2 text-primary">
+                      ₪{purchasesBySupplier[s.name].toLocaleString()}
+                    </div>
+                  ) : null}
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-center py-8">אין ספקים עדיין.</p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Quick links */}
       <Card>
