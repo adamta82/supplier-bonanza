@@ -16,7 +16,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { formatDate } from "@/lib/formatDate";
 
 const bonusTypeLabels: Record<string, string> = {
-  annual_target: "שנתי/תקופתי (יעדים)",
+  annual_target: "יעדים",
   marketing: "שיווק",
   transaction: "עסקה",
   annual_fixed: "שנתי קבוע",
