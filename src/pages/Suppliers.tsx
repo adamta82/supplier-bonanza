@@ -155,12 +155,12 @@ export default function Suppliers() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>תנאי תשלום</Label>
-                  <Input value={form.payment_terms} onChange={(e) => setForm({ ...form, payment_terms: e.target.value })} placeholder="שוטף+30" />
-                </div>
-                <div>
                   <Label>שוטף (ימים)</Label>
                   <Input type="number" value={form.shotef} onChange={(e) => setForm({ ...form, shotef: e.target.value })} />
+                </div>
+                <div>
+                  <Label>אובליגו (₪)</Label>
+                  <Input type="number" value={form.obligo} onChange={(e) => setForm({ ...form, obligo: e.target.value })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
