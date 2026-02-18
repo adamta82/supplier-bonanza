@@ -52,6 +52,15 @@ export default function Suppliers() {
     },
   });
 
+  // Fetch purchase records for PO search
+  const { data: purchaseRecords } = useQuery({
+    queryKey: ["all-purchases-po"],
+    queryFn: async () => {
+      const { data } = await supabase.from("purchase_records").select("order_number, supplier_id");
+      return data || [];
+    },
+  });
+
   const saveMutation = useMutation({
     mutationFn: async (data: SupplierForm) => {
       const payload = {
@@ -84,10 +93,15 @@ export default function Suppliers() {
   });
 
   const filtered = suppliers?.filter(
-    (s) =>
-      s.name.includes(search) ||
-      s.supplier_number?.includes(search) ||
-      false
+    (s) => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      if (s.name.toLowerCase().includes(q) || s.supplier_number?.toLowerCase().includes(q)) return true;
+      // Search by PO number
+      const supplierPOs = purchaseRecords?.filter((p) => p.supplier_id === s.id);
+      if (supplierPOs?.some((p) => p.order_number?.toLowerCase().includes(q))) return true;
+      return false;
+    }
   );
 
   const openEdit = (supplier: any) => {
@@ -165,10 +179,6 @@ export default function Suppliers() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>אובליגו (₪)</Label>
-                  <Input type="number" value={form.obligo} onChange={(e) => setForm({ ...form, obligo: e.target.value })} />
-                </div>
-                <div>
                   <Label>בונוס שנתי 2025</Label>
                   <Select value={form.annual_bonus_status} onValueChange={(v) => setForm({ ...form, annual_bonus_status: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -199,7 +209,7 @@ export default function Suppliers() {
       <div className="relative max-w-sm">
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder="חיפוש ספק..."
+          placeholder="חיפוש ספק, מספר הזמנה..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pr-10"

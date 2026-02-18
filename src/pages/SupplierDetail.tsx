@@ -11,12 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowRight, TrendingUp, ShoppingCart, Award, Target, Pencil, CheckCircle, XCircle, Clock, FileText } from "lucide-react";
+import { ArrowRight, TrendingUp, ShoppingCart, Award, Target, Pencil, CheckCircle, XCircle, Clock, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
-
 const bonusTypeLabels: Record<string, string> = {
   annual_target: "יעדים",
   marketing: "שיווק",
@@ -45,6 +44,8 @@ export default function SupplierDetail() {
   });
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [expandedPO, setExpandedPO] = useState<string | null>(null);
+  const [purchaseSearch, setPurchaseSearch] = useState("");
 
   const dateRange = useMemo(() => {
     if (filterMode === "month") {
@@ -556,9 +557,18 @@ export default function SupplierDetail() {
         <TabsContent value="purchases">
           <Card>
             <CardContent className="p-0">
+              <div className="p-3 border-b">
+                <Input
+                  placeholder="חיפוש לפי מס׳ הזמנה, תיאור פריט..."
+                  value={purchaseSearch}
+                  onChange={(e) => setPurchaseSearch(e.target.value)}
+                  className="max-w-sm"
+                />
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10"></TableHead>
                     <TableHead>תאריך</TableHead>
                     <TableHead>מס׳ הזמנת רכש</TableHead>
                     <TableHead>פריטים</TableHead>
@@ -567,37 +577,86 @@ export default function SupplierDetail() {
                 </TableHeader>
                 <TableBody>
                   {(() => {
-                    // Group by PO number
-                    const poMap = new Map<string, { date: string; items: number; total: number }>();
+                    const poMap = new Map<string, { date: string; items: typeof filteredPurchases; total: number }>();
                     filteredPurchases.forEach((r: any) => {
                       const po = r.order_number || r.id;
                       const existing = poMap.get(po);
                       if (existing) {
-                        existing.items += 1;
+                        existing.items.push(r);
                         existing.total += r.total_amount || 0;
                       } else {
-                        poMap.set(po, { date: r.order_date, items: 1, total: r.total_amount || 0 });
+                        poMap.set(po, { date: r.order_date, items: [r], total: r.total_amount || 0 });
                       }
                     });
-                    const poList = Array.from(poMap.entries()).sort((a, b) =>
+                    let poList = Array.from(poMap.entries()).sort((a, b) =>
                       (b[1].date || "").localeCompare(a[1].date || ""),
                     );
+                    if (purchaseSearch) {
+                      const q = purchaseSearch.toLowerCase();
+                      poList = poList.filter(([po, data]) =>
+                        po.toLowerCase().includes(q) ||
+                        data.items.some((item: any) =>
+                          (item.item_description || "").toLowerCase().includes(q) ||
+                          (item.item_code || "").toLowerCase().includes(q)
+                        )
+                      );
+                    }
                     if (poList.length === 0) {
                       return (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                          <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                             אין רכישות
                           </TableCell>
                         </TableRow>
                       );
                     }
                     return poList.slice(0, 100).map(([po, data]) => (
-                      <TableRow key={po}>
-                        <TableCell>{formatDate(data.date)}</TableCell>
-                        <TableCell className="font-mono text-xs">{po}</TableCell>
-                        <TableCell>{data.items} פריטים</TableCell>
-                        <TableCell>₪{data.total.toLocaleString()}</TableCell>
-                      </TableRow>
+                      <>
+                        <TableRow
+                          key={po}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setExpandedPO(expandedPO === po ? null : po)}
+                        >
+                          <TableCell className="w-10 text-center">
+                            {expandedPO === po ? <ChevronUp className="w-4 h-4 inline" /> : <ChevronDown className="w-4 h-4 inline" />}
+                          </TableCell>
+                          <TableCell>{formatDate(data.date)}</TableCell>
+                          <TableCell className="font-mono text-xs">{po}</TableCell>
+                          <TableCell>{data.items.length} פריטים</TableCell>
+                          <TableCell>₪{data.total.toLocaleString()}</TableCell>
+                        </TableRow>
+                        {expandedPO === po && (
+                          <TableRow key={`${po}-detail`}>
+                            <TableCell colSpan={5} className="p-0 bg-muted/30">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>שם פריט</TableHead>
+                                    <TableHead>כמות</TableHead>
+                                    <TableHead>מחיר ליח׳</TableHead>
+                                    <TableHead>סה״כ</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {data.items.map((item: any) => {
+                                    const unitPrice = (item.quantity && item.quantity > 0)
+                                      ? (item.total_amount || 0) / item.quantity
+                                      : item.total_amount || 0;
+                                    return (
+                                      <TableRow key={item.id}>
+                                        <TableCell>{item.item_description || item.item_code || "-"}</TableCell>
+                                        <TableCell>{item.quantity || "-"}</TableCell>
+                                        <TableCell>₪{unitPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}</TableCell>
+                                        <TableCell>₪{(item.total_amount || 0).toLocaleString()}</TableCell>
+                                      </TableRow>
+                                    );
+                                  })}
+                                </TableBody>
+                              </Table>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </>
                     ));
                   })()}
                 </TableBody>
@@ -718,10 +777,6 @@ export default function SupplierDetail() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>אובליגו (₪)</Label>
-                <Input type="number" value={editForm.obligo} onChange={(e) => setEditForm({ ...editForm, obligo: e.target.value })} />
-              </div>
               <div>
                 <Label>בונוס שנתי 2025</Label>
                 <Select value={editForm.annual_bonus_status} onValueChange={(v) => setEditForm({ ...editForm, annual_bonus_status: v })}>
