@@ -1,10 +1,15 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, ShoppingCart, Award, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 
+type SortOption = "name-asc" | "name-desc" | "amount-desc" | "amount-asc";
+
 export default function Dashboard() {
+  const [sortBy, setSortBy] = useState<SortOption>("name-asc");
   const { data: suppliers } = useQuery({
     queryKey: ["suppliers"],
     queryFn: async () => {
@@ -50,6 +55,21 @@ export default function Dashboard() {
     acc[name] = (acc[name] || 0) + (p.total_amount || 0);
     return acc;
   }, {} as Record<string, number>);
+
+  const sortedSuppliers = useMemo(() => {
+    if (!suppliers) return [];
+    return [...suppliers].sort((a, b) => {
+      const amountA = purchasesBySupplier?.[a.name] || 0;
+      const amountB = purchasesBySupplier?.[b.name] || 0;
+      switch (sortBy) {
+        case "name-asc": return (a.name || "").localeCompare(b.name || "", "he");
+        case "name-desc": return (b.name || "").localeCompare(a.name || "", "he");
+        case "amount-desc": return amountB - amountA;
+        case "amount-asc": return amountA - amountB;
+        default: return 0;
+      }
+    });
+  }, [suppliers, purchasesBySupplier, sortBy]);
 
   return (
     <div className="space-y-6">
@@ -108,13 +128,24 @@ export default function Dashboard() {
 
       {/* Suppliers grid */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>ספקים</CardTitle>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="מיון" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name-asc">שם (א-ת)</SelectItem>
+              <SelectItem value="name-desc">שם (ת-א)</SelectItem>
+              <SelectItem value="amount-desc">סכום (גבוה לנמוך)</SelectItem>
+              <SelectItem value="amount-asc">סכום (נמוך לגבוה)</SelectItem>
+            </SelectContent>
+          </Select>
         </CardHeader>
         <CardContent>
-          {suppliers && suppliers.length > 0 ? (
+          {sortedSuppliers.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {suppliers.map((s: any) => (
+              {sortedSuppliers.map((s: any) => (
                 <Link
                   key={s.id}
                   to={`/suppliers/${s.id}`}
