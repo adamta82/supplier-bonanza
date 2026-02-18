@@ -24,7 +24,7 @@ const bonusTypeLabels: Record<string, string> = {
   network: "רשתי",
 };
 
-type FilterMode = "all" | "month" | "quarter" | "custom";
+type FilterMode = "all" | "month" | "quarter" | "year" | "ytd" | "last30" | "last90" | "custom";
 
 export default function SupplierDetail() {
   const { id } = useParams<{ id: string }>();
@@ -48,6 +48,7 @@ export default function SupplierDetail() {
   const [purchaseSearch, setPurchaseSearch] = useState("");
 
   const dateRange = useMemo(() => {
+    const now = new Date();
     if (filterMode === "month") {
       const [y, m] = selectedMonth.split("-").map(Number);
       const start = new Date(y, m - 1, 1);
@@ -59,6 +60,22 @@ export default function SupplierDetail() {
       const start = new Date(y, (q - 1) * 3, 1);
       const end = new Date(y, q * 3, 0);
       return { start: start.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
+    }
+    if (filterMode === "year") {
+      return { start: `${now.getFullYear()}-01-01`, end: `${now.getFullYear()}-12-31` };
+    }
+    if (filterMode === "ytd") {
+      return { start: `${now.getFullYear()}-01-01`, end: now.toISOString().slice(0, 10) };
+    }
+    if (filterMode === "last30") {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 30);
+      return { start: d.toISOString().slice(0, 10), end: now.toISOString().slice(0, 10) };
+    }
+    if (filterMode === "last90") {
+      const d = new Date(now);
+      d.setDate(d.getDate() - 90);
+      return { start: d.toISOString().slice(0, 10), end: now.toISOString().slice(0, 10) };
     }
     if (filterMode === "custom" && dateFrom && dateTo) {
       return { start: dateFrom, end: dateTo };
@@ -341,6 +358,10 @@ export default function SupplierDetail() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">הכל</SelectItem>
+              <SelectItem value="ytd">מתחילת השנה</SelectItem>
+              <SelectItem value="year">שנה נוכחית</SelectItem>
+              <SelectItem value="last30">30 יום אחרונים</SelectItem>
+              <SelectItem value="last90">90 יום אחרונים</SelectItem>
               <SelectItem value="month">חודש</SelectItem>
               <SelectItem value="quarter">רבעון</SelectItem>
               <SelectItem value="custom">תאריכים</SelectItem>
@@ -549,8 +570,8 @@ export default function SupplierDetail() {
       {/* Tabs - without agreements (moved to top) */}
       <Tabs defaultValue="purchases" dir="rtl">
         <TabsList>
-          <TabsTrigger value="purchases">רכישות ({filteredPurchases.length})</TabsTrigger>
-          <TabsTrigger value="sales">מכירות ({filteredSales.length})</TabsTrigger>
+          <TabsTrigger value="purchases">רכשים ({new Set(filteredPurchases.map((r: any) => r.order_number || r.id)).size})</TabsTrigger>
+          <TabsTrigger value="sales">הזמנות לקוח ({filteredSales.length})</TabsTrigger>
           <TabsTrigger value="bonuses">בונוסים ({filteredBonuses.length})</TabsTrigger>
         </TabsList>
 
