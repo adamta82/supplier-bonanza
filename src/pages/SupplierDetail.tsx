@@ -631,7 +631,7 @@ export default function SupplierDetail() {
                         </TableRow>
                       );
                     }
-                    return poList.slice(0, 100).map(([po, data]) => (
+                    return poList.map(([po, data]) => (
                       <>
                         <TableRow
                           key={po}
