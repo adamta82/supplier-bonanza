@@ -158,7 +158,9 @@ export default function SupplierDetail() {
       if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, weLove: 0 };
       map[m].weLove += r.bonus_value || 0;
     });
-    Object.values(map).forEach((v) => { v.weLove += v.profit; });
+    Object.values(map).forEach((v) => {
+      v.weLove += v.profit;
+    });
     return Object.entries(map)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, v]) => ({ month, ...v }));
@@ -181,7 +183,7 @@ export default function SupplierDetail() {
   // Calculate bonus value for an agreement
   const calcAgreementBonusValue = (agreement: any) => {
     const today = new Date().toISOString().slice(0, 10);
-    
+
     // For transaction type - sum bonus_value from linked transaction_bonuses
     if (agreement.bonus_type === "transaction") {
       const linkedBonuses = (bonuses || []).filter((b: any) => b.agreement_id === agreement.id);
@@ -196,7 +198,7 @@ export default function SupplierDetail() {
       return true;
     });
     let volume = agrPurchases.reduce((s: number, p: any) => s + (p.total_amount || 0), 0);
-    
+
     // Add transaction bonuses that count toward target
     const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
     volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
@@ -215,7 +217,10 @@ export default function SupplierDetail() {
     const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
     let achievedTier = null;
     for (let i = sortedTiers.length - 1; i >= 0; i--) {
-      if (volume >= sortedTiers[i].target_value) { achievedTier = sortedTiers[i]; break; }
+      if (volume >= sortedTiers[i].target_value) {
+        achievedTier = sortedTiers[i];
+        break;
+      }
     }
     if (achievedTier) {
       return volume * (achievedTier.bonus_percentage / 100);
@@ -245,7 +250,9 @@ export default function SupplierDetail() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <Link to="/suppliers">
-            <Button variant="ghost" size="icon"><ArrowRight className="w-5 h-5" /></Button>
+            <Button variant="ghost" size="icon">
+              <ArrowRight className="w-5 h-5" />
+            </Button>
           </Link>
           <div>
             <h1 className="text-3xl font-bold">{supplier.name}</h1>
@@ -258,7 +265,9 @@ export default function SupplierDetail() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={filterMode} onValueChange={(v) => setFilterMode(v as FilterMode)}>
-            <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-[120px] h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">הכל</SelectItem>
               <SelectItem value="month">חודש</SelectItem>
@@ -268,20 +277,46 @@ export default function SupplierDetail() {
           </Select>
           {filterMode === "month" && (
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>{months.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+              <SelectTrigger className="w-[120px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {months.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           )}
           {filterMode === "quarter" && (
             <Select value={selectedQuarter} onValueChange={setSelectedQuarter}>
-              <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>{quarters.map((q) => <SelectItem key={q} value={q}>{q}</SelectItem>)}</SelectContent>
+              <SelectTrigger className="w-[120px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {quarters.map((q) => (
+                  <SelectItem key={q} value={q}>
+                    {q}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           )}
           {filterMode === "custom" && (
             <>
-              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[140px] h-8 text-xs" />
-              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[140px] h-8 text-xs" />
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="w-[140px] h-8 text-xs"
+              />
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="w-[140px] h-8 text-xs"
+              />
             </>
           )}
         </div>
@@ -344,7 +379,9 @@ export default function SupplierDetail() {
               return true;
             });
             let volume = agrPurchases.reduce((s: number, p: any) => s + (p.total_amount || 0), 0);
-            const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
+            const agrTxBonuses = (bonuses || []).filter(
+              (b: any) => b.counts_toward_target && b.agreement_id === agreement.id,
+            );
             volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
             const progress = highestTier ? Math.min((volume / highestTier.target_value) * 100, 100) : 0;
 
@@ -355,11 +392,19 @@ export default function SupplierDetail() {
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary">{bonusTypeLabels[agreement.bonus_type] || agreement.bonus_type}</Badge>
                       {agreement.period_start && agreement.period_end && (
-                        <span className="text-xs text-muted-foreground">{formatDate(agreement.period_start)} - {formatDate(agreement.period_end)}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(agreement.period_start)} - {formatDate(agreement.period_end)}
+                        </span>
                       )}
-                      {agreement.category_mode === "include_only" && <span className="text-xs text-muted-foreground">רק: {agreement.category_filter}</span>}
-                      {agreement.category_mode === "exclude" && <span className="text-xs text-muted-foreground">חוץ מ: {agreement.category_filter}</span>}
-                      {agreement.series_name && <span className="text-xs text-muted-foreground">סדרה: {agreement.series_name}</span>}
+                      {agreement.category_mode === "include_only" && (
+                        <span className="text-xs text-muted-foreground">רק: {agreement.category_filter}</span>
+                      )}
+                      {agreement.category_mode === "exclude" && (
+                        <span className="text-xs text-muted-foreground">חוץ מ: {agreement.category_filter}</span>
+                      )}
+                      {agreement.series_name && (
+                        <span className="text-xs text-muted-foreground">סדרה: {agreement.series_name}</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-primary">₪{bonusValue.toLocaleString()}</span>
@@ -370,13 +415,18 @@ export default function SupplierDetail() {
                   {sortedTiers.length > 0 && (
                     <>
                       <div className="flex items-center justify-between text-sm">
-                        <span>התקדמות: ₪{volume.toLocaleString()} / ₪{highestTier?.target_value.toLocaleString()}</span>
+                        <span>
+                          התקדמות: ₪{volume.toLocaleString()} / ₪{highestTier?.target_value.toLocaleString()}
+                        </span>
                         <span className="font-bold">{progress.toFixed(0)}%</span>
                       </div>
                       <Progress value={progress} className="h-2" />
                       <div className="flex flex-wrap gap-2 text-xs">
                         {sortedTiers.map((tier: any, i: number) => (
-                          <span key={i} className={`px-2 py-0.5 rounded-full ${volume >= tier.target_value ? "bg-primary/20 text-primary font-semibold" : "bg-muted text-muted-foreground"}`}>
+                          <span
+                            key={i}
+                            className={`px-2 py-0.5 rounded-full ${volume >= tier.target_value ? "bg-primary/20 text-primary font-semibold" : "bg-muted text-muted-foreground"}`}
+                          >
                             ₪{tier.target_value.toLocaleString()} → {tier.bonus_percentage}%
                           </span>
                         ))}
@@ -395,14 +445,18 @@ export default function SupplierDetail() {
             );
           })
         ) : (
-          <Card><CardContent className="py-6 text-center text-muted-foreground">אין הסכמי בונוס</CardContent></Card>
+          <Card>
+            <CardContent className="py-6 text-center text-muted-foreground">אין הסכמי בונוס</CardContent>
+          </Card>
         )}
       </div>
 
       {/* Monthly chart */}
       {monthlyData.length > 0 && (
         <Card>
-          <CardHeader><CardTitle>ביצועים {filterMode === "all" ? "חודשיים" : "לפי תקופה"}</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>ביצועים {filterMode === "all" ? "חודשיים" : "לפי תקופה"}</CardTitle>
+          </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={monthlyData}>
@@ -436,7 +490,7 @@ export default function SupplierDetail() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>תאריך</TableHead>
-                    <TableHead>מס׳ הזמנה</TableHead>
+                    <TableHead>מס׳ הזמנת רכש</TableHead>
                     <TableHead>פריטים</TableHead>
                     <TableHead>סכום</TableHead>
                   </TableRow>
@@ -455,9 +509,17 @@ export default function SupplierDetail() {
                         poMap.set(po, { date: r.order_date, items: 1, total: r.total_amount || 0 });
                       }
                     });
-                    const poList = Array.from(poMap.entries()).sort((a, b) => (b[1].date || "").localeCompare(a[1].date || ""));
+                    const poList = Array.from(poMap.entries()).sort((a, b) =>
+                      (b[1].date || "").localeCompare(a[1].date || ""),
+                    );
                     if (poList.length === 0) {
-                      return <TableRow><TableCell colSpan={4} className="text-center py-6 text-muted-foreground">אין רכישות</TableCell></TableRow>;
+                      return (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
+                            אין רכישות
+                          </TableCell>
+                        </TableRow>
+                      );
                     }
                     return poList.slice(0, 100).map(([po, data]) => (
                       <TableRow key={po}>
@@ -490,17 +552,25 @@ export default function SupplierDetail() {
                 </TableHeader>
                 <TableBody>
                   {filteredSales.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">אין מכירות</TableCell></TableRow>
-                  ) : filteredSales.slice(0, 50).map((r: any) => (
-                    <TableRow key={r.id}>
-                      <TableCell>{formatDate(r.sale_date)}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{r.item_description || r.item_code || "-"}</TableCell>
-                      <TableCell>{r.customer_name || "-"}</TableCell>
-                      <TableCell>{r.quantity || "-"}</TableCell>
-                      <TableCell>₪{(r.sale_price || 0).toLocaleString()}</TableCell>
-                      <TableCell>₪{(r.profit_direct || 0).toLocaleString()}</TableCell>
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                        אין מכירות
+                      </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    filteredSales.slice(0, 50).map((r: any) => (
+                      <TableRow key={r.id}>
+                        <TableCell>{formatDate(r.sale_date)}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">
+                          {r.item_description || r.item_code || "-"}
+                        </TableCell>
+                        <TableCell>{r.customer_name || "-"}</TableCell>
+                        <TableCell>{r.quantity || "-"}</TableCell>
+                        <TableCell>₪{(r.sale_price || 0).toLocaleString()}</TableCell>
+                        <TableCell>₪{(r.profit_direct || 0).toLocaleString()}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -509,7 +579,9 @@ export default function SupplierDetail() {
 
         <TabsContent value="bonuses">
           <Card>
-            <CardHeader><CardTitle className="text-base">עסקאות בונוס</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base">עסקאות בונוס</CardTitle>
+            </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
@@ -523,16 +595,26 @@ export default function SupplierDetail() {
                 </TableHeader>
                 <TableBody>
                   {filteredBonuses.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="text-center py-6 text-muted-foreground">אין בונוסים</TableCell></TableRow>
-                  ) : filteredBonuses.map((b: any) => (
-                    <TableRow key={b.id}>
-                      <TableCell>{formatDate(b.transaction_date)}</TableCell>
-                      <TableCell><Badge variant="secondary">{bonusTypeLabels[b.bonus_agreements?.bonus_type] || "עסקה"}</Badge></TableCell>
-                      <TableCell className="max-w-[200px] truncate">{b.description || "-"}</TableCell>
-                      <TableCell>₪{(b.total_value || 0).toLocaleString()}</TableCell>
-                      <TableCell className="font-semibold text-primary">₪{(b.bonus_value || 0).toLocaleString()}</TableCell>
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                        אין בונוסים
+                      </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    filteredBonuses.map((b: any) => (
+                      <TableRow key={b.id}>
+                        <TableCell>{formatDate(b.transaction_date)}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{bonusTypeLabels[b.bonus_agreements?.bonus_type] || "עסקה"}</Badge>
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate">{b.description || "-"}</TableCell>
+                        <TableCell>₪{(b.total_value || 0).toLocaleString()}</TableCell>
+                        <TableCell className="font-semibold text-primary">
+                          ₪{(b.bonus_value || 0).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
