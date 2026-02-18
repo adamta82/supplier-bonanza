@@ -147,30 +147,57 @@ export default function UploadPage() {
   const uploadSales = useMutation({
     mutationFn: async () => {
       const batch = new Date().toISOString();
+
+      // Build a map of SO number -> supplier info by propagating from rows that have a supplier
+      const soSupplierMap = new Map<string, { number: string; name: string }>();
+      parsedData.forEach((row) => {
+        const so = (row["הזמנה"] || row["order_number"] || "")?.toString().trim();
+        const suppNum = (row["ספק מועדף"] || row["מס' ספק"] || row["מס ספק"] || "")?.toString().trim();
+        const suppName = (row["שם ספק"] || row["supplier_name"] || "")?.toString().trim();
+        if (so && suppNum && !soSupplierMap.has(so)) {
+          soSupplierMap.set(so, { number: suppNum, name: suppName });
+        }
+      });
+
       const records = parsedData.map((row) => {
-        const supplierName = row["שם ספק"] || row["supplier_name"] || row["ספק"] || "";
-        const salePrice = parseFloat(row["מחיר מכירה"] || row["sale_price"] || "0") || 0;
-        const costPrice = parseFloat(row["מחיר עלות"] || row["עלות"] || row["cost_price"] || "0") || 0;
+        const so = (row["הזמנה"] || row["order_number"] || "")?.toString().trim();
+        let supplierNumber = (row["ספק מועדף"] || row["מס' ספק"] || row["מס ספק"] || "")?.toString().trim();
+        let supplierName = (row["שם ספק"] || row["supplier_name"] || row["ספק"] || "")?.toString().trim();
+
+        // Propagate supplier from SO group if current row has none
+        if (!supplierNumber && so && soSupplierMap.has(so)) {
+          const mapped = soSupplierMap.get(so)!;
+          supplierNumber = mapped.number;
+          if (!supplierName) supplierName = mapped.name;
+        }
+
+        const salePrice = parseFloat(row["מחיר ליחידה"] || row["מחיר מכירה"] || row["sale_price"] || "0") || 0;
+        const costPrice = parseFloat(row["עלות"] || row["מחיר עלות"] || row["cost_price"] || "0") || 0;
         const qty = parseFloat(row["כמות"] || row["quantity"] || "1") || 1;
-        const supplierNumber = (row["מס' ספק"] || row["מס ספק"] || "")?.toString().trim();
+
         const existingSupplier = suppliers?.find(
-          (s) => (supplierNumber && s.supplier_number === supplierNumber) || s.name === supplierName
+          (s) => (supplierNumber && s.supplier_number === supplierNumber) || (supplierName && s.name === supplierName)
         );
+
         return {
           supplier_id: existingSupplier?.id || null,
-          supplier_name: supplierName,
+          supplier_name: supplierName || null,
           item_code: (row["מק'ט"] || row["מק\"ט"] || row["item_code"] || "")?.toString() || null,
-          item_description: row["שם פריט"] || row["תאור פריט"] || row["item_description"] || null,
+          item_description: row["תאור מוצר"] || row["שם פריט"] || row["תאור פריט"] || row["item_description"] || null,
           quantity: qty,
           sale_price: salePrice,
           cost_price: costPrice,
           profit_direct: (salePrice - costPrice) * qty,
-          customer_name: row["לקוח"] || row["שם לקוח"] || row["customer_name"] || null,
+          customer_name: row["שם לקוח"] || row["לקוח"] || row["customer_name"] || null,
           sale_date: parseDate(row["תאריך"] || row["sale_date"]),
           category: row["קטגוריה"] || row["category"] || null,
           upload_batch: batch,
         };
       });
+
+      // Delete existing sales before inserting
+      const { error: deleteError } = await supabase.from("sales_records").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      if (deleteError) throw deleteError;
 
       const chunkSize = 100;
       for (let i = 0; i < records.length; i += chunkSize) {
@@ -180,6 +207,8 @@ export default function UploadPage() {
       }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["sales-all"] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
       toast.success(`${parsedData.length} רשומות מכירה הועלו בהצלחה`);
       setParsedData([]);
       setHeaders([]);
@@ -254,7 +283,8 @@ export default function UploadPage() {
                 העלאת דוח מכירות (Excel)
               </CardTitle>
               <CardDescription>
-                העלה קובץ Excel עם מכירות לפי פריט. עמודות נפוצות: שם ספק, מק"ט, שם פריט, כמות, מחיר מכירה, מחיר עלות
+                העלה קובץ Excel עם הזמנות לקוח. עמודות: מס. לקוח, שם לקוח, הזמנה (SO), תאריך, מס' הזמנה זבילו, מק'ט, תאור מוצר, מחיר ליחידה, עלות, כמות, ספק מועדף, שם ספק.
+                ספק מועדף מופץ אוטומטית לכל שורות אותו SO.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
