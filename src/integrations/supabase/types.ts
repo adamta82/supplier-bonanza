@@ -237,34 +237,40 @@ export type Database = {
       }
       suppliers: {
         Row: {
+          annual_bonus_status: string | null
           created_at: string
           id: string
           name: string
           notes: string | null
           obligo: number | null
           payment_terms: string | null
+          reconciliation_date: string | null
           shotef: number | null
           supplier_number: string | null
           updated_at: string
         }
         Insert: {
+          annual_bonus_status?: string | null
           created_at?: string
           id?: string
           name: string
           notes?: string | null
           obligo?: number | null
           payment_terms?: string | null
+          reconciliation_date?: string | null
           shotef?: number | null
           supplier_number?: string | null
           updated_at?: string
         }
         Update: {
+          annual_bonus_status?: string | null
           created_at?: string
           id?: string
           name?: string
           notes?: string | null
           obligo?: number | null
           payment_terms?: string | null
+          reconciliation_date?: string | null
           shotef?: number | null
           supplier_number?: string | null
           updated_at?: string
