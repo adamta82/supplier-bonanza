@@ -16,7 +16,7 @@ export default function Dashboard() {
   const { data: purchases } = useQuery({
     queryKey: ["purchases-summary"],
     queryFn: async () => {
-      const { data } = await supabase.from("purchase_records").select("supplier_name, total_amount");
+      const { data } = await supabase.rpc("get_purchases_by_supplier");
       return data || [];
     },
   });
