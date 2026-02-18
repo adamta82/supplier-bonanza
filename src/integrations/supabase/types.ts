@@ -185,6 +185,7 @@ export type Database = {
           id: string
           item_code: string | null
           item_description: string | null
+          order_number: string | null
           profit_direct: number | null
           quantity: number | null
           sale_date: string | null
@@ -201,6 +202,7 @@ export type Database = {
           id?: string
           item_code?: string | null
           item_description?: string | null
+          order_number?: string | null
           profit_direct?: number | null
           quantity?: number | null
           sale_date?: string | null
@@ -217,6 +219,7 @@ export type Database = {
           id?: string
           item_code?: string | null
           item_description?: string | null
+          order_number?: string | null
           profit_direct?: number | null
           quantity?: number | null
           sale_date?: string | null

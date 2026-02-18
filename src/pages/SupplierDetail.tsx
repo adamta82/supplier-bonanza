@@ -45,7 +45,9 @@ export default function SupplierDetail() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [expandedPO, setExpandedPO] = useState<string | null>(null);
+  const [expandedSO, setExpandedSO] = useState<string | null>(null);
   const [purchaseSearch, setPurchaseSearch] = useState("");
+  const [salesSearch, setSalesSearch] = useState("");
 
   const dateRange = useMemo(() => {
     const now = new Date();
@@ -689,38 +691,117 @@ export default function SupplierDetail() {
         <TabsContent value="sales">
           <Card>
             <CardContent className="p-0">
+              <div className="p-3 border-b">
+                <Input
+                  placeholder="חיפוש לפי SO, פריט או לקוח..."
+                  value={salesSearch}
+                  onChange={(e) => setSalesSearch(e.target.value)}
+                  className="max-w-sm h-8 text-xs"
+                />
+              </div>
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10"></TableHead>
                     <TableHead>תאריך</TableHead>
-                    <TableHead>פריט</TableHead>
+                    <TableHead>מס׳ הזמנה (SO)</TableHead>
                     <TableHead>לקוח</TableHead>
-                    <TableHead>כמות</TableHead>
-                    <TableHead>מחיר מכירה</TableHead>
+                    <TableHead>פריטים</TableHead>
+                    <TableHead>סה״כ מכירה</TableHead>
                     <TableHead>רווח ישיר</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSales.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                        אין מכירות
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredSales.slice(0, 50).map((r: any) => (
-                      <TableRow key={r.id}>
-                        <TableCell>{formatDate(r.sale_date)}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">
-                          {r.item_description || r.item_code || "-"}
-                        </TableCell>
-                        <TableCell>{r.customer_name || "-"}</TableCell>
-                        <TableCell>{r.quantity || "-"}</TableCell>
-                        <TableCell>₪{(r.sale_price || 0).toLocaleString()}</TableCell>
-                        <TableCell>₪{(r.profit_direct || 0).toLocaleString()}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
+                  {(() => {
+                    const soMap = new Map<string, { date: string; customer: string; items: typeof filteredSales; totalSale: number; totalProfit: number }>();
+                    filteredSales.forEach((r: any) => {
+                      const so = r.order_number || r.id;
+                      const existing = soMap.get(so);
+                      if (existing) {
+                        existing.items.push(r);
+                        existing.totalSale += (r.sale_price || 0) * (r.quantity || 1);
+                        existing.totalProfit += r.profit_direct || 0;
+                      } else {
+                        soMap.set(so, {
+                          date: r.sale_date,
+                          customer: r.customer_name || "-",
+                          items: [r],
+                          totalSale: (r.sale_price || 0) * (r.quantity || 1),
+                          totalProfit: r.profit_direct || 0,
+                        });
+                      }
+                    });
+                    let soList = Array.from(soMap.entries()).sort((a, b) =>
+                      (b[1].date || "").localeCompare(a[1].date || ""),
+                    );
+                    if (salesSearch) {
+                      const q = salesSearch.toLowerCase();
+                      soList = soList.filter(([so, data]) =>
+                        so.toLowerCase().includes(q) ||
+                        (data.customer || "").toLowerCase().includes(q) ||
+                        data.items.some((item: any) =>
+                          (item.item_description || "").toLowerCase().includes(q) ||
+                          (item.item_code || "").toLowerCase().includes(q)
+                        )
+                      );
+                    }
+                    if (soList.length === 0) {
+                      return (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                            אין מכירות
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+                    return soList.map(([so, data]) => (
+                      <>
+                        <TableRow
+                          key={so}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setExpandedSO(expandedSO === so ? null : so)}
+                        >
+                          <TableCell className="w-10 text-center">
+                            {expandedSO === so ? <ChevronUp className="w-4 h-4 inline" /> : <ChevronDown className="w-4 h-4 inline" />}
+                          </TableCell>
+                          <TableCell>{formatDate(data.date)}</TableCell>
+                          <TableCell className="font-mono text-xs">{so}</TableCell>
+                          <TableCell>{data.customer}</TableCell>
+                          <TableCell>{data.items.length} פריטים</TableCell>
+                          <TableCell>₪{data.totalSale.toLocaleString()}</TableCell>
+                          <TableCell>₪{data.totalProfit.toLocaleString()}</TableCell>
+                        </TableRow>
+                        {expandedSO === so && (
+                          <TableRow key={`${so}-detail`}>
+                            <TableCell colSpan={7} className="p-0 bg-muted/30">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>פריט</TableHead>
+                                    <TableHead>כמות</TableHead>
+                                    <TableHead>מחיר מכירה</TableHead>
+                                    <TableHead>עלות</TableHead>
+                                    <TableHead>רווח ישיר</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {data.items.map((item: any) => (
+                                    <TableRow key={item.id}>
+                                      <TableCell>{item.item_description || item.item_code || "-"}</TableCell>
+                                      <TableCell>{item.quantity || "-"}</TableCell>
+                                      <TableCell>₪{(item.sale_price || 0).toLocaleString()}</TableCell>
+                                      <TableCell>₪{(item.cost_price || 0).toLocaleString()}</TableCell>
+                                      <TableCell>₪{(item.profit_direct || 0).toLocaleString()}</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </>
+                    ));
+                  })()}
                 </TableBody>
               </Table>
             </CardContent>
