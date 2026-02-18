@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,10 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowRight, TrendingUp, ShoppingCart, Award, Target } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowRight, TrendingUp, ShoppingCart, Award, Target, Pencil } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { formatDate } from "@/lib/formatDate";
+import { toast } from "sonner";
 
 const bonusTypeLabels: Record<string, string> = {
   annual_target: "יעדים",
@@ -27,6 +29,11 @@ type FilterMode = "all" | "month" | "quarter" | "custom";
 
 export default function SupplierDetail() {
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
+  const [editOpen, setEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "", supplier_number: "", payment_terms: "", shotef: "", obligo: "", notes: "", annual_bonus_status: "pending", reconciliation_date: "",
+  });
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
@@ -66,6 +73,45 @@ export default function SupplierDetail() {
     },
     enabled: !!id,
   });
+
+  const openEdit = () => {
+    if (!supplier) return;
+    setEditForm({
+      name: supplier.name,
+      supplier_number: supplier.supplier_number || "",
+      payment_terms: supplier.payment_terms || "",
+      shotef: supplier.shotef?.toString() || "",
+      obligo: (supplier as any).obligo?.toString() || "",
+      notes: supplier.notes || "",
+      annual_bonus_status: supplier.annual_bonus_status || "pending",
+      reconciliation_date: supplier.reconciliation_date || "",
+    });
+    setEditOpen(true);
+  };
+
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("suppliers").update({
+        name: editForm.name,
+        supplier_number: editForm.supplier_number || null,
+        payment_terms: editForm.payment_terms || null,
+        shotef: editForm.shotef ? parseInt(editForm.shotef) : null,
+        obligo: editForm.obligo ? parseFloat(editForm.obligo) : null,
+        notes: editForm.notes || null,
+        annual_bonus_status: editForm.annual_bonus_status || "pending",
+        reconciliation_date: editForm.reconciliation_date || null,
+      }).eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier", id] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      toast.success("ספק עודכן בהצלחה");
+      setEditOpen(false);
+    },
+    onError: () => toast.error("שגיאה בעדכון הספק"),
+  });
+
 
   const { data: agreements } = useQuery({
     queryKey: ["supplier-agreements", id],
@@ -262,6 +308,9 @@ export default function SupplierDetail() {
               {(supplier as any).obligo != null && ` | אובליגו: ₪${Number((supplier as any).obligo).toLocaleString()}`}
             </p>
           </div>
+          <Button variant="ghost" size="icon" onClick={openEdit}>
+            <Pencil className="w-4 h-4" />
+          </Button>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={filterMode} onValueChange={(v) => setFilterMode(v as FilterMode)}>
@@ -621,6 +670,63 @@ export default function SupplierDetail() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Supplier Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>עריכת ספק</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); updateMutation.mutate(); }} className="space-y-4">
+            <div>
+              <Label>שם ספק *</Label>
+              <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required />
+            </div>
+            <div>
+              <Label>מספר ספק</Label>
+              <Input value={editForm.supplier_number} onChange={(e) => setEditForm({ ...editForm, supplier_number: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>תנאי תשלום</Label>
+                <Input value={editForm.payment_terms} onChange={(e) => setEditForm({ ...editForm, payment_terms: e.target.value })} placeholder="שוטף+30" />
+              </div>
+              <div>
+                <Label>שוטף (ימים)</Label>
+                <Input type="number" value={editForm.shotef} onChange={(e) => setEditForm({ ...editForm, shotef: e.target.value })} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>אובליגו (₪)</Label>
+                <Input type="number" value={editForm.obligo} onChange={(e) => setEditForm({ ...editForm, obligo: e.target.value })} />
+              </div>
+              <div>
+                <Label>בונוס שנתי 2025</Label>
+                <Select value={editForm.annual_bonus_status} onValueChange={(v) => setEditForm({ ...editForm, annual_bonus_status: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">ממתין</SelectItem>
+                    <SelectItem value="received">התקבל</SelectItem>
+                    <SelectItem value="none">אין</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label>כרטסת מתואמת עד</Label>
+              <Input type="date" value={editForm.reconciliation_date} onChange={(e) => setEditForm({ ...editForm, reconciliation_date: e.target.value })} />
+            </div>
+            <div>
+              <Label>הערות</Label>
+              <Input value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} />
+            </div>
+            <Button type="submit" className="w-full" disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? "שומר..." : "שמור"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

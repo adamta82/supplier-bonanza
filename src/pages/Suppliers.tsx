@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Pencil, FileCheck, Award, CheckCircle, XCircle, Clock } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
 
@@ -18,10 +19,13 @@ type SupplierForm = {
   supplier_number: string;
   payment_terms: string;
   shotef: string;
+  obligo: string;
   notes: string;
+  annual_bonus_status: string;
+  reconciliation_date: string;
 };
 
-const emptyForm: SupplierForm = { name: "", supplier_number: "", payment_terms: "", shotef: "", notes: "" };
+const emptyForm: SupplierForm = { name: "", supplier_number: "", payment_terms: "", shotef: "", obligo: "", notes: "", annual_bonus_status: "pending", reconciliation_date: "" };
 
 export default function Suppliers() {
   const queryClient = useQueryClient();
@@ -55,7 +59,10 @@ export default function Suppliers() {
         supplier_number: data.supplier_number || null,
         payment_terms: data.payment_terms || null,
         shotef: data.shotef ? parseInt(data.shotef) : null,
+        obligo: data.obligo ? parseFloat(data.obligo) : null,
         notes: data.notes || null,
+        annual_bonus_status: data.annual_bonus_status || "pending",
+        reconciliation_date: data.reconciliation_date || null,
       };
 
       if (editId) {
@@ -90,7 +97,10 @@ export default function Suppliers() {
       supplier_number: supplier.supplier_number || "",
       payment_terms: supplier.payment_terms || "",
       shotef: supplier.shotef?.toString() || "",
+      obligo: supplier.obligo?.toString() || "",
       notes: supplier.notes || "",
+      annual_bonus_status: supplier.annual_bonus_status || "pending",
+      reconciliation_date: supplier.reconciliation_date || "",
     });
     setIsOpen(true);
   };
@@ -152,6 +162,27 @@ export default function Suppliers() {
                   <Label>שוטף (ימים)</Label>
                   <Input type="number" value={form.shotef} onChange={(e) => setForm({ ...form, shotef: e.target.value })} />
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>אובליגו (₪)</Label>
+                  <Input type="number" value={form.obligo} onChange={(e) => setForm({ ...form, obligo: e.target.value })} />
+                </div>
+                <div>
+                  <Label>בונוס שנתי 2025</Label>
+                  <Select value={form.annual_bonus_status} onValueChange={(v) => setForm({ ...form, annual_bonus_status: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">ממתין</SelectItem>
+                      <SelectItem value="received">התקבל</SelectItem>
+                      <SelectItem value="none">אין</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label>כרטסת מתואמת עד</Label>
+                <Input type="date" value={form.reconciliation_date} onChange={(e) => setForm({ ...form, reconciliation_date: e.target.value })} />
               </div>
               <div>
                 <Label>הערות</Label>
