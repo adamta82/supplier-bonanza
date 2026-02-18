@@ -97,6 +97,11 @@ export default function UploadPage() {
         if (s.supplier_number) supplierIdMap.set(s.supplier_number, s.id);
       });
 
+      // Delete ALL existing purchase records before inserting new ones
+      // This preserves supplier data (agreements, obligo, bonus status, etc.)
+      const { error: deleteError } = await supabase.from("purchase_records").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      if (deleteError) throw deleteError;
+
       // Map rows to purchase records
       const records = parsedData.map((row) => {
         const supplierNumber = (row["מס' ספק"] || row["מס ספק"] || "")?.toString().trim();
