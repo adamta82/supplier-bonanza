@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Upload as UploadIcon, FileSpreadsheet, CheckCircle } from "lucide-react";
+import { Upload as UploadIcon, FileSpreadsheet } from "lucide-react";
 import * as XLSX from "xlsx";
 
 type ParsedRow = Record<string, any>;
@@ -39,39 +39,82 @@ export default function UploadPage() {
       const json = XLSX.utils.sheet_to_json<ParsedRow>(sheet);
       if (json.length > 0) {
         setHeaders(Object.keys(json[0]));
-        setParsedData(json.slice(0, 500)); // limit preview
+        setParsedData(json);
       }
     };
     reader.readAsBinaryString(file);
   }, []);
 
-  const matchSupplier = (name: string | undefined, number: string | undefined) => {
-    if (!name && !number) return null;
-    const found = suppliers?.find(
-      (s) =>
-        (number && s.supplier_number === number) ||
-        (name && s.name === name)
-    );
-    return found?.id || null;
+  // Parse dd/mm/yyyy date to yyyy-mm-dd
+  const parseDate = (val: any): string | null => {
+    if (!val) return null;
+    const s = val.toString().trim();
+    // dd/mm/yyyy
+    const parts = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (parts) {
+      return `${parts[3]}-${parts[2].padStart(2, "0")}-${parts[1].padStart(2, "0")}`;
+    }
+    // Already yyyy-mm-dd or ISO
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    // Excel serial number
+    if (!isNaN(Number(s)) && Number(s) > 40000) {
+      const d = new Date((Number(s) - 25569) * 86400 * 1000);
+      return d.toISOString().slice(0, 10);
+    }
+    return null;
   };
 
   const uploadPurchases = useMutation({
     mutationFn: async () => {
       const batch = new Date().toISOString();
+
+      // Collect unique suppliers from the data
+      const supplierMap = new Map<string, string>(); // supplier_number -> name
+      parsedData.forEach((row) => {
+        const num = (row["מס' ספק"] || row["מס ספק"] || "")?.toString().trim();
+        const name = (row["שם ספק"] || row["supplier_name"] || "")?.toString().trim();
+        if (num && name) supplierMap.set(num, name);
+      });
+
+      // Ensure all suppliers exist
+      const existingNumbers = new Set(suppliers?.map((s) => s.supplier_number) || []);
+      const newSuppliers: { name: string; supplier_number: string }[] = [];
+      supplierMap.forEach((name, num) => {
+        if (!existingNumbers.has(num)) {
+          newSuppliers.push({ name, supplier_number: num });
+        }
+      });
+
+      if (newSuppliers.length > 0) {
+        const { error } = await supabase.from("suppliers").insert(newSuppliers);
+        if (error) throw error;
+      }
+
+      // Re-fetch suppliers to get IDs
+      const { data: allSuppliers } = await supabase.from("suppliers").select("id, name, supplier_number");
+      const supplierIdMap = new Map<string, string>();
+      allSuppliers?.forEach((s) => {
+        if (s.supplier_number) supplierIdMap.set(s.supplier_number, s.id);
+      });
+
+      // Map rows to purchase records
       const records = parsedData.map((row) => {
-        const supplierName = row["שם ספק"] || row["supplier_name"] || row["ספק"] || "";
-        const supplierNumber = row["מס ספק"] || row["supplier_number"] || row["מספר ספק"] || "";
+        const supplierNumber = (row["מס' ספק"] || row["מס ספק"] || "")?.toString().trim();
+        const supplierName = (row["שם ספק"] || row["supplier_name"] || "")?.toString().trim();
+        const orderNumber = (row["הזמנה"] || row["order_number"] || "")?.toString().trim();
+        const priceILS = parseFloat(row["מחיר סופי בשקלים"] || row["מחיר סופי"] || row["total_amount"] || "0") || 0;
+
         return {
-          supplier_id: matchSupplier(supplierName, supplierNumber?.toString()),
+          supplier_id: supplierIdMap.get(supplierNumber) || null,
           supplier_name: supplierName,
-          supplier_number: supplierNumber?.toString() || null,
-          order_number: (row["מס הזמנה"] || row["order_number"] || "")?.toString() || null,
-          order_date: row["תאריך"] || row["order_date"] || null,
-          item_code: (row["מק\"ט"] || row["קוד פריט"] || row["item_code"] || "")?.toString() || null,
-          item_description: row["תאור פריט"] || row["שם פריט"] || row["item_description"] || null,
-          quantity: parseFloat(row["כמות"] || row["quantity"] || "0") || null,
-          unit_price: parseFloat(row["מחיר"] || row["מחיר יחידה"] || row["unit_price"] || "0") || null,
-          total_amount: parseFloat(row["סכום"] || row["סה\"כ"] || row["total_amount"] || "0") || null,
+          supplier_number: supplierNumber || null,
+          order_number: orderNumber || null,
+          order_date: parseDate(row["תאריך"] || row["order_date"]),
+          item_code: (row["מק'ט"] || row["מק\"ט"] || row["item_code"] || "")?.toString().trim() || null,
+          item_description: (row["תאור מוצר"] || row["תאור פריט"] || row["item_description"] || "")?.toString().trim() || null,
+          quantity: parseFloat(row["כמות"] || row["quantity"] || "1") || 1,
+          unit_price: parseFloat(row["מחיר סופי"] || row["unit_price"] || "0") || null,
+          total_amount: priceILS,
           category: row["קטגוריה"] || row["category"] || null,
           upload_batch: batch,
         };
@@ -87,7 +130,8 @@ export default function UploadPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["purchases-summary"] });
-      toast.success(`${parsedData.length} רשומות רכישה הועלו בהצלחה`);
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      toast.success(`${parsedData.length} שורות רכישה הועלו בהצלחה`);
       setParsedData([]);
       setHeaders([]);
       setFileName("");
@@ -103,17 +147,21 @@ export default function UploadPage() {
         const salePrice = parseFloat(row["מחיר מכירה"] || row["sale_price"] || "0") || 0;
         const costPrice = parseFloat(row["מחיר עלות"] || row["עלות"] || row["cost_price"] || "0") || 0;
         const qty = parseFloat(row["כמות"] || row["quantity"] || "1") || 1;
+        const supplierNumber = (row["מס' ספק"] || row["מס ספק"] || "")?.toString().trim();
+        const existingSupplier = suppliers?.find(
+          (s) => (supplierNumber && s.supplier_number === supplierNumber) || s.name === supplierName
+        );
         return {
-          supplier_id: matchSupplier(supplierName, undefined),
+          supplier_id: existingSupplier?.id || null,
           supplier_name: supplierName,
-          item_code: (row["מק\"ט"] || row["קוד פריט"] || row["item_code"] || "")?.toString() || null,
+          item_code: (row["מק'ט"] || row["מק\"ט"] || row["item_code"] || "")?.toString() || null,
           item_description: row["שם פריט"] || row["תאור פריט"] || row["item_description"] || null,
           quantity: qty,
           sale_price: salePrice,
           cost_price: costPrice,
           profit_direct: (salePrice - costPrice) * qty,
           customer_name: row["לקוח"] || row["שם לקוח"] || row["customer_name"] || null,
-          sale_date: row["תאריך"] || row["sale_date"] || null,
+          sale_date: parseDate(row["תאריך"] || row["sale_date"]),
           category: row["קטגוריה"] || row["category"] || null,
           upload_batch: batch,
         };
@@ -155,7 +203,8 @@ export default function UploadPage() {
                 העלאת דוח רכישות (Excel)
               </CardTitle>
               <CardDescription>
-                העלה קובץ Excel עם פירוט הזמנות רכש. עמודות נפוצות: שם ספק, מס ספק, מק"ט, תאור פריט, כמות, מחיר, סכום
+                העלה קובץ Excel עם הזמנות רכש. עמודות: מס' ספק, שם ספק, הזמנה (PO), תאריך, מק'ט, תאור מוצר, כמות, מחיר סופי בשקלים.
+                ספקים חדשים ייווצרו אוטומטית.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -184,7 +233,7 @@ export default function UploadPage() {
                   </div>
                   <Button onClick={() => uploadPurchases.mutate()} disabled={isUploading} className="gap-2">
                     <UploadIcon className="w-4 h-4" />
-                    {isUploading ? "מעלה..." : `העלה ${parsedData.length} רשומות רכישה`}
+                    {isUploading ? "מעלה..." : `העלה ${parsedData.length} שורות רכישה`}
                   </Button>
                 </>
               )}

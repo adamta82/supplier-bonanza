@@ -437,25 +437,37 @@ export default function SupplierDetail() {
                   <TableRow>
                     <TableHead>תאריך</TableHead>
                     <TableHead>מס׳ הזמנה</TableHead>
-                    <TableHead>פריט</TableHead>
-                    <TableHead>קטגוריה</TableHead>
-                    <TableHead>כמות</TableHead>
+                    <TableHead>פריטים</TableHead>
                     <TableHead>סכום</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPurchases.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground">אין רכישות</TableCell></TableRow>
-                  ) : filteredPurchases.slice(0, 50).map((r: any) => (
-                    <TableRow key={r.id}>
-                      <TableCell>{formatDate(r.order_date)}</TableCell>
-                      <TableCell>{r.order_number || "-"}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{r.item_description || r.item_code || "-"}</TableCell>
-                      <TableCell>{r.category || "-"}</TableCell>
-                      <TableCell>{r.quantity || "-"}</TableCell>
-                      <TableCell>₪{(r.total_amount || 0).toLocaleString()}</TableCell>
-                    </TableRow>
-                  ))}
+                  {(() => {
+                    // Group by PO number
+                    const poMap = new Map<string, { date: string; items: number; total: number }>();
+                    filteredPurchases.forEach((r: any) => {
+                      const po = r.order_number || r.id;
+                      const existing = poMap.get(po);
+                      if (existing) {
+                        existing.items += 1;
+                        existing.total += r.total_amount || 0;
+                      } else {
+                        poMap.set(po, { date: r.order_date, items: 1, total: r.total_amount || 0 });
+                      }
+                    });
+                    const poList = Array.from(poMap.entries()).sort((a, b) => (b[1].date || "").localeCompare(a[1].date || ""));
+                    if (poList.length === 0) {
+                      return <TableRow><TableCell colSpan={4} className="text-center py-6 text-muted-foreground">אין רכישות</TableCell></TableRow>;
+                    }
+                    return poList.slice(0, 100).map(([po, data]) => (
+                      <TableRow key={po}>
+                        <TableCell>{formatDate(data.date)}</TableCell>
+                        <TableCell className="font-mono text-xs">{po}</TableCell>
+                        <TableCell>{data.items} פריטים</TableCell>
+                        <TableCell>₪{data.total.toLocaleString()}</TableCell>
+                      </TableRow>
+                    ));
+                  })()}
                 </TableBody>
               </Table>
             </CardContent>

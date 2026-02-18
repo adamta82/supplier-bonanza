@@ -2,14 +2,16 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Pencil, FileCheck, Award, CheckCircle, XCircle, Clock } from "lucide-react";
+import { formatDate } from "@/lib/formatDate";
 
 type SupplierForm = {
   name: string;
@@ -34,6 +36,15 @@ export default function Suppliers() {
       const { data, error } = await supabase.from("suppliers").select("*").order("name");
       if (error) throw error;
       return data;
+    },
+  });
+
+  // Fetch agreements to check which suppliers have them
+  const { data: agreements } = useQuery({
+    queryKey: ["all-agreements-summary"],
+    queryFn: async () => {
+      const { data } = await supabase.from("bonus_agreements").select("supplier_id, is_active");
+      return data || [];
     },
   });
 
@@ -65,17 +76,6 @@ export default function Suppliers() {
     onError: () => toast.error("שגיאה בשמירת הספק"),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("suppliers").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
-      toast.success("ספק נמחק");
-    },
-  });
-
   const filtered = suppliers?.filter(
     (s) =>
       s.name.includes(search) ||
@@ -93,6 +93,30 @@ export default function Suppliers() {
       notes: supplier.notes || "",
     });
     setIsOpen(true);
+  };
+
+  // Check if supplier has agreements
+  const hasAgreements = (supplierId: string) => {
+    return agreements?.some((a) => a.supplier_id === supplierId);
+  };
+
+  const getAnnualBonusIcon = (status: string | null) => {
+    switch (status) {
+      case "received":
+        return <CheckCircle className="w-4 h-4 text-primary" />;
+      case "none":
+        return <XCircle className="w-4 h-4 text-muted-foreground" />;
+      default: // pending
+        return <Clock className="w-4 h-4 text-destructive" />;
+    }
+  };
+
+  const getAnnualBonusLabel = (status: string | null) => {
+    switch (status) {
+      case "received": return "התקבל";
+      case "none": return "אין";
+      default: return "ממתין";
+    }
   };
 
   return (
@@ -158,9 +182,9 @@ export default function Suppliers() {
               <TableRow>
                 <TableHead>שם ספק</TableHead>
                 <TableHead>מספר ספק</TableHead>
-                <TableHead>תנאי תשלום</TableHead>
-                <TableHead>שוטף</TableHead>
-                <TableHead>הערות</TableHead>
+                <TableHead>הסכמים</TableHead>
+                <TableHead>בונוס 2025</TableHead>
+                <TableHead>תיאום כרטסת</TableHead>
                 <TableHead>פעולות</TableHead>
               </TableRow>
             </TableHeader>
@@ -168,17 +192,34 @@ export default function Suppliers() {
               {isLoading ? (
                 <TableRow><TableCell colSpan={6} className="text-center py-8">טוען...</TableCell></TableRow>
               ) : filtered?.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">אין ספקים. הוסף ספק חדש כדי להתחיל.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">אין ספקים. העלה דוח רכישות כדי להתחיל.</TableCell></TableRow>
               ) : (
-                filtered?.map((s) => (
+                filtered?.map((s: any) => (
                   <TableRow key={s.id}>
                     <TableCell className="font-medium">
                       <Link to={`/suppliers/${s.id}`} className="text-primary hover:underline">{s.name}</Link>
                     </TableCell>
                     <TableCell>{s.supplier_number || "-"}</TableCell>
-                    <TableCell>{s.payment_terms || "-"}</TableCell>
-                    <TableCell>{s.shotef || "-"}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{s.notes || "-"}</TableCell>
+                    <TableCell>
+                      {hasAgreements(s.id) ? (
+                        <Badge variant="default" className="gap-1"><FileCheck className="w-3 h-3" />יש</Badge>
+                      ) : (
+                        <Badge variant="outline" className="gap-1 text-muted-foreground">אין</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        {getAnnualBonusIcon(s.annual_bonus_status)}
+                        <span className="text-xs">{getAnnualBonusLabel(s.annual_bonus_status)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {s.reconciliation_date ? (
+                        <span className="text-xs">עד {formatDate(s.reconciliation_date)}</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">לא תואם</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
                         <Pencil className="w-4 h-4" />
