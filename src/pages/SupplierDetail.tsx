@@ -705,6 +705,7 @@ export default function SupplierDetail() {
                     <TableHead className="w-10"></TableHead>
                     <TableHead>תאריך</TableHead>
                     <TableHead>מס׳ הזמנה (SO)</TableHead>
+                    <TableHead>מס׳ הזמנה זבילו</TableHead>
                     <TableHead>לקוח</TableHead>
                     <TableHead>פריטים</TableHead>
                     <TableHead>סה״כ מכירה</TableHead>
@@ -713,18 +714,20 @@ export default function SupplierDetail() {
                 </TableHeader>
                 <TableBody>
                   {(() => {
-                    const soMap = new Map<string, { date: string; customer: string; items: typeof filteredSales; totalSale: number; totalProfit: number }>();
+                    const soMap = new Map<string, { date: string; customer: string; customerPo: string; items: typeof filteredSales; totalSale: number; totalProfit: number }>();
                     filteredSales.forEach((r: any) => {
-                      const so = r.order_number || r.id;
+                      const so = r.order_number || `_single_${r.id}`;
                       const existing = soMap.get(so);
                       if (existing) {
                         existing.items.push(r);
                         existing.totalSale += (r.sale_price || 0) * (r.quantity || 1);
                         existing.totalProfit += r.profit_direct || 0;
+                        if (!existing.customerPo && r.customer_po) existing.customerPo = r.customer_po;
                       } else {
                         soMap.set(so, {
                           date: r.sale_date,
                           customer: r.customer_name || "-",
+                          customerPo: r.customer_po || "",
                           items: [r],
                           totalSale: (r.sale_price || 0) * (r.quantity || 1),
                           totalProfit: r.profit_direct || 0,
@@ -739,6 +742,7 @@ export default function SupplierDetail() {
                       soList = soList.filter(([so, data]) =>
                         so.toLowerCase().includes(q) ||
                         (data.customer || "").toLowerCase().includes(q) ||
+                        (data.customerPo || "").toLowerCase().includes(q) ||
                         data.items.some((item: any) =>
                           (item.item_description || "").toLowerCase().includes(q) ||
                           (item.item_code || "").toLowerCase().includes(q)
@@ -748,7 +752,7 @@ export default function SupplierDetail() {
                     if (soList.length === 0) {
                       return (
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                          <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
                             אין מכירות
                           </TableCell>
                         </TableRow>
@@ -765,7 +769,8 @@ export default function SupplierDetail() {
                             {expandedSO === so ? <ChevronUp className="w-4 h-4 inline" /> : <ChevronDown className="w-4 h-4 inline" />}
                           </TableCell>
                           <TableCell>{formatDate(data.date)}</TableCell>
-                          <TableCell className="font-mono text-xs">{so}</TableCell>
+                          <TableCell className="font-mono text-xs">{so.startsWith("_single_") ? "-" : so}</TableCell>
+                          <TableCell className="font-mono text-xs">{data.customerPo || "-"}</TableCell>
                           <TableCell>{data.customer}</TableCell>
                           <TableCell>{data.items.length} פריטים</TableCell>
                           <TableCell>₪{data.totalSale.toLocaleString()}</TableCell>
@@ -773,7 +778,7 @@ export default function SupplierDetail() {
                         </TableRow>
                         {expandedSO === so && (
                           <TableRow key={`${so}-detail`}>
-                            <TableCell colSpan={7} className="p-0 bg-muted/30">
+                            <TableCell colSpan={8} className="p-0 bg-muted/30">
                               <Table>
                                 <TableHeader>
                                   <TableRow>

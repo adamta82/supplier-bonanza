@@ -1,0 +1,1 @@
+ALTER TABLE public.sales_records ADD COLUMN customer_po text;
