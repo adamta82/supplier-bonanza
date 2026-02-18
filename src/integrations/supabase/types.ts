@@ -336,7 +336,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_purchases_by_supplier: {
+        Args: never
+        Returns: {
+          supplier_name: string
+          total_amount: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
