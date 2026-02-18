@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowRight, TrendingUp, ShoppingCart, Award, Target, Pencil } from "lucide-react";
+import { ArrowRight, TrendingUp, ShoppingCart, Award, Target, Pencil, CheckCircle, XCircle, Clock, FileText } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { formatDate } from "@/lib/formatDate";
@@ -301,16 +301,37 @@ export default function SupplierDetail() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold">{supplier.name}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-bold">{supplier.name}</h1>
+              <Button variant="ghost" size="icon" onClick={openEdit}>
+                <Pencil className="w-4 h-4" />
+              </Button>
+            </div>
             <p className="text-muted-foreground text-sm">
               {supplier.supplier_number && `מס׳ ספק: ${supplier.supplier_number}`}
-              {supplier.shotef != null && ` | שוטף ${supplier.shotef}`}
+              {supplier.shotef != null && ` | שוטף+${supplier.shotef}`}
               {(supplier as any).obligo != null && ` | אובליגו: ₪${Number((supplier as any).obligo).toLocaleString()}`}
             </p>
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-1.5">
+                {supplier.annual_bonus_status === "received" ? (
+                  <><CheckCircle className="w-4 h-4 text-primary" /><span className="text-xs font-medium text-primary">בונוס 2025: התקבל</span></>
+                ) : supplier.annual_bonus_status === "none" ? (
+                  <><XCircle className="w-4 h-4 text-muted-foreground" /><span className="text-xs text-muted-foreground">בונוס 2025: אין</span></>
+                ) : (
+                  <><Clock className="w-4 h-4 text-destructive" /><span className="text-xs font-medium text-destructive">בונוס 2025: ממתין</span></>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-muted-foreground" />
+                {supplier.reconciliation_date ? (
+                  <span className="text-xs">כרטסת מתואמת עד {formatDate(supplier.reconciliation_date)}</span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">כרטסת לא מתואמת</span>
+                )}
+              </div>
+            </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={openEdit}>
-            <Pencil className="w-4 h-4" />
-          </Button>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Select value={filterMode} onValueChange={(v) => setFilterMode(v as FilterMode)}>
@@ -688,12 +709,12 @@ export default function SupplierDetail() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>תנאי תשלום</Label>
-                <Input value={editForm.payment_terms} onChange={(e) => setEditForm({ ...editForm, payment_terms: e.target.value })} placeholder="שוטף+30" />
-              </div>
-              <div>
                 <Label>שוטף (ימים)</Label>
                 <Input type="number" value={editForm.shotef} onChange={(e) => setEditForm({ ...editForm, shotef: e.target.value })} />
+              </div>
+              <div>
+                <Label>אובליגו (₪)</Label>
+                <Input type="number" value={editForm.obligo} onChange={(e) => setEditForm({ ...editForm, obligo: e.target.value })} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
