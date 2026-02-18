@@ -179,7 +179,7 @@ export default function UploadPage() {
           (s) => (supplierNumber && s.supplier_number === supplierNumber) || (supplierName && s.name === supplierName)
         );
 
-        const customerPo = (row["מס' הזמנה זבילו"] || row["מס הזמנה זבילו"] || row["customer_po"] || "")?.toString().trim();
+        const customerPo = (row["הז. רכש (לקוח)"] || row["הז רכש"] || row["מס' הזמנה זבילו"] || row["מס הזמנה זבילו"] || row["customer_po"] || "")?.toString().trim();
 
         return {
           supplier_id: existingSupplier?.id || null,
