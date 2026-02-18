@@ -772,7 +772,7 @@ export default function SupplierDetail() {
                           <TableCell className="font-mono text-xs">{so.startsWith("_single_") ? "-" : so}</TableCell>
                           <TableCell className="font-mono text-xs">{data.customerPo || "-"}</TableCell>
                           <TableCell>{data.customer}</TableCell>
-                          <TableCell>{data.items.length} פריטים</TableCell>
+                          <TableCell>{data.items.length}</TableCell>
                           <TableCell>₪{data.totalSale.toLocaleString()}</TableCell>
                           <TableCell>₪{data.totalProfit.toLocaleString()}</TableCell>
                         </TableRow>
