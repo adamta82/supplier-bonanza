@@ -192,6 +192,7 @@ export default function UploadPage() {
           sale_date: parseDate(row["תאריך"] || row["sale_date"]),
           category: row["קטגוריה"] || row["category"] || null,
           upload_batch: batch,
+          order_number: so || null,
         };
       });
 
