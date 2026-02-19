@@ -202,16 +202,28 @@ export default function SupplierDetail() {
   const totalDirectProfit = filteredSales.reduce((s, r) => s + (r.profit_direct || 0), 0);
   const totalTransactionBonus = filteredBonuses.reduce((s, r) => s + (r.bonus_value || 0), 0);
 
-  // Calculate total agreement-based bonuses (only money type) for KPI
-  const totalAgreementBonus = useMemo(() => {
+  // Calculate ALL agreement bonuses for display
+  const totalAllBonus = useMemo(() => {
     if (!agreements) return 0;
-    return agreements
-      .filter((a: any) => (a as any).bonus_payment_type !== "goods" || !(a as any).bonus_payment_type)
-      .reduce((sum: number, a: any) => sum + calcAgreementBonusValue(a), 0);
+    return agreements.reduce((sum: number, a: any) => {
+      const v = calcAgreementBonusValue(a);
+      return sum + (isNaN(v) ? 0 : v);
+    }, 0);
   }, [agreements, purchases, bonuses]);
 
-  const totalBonusValue = totalAgreementBonus;
-  const weLoveProfit = totalDirectProfit + totalBonusValue;
+  // Calculate only money-type agreement bonuses for wilove profit
+  const totalMoneyBonus = useMemo(() => {
+    if (!agreements) return 0;
+    return agreements
+      .filter((a: any) => a.bonus_payment_type === "money")
+      .reduce((sum: number, a: any) => {
+        const v = calcAgreementBonusValue(a);
+        return sum + (isNaN(v) ? 0 : v);
+      }, 0);
+  }, [agreements, purchases, bonuses]);
+
+  const totalBonusValue = totalAllBonus;
+  const weLoveProfit = totalDirectProfit + totalMoneyBonus;
 
   const monthlyData = useMemo(() => {
     const map: Record<string, { purchases: number; sales: number; profit: number; weLove: number }> = {};
