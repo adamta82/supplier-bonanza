@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, X } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
 
 const bonusTypeLabels: Record<string, string> = {
@@ -29,13 +29,13 @@ const periodLabels: Record<string, string> = {
   custom: "מותאם",
 };
 
-const categoryModeLabels: Record<string, string> = {
-  all: "כל המוצרים",
-  include_only: "רק קטגוריה מסוימת",
-  exclude: "הכל חוץ מקטגוריה",
+const paymentTypeLabels: Record<string, string> = {
+  goods: "סחורה",
+  money: "כסף",
 };
 
 type TierForm = { target_value: string; bonus_percentage: string };
+type ExclusionForm = { keyword: string; counts_toward_target: boolean; gets_bonus: boolean };
 
 export default function Agreements() {
   const queryClient = useQueryClient();
@@ -49,14 +49,14 @@ export default function Agreements() {
     period_end: "",
     vat_included: false,
     target_type: "amount",
-    category_filter: "",
-    category_mode: "all",
     fixed_amount: "",
     fixed_percentage: "",
     series_name: "",
     notes: "",
+    bonus_payment_type: "goods",
   });
   const [tiers, setTiers] = useState<TierForm[]>([{ target_value: "", bonus_percentage: "" }]);
+  const [exclusions, setExclusions] = useState<ExclusionForm[]>([]);
 
   const { data: suppliers } = useQuery({
     queryKey: ["suppliers"],
@@ -79,7 +79,7 @@ export default function Agreements() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = {
+      const payload: any = {
         supplier_id: form.supplier_id,
         bonus_type: form.bonus_type,
         period_type: form.period_type || null,
@@ -87,12 +87,14 @@ export default function Agreements() {
         period_end: form.period_end || null,
         vat_included: form.vat_included,
         target_type: form.target_type || null,
-        category_filter: form.category_filter || null,
-        category_mode: form.category_mode || null,
+        category_filter: null,
+        category_mode: null,
         fixed_amount: form.fixed_amount ? parseFloat(form.fixed_amount) : null,
         fixed_percentage: form.fixed_percentage ? parseFloat(form.fixed_percentage) : null,
         series_name: form.series_name || null,
         notes: form.notes || null,
+        bonus_payment_type: form.bonus_payment_type,
+        exclusions: exclusions.length > 0 ? JSON.stringify(exclusions) : "[]",
       };
 
       let agreementId = editId;
@@ -107,7 +109,6 @@ export default function Agreements() {
         agreementId = data.id;
       }
 
-      // Insert tiers
       const validTiers = tiers.filter((t) => t.target_value && t.bonus_percentage);
       if (validTiers.length > 0 && agreementId) {
         const { error } = await supabase.from("bonus_tiers").insert(
@@ -147,15 +148,17 @@ export default function Agreements() {
     setForm({
       supplier_id: "", bonus_type: "annual_target", period_type: "annual",
       period_start: "", period_end: "", vat_included: false, target_type: "amount",
-      category_filter: "", category_mode: "all", fixed_amount: "", fixed_percentage: "",
-      series_name: "", notes: "",
+      fixed_amount: "", fixed_percentage: "",
+      series_name: "", notes: "", bonus_payment_type: "goods",
     });
     setTiers([{ target_value: "", bonus_percentage: "" }]);
+    setExclusions([]);
   };
 
   const needsTiers = form.bonus_type === "annual_target" || (form.bonus_type === "marketing" && !form.fixed_amount);
   const needsFixed = form.bonus_type === "annual_fixed" || form.bonus_type === "marketing" || form.bonus_type === "transaction";
   const needsSeries = form.bonus_type === "network";
+  const needsExclusions = form.bonus_type === "annual_target" || form.bonus_type === "marketing";
 
   return (
     <div className="space-y-6">
@@ -183,17 +186,29 @@ export default function Agreements() {
                 </Select>
               </div>
 
-              {/* Bonus type */}
-              <div>
-                <Label>סוג בונוס *</Label>
-                <Select value={form.bonus_type} onValueChange={(v) => setForm({ ...form, bonus_type: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(bonusTypeLabels).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Bonus type + payment type */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>סוג בונוס *</Label>
+                  <Select value={form.bonus_type} onValueChange={(v) => setForm({ ...form, bonus_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(bonusTypeLabels).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>אופן קבלת הבונוס</Label>
+                  <Select value={form.bonus_payment_type} onValueChange={(v) => setForm({ ...form, bonus_payment_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="goods">סחורה</SelectItem>
+                      <SelectItem value="money">כסף</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Period */}
@@ -221,7 +236,7 @@ export default function Agreements() {
 
               {/* VAT & target type */}
               {(form.bonus_type === "annual_target" || form.bonus_type === "marketing") && (
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div className="flex items-center gap-2">
                     <input type="checkbox" checked={form.vat_included} onChange={(e) => setForm({ ...form, vat_included: e.target.checked })} className="w-4 h-4" />
                     <Label>כולל מע"מ</Label>
@@ -236,24 +251,6 @@ export default function Agreements() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label>מצב קטגוריה</Label>
-                    <Select value={form.category_mode} onValueChange={(v) => setForm({ ...form, category_mode: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(categoryModeLabels).map(([k, v]) => (
-                          <SelectItem key={k} value={k}>{v}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              )}
-
-              {form.category_mode !== "all" && (
-                <div>
-                  <Label>שם קטגוריה/סדרה לסינון</Label>
-                  <Input value={form.category_filter} onChange={(e) => setForm({ ...form, category_filter: e.target.value })} placeholder="למשל: מזגנים" />
                 </div>
               )}
 
@@ -276,6 +273,52 @@ export default function Agreements() {
                 <div>
                   <Label>שם סדרה/דגם (לזיהוי אוטומטי בפריטים)</Label>
                   <Input value={form.series_name} onChange={(e) => setForm({ ...form, series_name: e.target.value })} placeholder="למשל: ELITE" />
+                </div>
+              )}
+
+              {/* Exclusions */}
+              {needsExclusions && (
+                <div className="space-y-3 border rounded-lg p-3">
+                  <Label className="text-base font-semibold">חריגות</Label>
+                  <p className="text-xs text-muted-foreground">פריטים שמילת המפתח מופיעה בשם שלהם יטופלו בהתאם להגדרות</p>
+                  {exclusions.map((exc, i) => (
+                    <div key={i} className="flex gap-2 items-center border-b pb-2">
+                      <div className="flex-1">
+                        <Input
+                          value={exc.keyword}
+                          onChange={(e) => {
+                            const newExc = [...exclusions];
+                            newExc[i].keyword = e.target.value;
+                            setExclusions(newExc);
+                          }}
+                          placeholder="מילת מפתח (למשל: הובלה)"
+                          className="text-sm"
+                        />
+                      </div>
+                      <label className="flex items-center gap-1 text-xs whitespace-nowrap">
+                        <input type="checkbox" checked={exc.counts_toward_target} onChange={(e) => {
+                          const newExc = [...exclusions];
+                          newExc[i].counts_toward_target = e.target.checked;
+                          setExclusions(newExc);
+                        }} className="w-3.5 h-3.5" />
+                        נספר ביעד
+                      </label>
+                      <label className="flex items-center gap-1 text-xs whitespace-nowrap">
+                        <input type="checkbox" checked={exc.gets_bonus} onChange={(e) => {
+                          const newExc = [...exclusions];
+                          newExc[i].gets_bonus = e.target.checked;
+                          setExclusions(newExc);
+                        }} className="w-3.5 h-3.5" />
+                        מקבל בונוס
+                      </label>
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExclusions(exclusions.filter((_, j) => j !== i))}>
+                        <X className="w-3.5 h-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" size="sm" onClick={() => setExclusions([...exclusions, { keyword: "", counts_toward_target: true, gets_bonus: false }])}>
+                    + הוסף חריגה
+                  </Button>
                 </div>
               )}
 
@@ -357,78 +400,89 @@ export default function Agreements() {
               <TableRow>
                 <TableHead>ספק</TableHead>
                 <TableHead>סוג בונוס</TableHead>
+                <TableHead>קבלה</TableHead>
                 <TableHead>תקופה</TableHead>
                 <TableHead>מדרגות/ערכים</TableHead>
-                <TableHead>קטגוריה</TableHead>
+                <TableHead>חריגות</TableHead>
                 <TableHead>פעולות</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8">טוען...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8">טוען...</TableCell></TableRow>
               ) : agreements?.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">אין הסכמים. הוסף הסכם חדש.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">אין הסכמים. הוסף הסכם חדש.</TableCell></TableRow>
               ) : (
-                agreements?.map((a: any) => (
-                  <TableRow key={a.id}>
-                    <TableCell className="font-medium"><Link to={`/suppliers/${a.supplier_id}`} className="text-primary hover:underline">{a.suppliers?.name}</Link></TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{bonusTypeLabels[a.bonus_type] || a.bonus_type}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {a.period_start && a.period_end
-                        ? `${formatDate(a.period_start)} - ${formatDate(a.period_end)}`
-                        : periodLabels[a.period_type] || "-"}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {a.bonus_tiers?.length > 0
-                        ? a.bonus_tiers
-                            .sort((x: any, y: any) => x.tier_order - y.tier_order)
-                            .map((t: any) => `₪${t.target_value.toLocaleString()} → ${t.bonus_percentage}%`)
-                            .join(" | ")
-                        : a.fixed_percentage
-                        ? `${a.fixed_percentage}%`
-                        : a.fixed_amount
-                        ? `₪${a.fixed_amount.toLocaleString()}`
-                        : "-"}
-                    </TableCell>
-                    <TableCell>
-                      {a.category_mode === "include_only" ? `רק: ${a.category_filter}` :
-                       a.category_mode === "exclude" ? `חוץ מ: ${a.category_filter}` :
-                       a.series_name ? `סדרה: ${a.series_name}` : "הכל"}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" onClick={() => {
-                        setEditId(a.id);
-                        setForm({
-                          supplier_id: a.supplier_id,
-                          bonus_type: a.bonus_type,
-                          period_type: a.period_type || "annual",
-                          period_start: a.period_start || "",
-                          period_end: a.period_end || "",
-                          vat_included: a.vat_included || false,
-                          target_type: a.target_type || "amount",
-                          category_filter: a.category_filter || "",
-                          category_mode: a.category_mode || "all",
-                          fixed_amount: a.fixed_amount?.toString() || "",
-                          fixed_percentage: a.fixed_percentage?.toString() || "",
-                          series_name: a.series_name || "",
-                          notes: a.notes || "",
-                        });
-                        setTiers(
-                          a.bonus_tiers?.length > 0
-                            ? a.bonus_tiers
-                                .sort((x: any, y: any) => x.tier_order - y.tier_order)
-                                .map((t: any) => ({ target_value: t.target_value.toString(), bonus_percentage: t.bonus_percentage.toString() }))
-                            : [{ target_value: "", bonus_percentage: "" }]
-                        );
-                        setIsOpen(true);
-                      }}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+                agreements?.map((a: any) => {
+                  const excl = (() => {
+                    try { return typeof a.exclusions === "string" ? JSON.parse(a.exclusions) : (a.exclusions || []); } catch { return []; }
+                  })();
+                  return (
+                    <TableRow key={a.id}>
+                      <TableCell className="font-medium"><Link to={`/suppliers/${a.supplier_id}`} className="text-primary hover:underline">{a.suppliers?.name}</Link></TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{bonusTypeLabels[a.bonus_type] || a.bonus_type}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={a.bonus_payment_type === "money" ? "outline" : "default"}>
+                          {paymentTypeLabels[a.bonus_payment_type] || "סחורה"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {a.period_start && a.period_end
+                          ? `${formatDate(a.period_start)} - ${formatDate(a.period_end)}`
+                          : periodLabels[a.period_type] || "-"}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {a.bonus_tiers?.length > 0
+                          ? a.bonus_tiers
+                              .sort((x: any, y: any) => x.tier_order - y.tier_order)
+                              .map((t: any) => `₪${t.target_value.toLocaleString()} → ${t.bonus_percentage}%`)
+                              .join(" | ")
+                          : a.fixed_percentage
+                          ? `${a.fixed_percentage}%`
+                          : a.fixed_amount
+                          ? `₪${a.fixed_amount.toLocaleString()}`
+                          : "-"}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {excl.length > 0
+                          ? excl.map((e: any) => e.keyword).join(", ")
+                          : a.series_name ? `סדרה: ${a.series_name}` : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" onClick={() => {
+                          setEditId(a.id);
+                          setForm({
+                            supplier_id: a.supplier_id,
+                            bonus_type: a.bonus_type,
+                            period_type: a.period_type || "annual",
+                            period_start: a.period_start || "",
+                            period_end: a.period_end || "",
+                            vat_included: a.vat_included || false,
+                            target_type: a.target_type || "amount",
+                            fixed_amount: a.fixed_amount?.toString() || "",
+                            fixed_percentage: a.fixed_percentage?.toString() || "",
+                            series_name: a.series_name || "",
+                            notes: a.notes || "",
+                            bonus_payment_type: a.bonus_payment_type || "goods",
+                          });
+                          setTiers(
+                            a.bonus_tiers?.length > 0
+                              ? a.bonus_tiers
+                                  .sort((x: any, y: any) => x.tier_order - y.tier_order)
+                                  .map((t: any) => ({ target_value: t.target_value.toString(), bonus_percentage: t.bonus_percentage.toString() }))
+                              : [{ target_value: "", bonus_percentage: "" }]
+                          );
+                          setExclusions(excl);
+                          setIsOpen(true);
+                        }}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

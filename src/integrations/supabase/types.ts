@@ -16,10 +16,12 @@ export type Database = {
     Tables: {
       bonus_agreements: {
         Row: {
+          bonus_payment_type: string
           bonus_type: string
           category_filter: string | null
           category_mode: string | null
           created_at: string
+          exclusions: Json | null
           fixed_amount: number | null
           fixed_percentage: number | null
           id: string
@@ -35,10 +37,12 @@ export type Database = {
           vat_included: boolean | null
         }
         Insert: {
+          bonus_payment_type?: string
           bonus_type: string
           category_filter?: string | null
           category_mode?: string | null
           created_at?: string
+          exclusions?: Json | null
           fixed_amount?: number | null
           fixed_percentage?: number | null
           id?: string
@@ -54,10 +58,12 @@ export type Database = {
           vat_included?: boolean | null
         }
         Update: {
+          bonus_payment_type?: string
           bonus_type?: string
           category_filter?: string | null
           category_mode?: string | null
           created_at?: string
+          exclusions?: Json | null
           fixed_amount?: number | null
           fixed_percentage?: number | null
           id?: string

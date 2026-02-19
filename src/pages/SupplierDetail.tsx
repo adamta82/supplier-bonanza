@@ -437,6 +437,7 @@ export default function SupplierDetail() {
             <Target className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">רווח ישיר</div>
             <div className="text-lg font-bold">₪{totalDirectProfit.toLocaleString()}</div>
+            <div className="text-xs text-muted-foreground">{totalSales > 0 ? `${((totalDirectProfit / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
           </CardContent>
         </Card>
         <Card>
@@ -451,6 +452,7 @@ export default function SupplierDetail() {
             <TrendingUp className="w-5 h-5 mx-auto mb-1 text-primary" />
             <div className="text-xs text-muted-foreground">רווח וילוב</div>
             <div className="text-lg font-bold text-primary">₪{weLoveProfit.toLocaleString()}</div>
+            <div className="text-xs text-primary">{totalSales > 0 ? `${((weLoveProfit / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
           </CardContent>
         </Card>
       </div>
