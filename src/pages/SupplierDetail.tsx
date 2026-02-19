@@ -202,76 +202,8 @@ export default function SupplierDetail() {
   const totalDirectProfit = filteredSales.reduce((s, r) => s + (r.profit_direct || 0), 0);
   const totalTransactionBonus = filteredBonuses.reduce((s, r) => s + (r.bonus_value || 0), 0);
 
-  // Calculate ALL agreement bonuses for display
-  const totalAllBonus = useMemo(() => {
-    if (!agreements) return 0;
-    return agreements.reduce((sum: number, a: any) => {
-      const v = calcAgreementBonusValue(a);
-      return sum + (isNaN(v) ? 0 : v);
-    }, 0);
-  }, [agreements, purchases, bonuses]);
-
-  // Calculate only money-type agreement bonuses for wilove profit
-  const totalMoneyBonus = useMemo(() => {
-    if (!agreements) return 0;
-    return agreements
-      .filter((a: any) => a.bonus_payment_type === "money")
-      .reduce((sum: number, a: any) => {
-        const v = calcAgreementBonusValue(a);
-        return sum + (isNaN(v) ? 0 : v);
-      }, 0);
-  }, [agreements, purchases, bonuses]);
-
-  const totalBonusValue = totalAllBonus;
-  const weLoveProfit = totalDirectProfit + totalMoneyBonus;
-
-  const monthlyData = useMemo(() => {
-    const map: Record<string, { purchases: number; sales: number; profit: number; weLove: number }> = {};
-    const fp = filteredPurchases;
-    const fs = filteredSales;
-    const fb = filteredBonuses;
-    fp.forEach((r) => {
-      const m = r.order_date?.slice(0, 7) || "unknown";
-      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, weLove: 0 };
-      map[m].purchases += r.total_amount || 0;
-    });
-    fs.forEach((r) => {
-      const m = r.sale_date?.slice(0, 7) || "unknown";
-      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, weLove: 0 };
-      map[m].sales += (r.sale_price || 0) * (r.quantity || 0);
-      map[m].profit += r.profit_direct || 0;
-    });
-    fb.forEach((r) => {
-      const m = r.transaction_date?.slice(0, 7) || "unknown";
-      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, weLove: 0 };
-      map[m].weLove += r.bonus_value || 0;
-    });
-    Object.values(map).forEach((v) => {
-      v.weLove += v.profit;
-    });
-    return Object.entries(map)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, v]) => ({ month, ...v }));
-  }, [filteredPurchases, filteredSales, filteredBonuses]);
-
-  const months = useMemo(() => {
-    const now = new Date();
-    return Array.from({ length: 12 }, (_, i) => {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    });
-  }, []);
-
-  const quarters = useMemo(() => {
-    const now = new Date();
-    const y = now.getFullYear();
-    return [`${y}-Q1`, `${y}-Q2`, `${y}-Q3`, `${y}-Q4`, `${y - 1}-Q1`, `${y - 1}-Q2`, `${y - 1}-Q3`, `${y - 1}-Q4`];
-  }, []);
-
   // Calculate bonus value for an agreement
   const calcAgreementBonusValue = (agreement: any) => {
-    const today = new Date().toISOString().slice(0, 10);
-
     // For transaction type - sum bonus_value from linked transaction_bonuses
     if (agreement.bonus_type === "transaction") {
       const linkedBonuses = (bonuses || []).filter((b: any) => b.agreement_id === agreement.id);
@@ -315,6 +247,65 @@ export default function SupplierDetail() {
     }
     return 0;
   };
+
+  // Calculate ALL agreement bonuses for display
+  const totalAllBonus = useMemo(() => {
+    if (!agreements) return 0;
+    return agreements.reduce((sum: number, a: any) => {
+      const v = calcAgreementBonusValue(a);
+      return sum + (isNaN(v) ? 0 : v);
+    }, 0);
+  }, [agreements, purchases, bonuses]);
+
+  // Calculate only money-type agreement bonuses for wilove profit
+  const totalMoneyBonus = useMemo(() => {
+    if (!agreements) return 0;
+    return agreements
+      .filter((a: any) => a.bonus_payment_type === "money")
+      .reduce((sum: number, a: any) => {
+        const v = calcAgreementBonusValue(a);
+        return sum + (isNaN(v) ? 0 : v);
+      }, 0);
+  }, [agreements, purchases, bonuses]);
+
+  const totalBonusValue = totalAllBonus;
+  const weLoveProfit = totalDirectProfit + totalMoneyBonus;
+
+  const monthlyData = useMemo(() => {
+    const map: Record<string, { purchases: number; sales: number; profit: number; weLove: number }> = {};
+    filteredPurchases.forEach((r) => {
+      const m = r.order_date?.slice(0, 7) || "unknown";
+      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, weLove: 0 };
+      map[m].purchases += r.total_amount || 0;
+    });
+    filteredSales.forEach((r) => {
+      const m = r.sale_date?.slice(0, 7) || "unknown";
+      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, weLove: 0 };
+      map[m].sales += (r.sale_price || 0) * (r.quantity || 0);
+      map[m].profit += r.profit_direct || 0;
+    });
+    filteredBonuses.forEach((r) => {
+      const m = r.transaction_date?.slice(0, 7) || "unknown";
+      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, weLove: 0 };
+      map[m].weLove += r.bonus_value || 0;
+    });
+    Object.values(map).forEach((v) => { v.weLove += v.profit; });
+    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([month, v]) => ({ month, ...v }));
+  }, [filteredPurchases, filteredSales, filteredBonuses]);
+
+  const months = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    });
+  }, []);
+
+  const quarters = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    return [`${y}-Q1`, `${y}-Q2`, `${y}-Q3`, `${y}-Q4`, `${y - 1}-Q1`, `${y - 1}-Q2`, `${y - 1}-Q3`, `${y - 1}-Q4`];
+  }, []);
 
   // Get agreement status
   const getAgreementStatus = (agreement: any) => {
