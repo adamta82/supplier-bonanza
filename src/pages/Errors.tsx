@@ -14,6 +14,7 @@ export default function Errors() {
         .from("purchase_records")
         .select("*")
         .is("supplier_id", null)
+        .not("item_description", "ilike", "%הובלה%")
         .order("order_date", { ascending: false });
       return data || [];
     },
@@ -26,6 +27,7 @@ export default function Errors() {
         .from("sales_records")
         .select("*")
         .is("supplier_id", null)
+        .not("item_description", "ilike", "%הובלה%")
         .order("sale_date", { ascending: false });
       return data || [];
     },
@@ -50,23 +52,23 @@ export default function Errors() {
                   <TableRow>
                     <TableHead>תאריך</TableHead>
                     <TableHead>מס׳ הזמנה</TableHead>
-                    <TableHead>שם ספק (מקור)</TableHead>
                     <TableHead>מס׳ ספק (מקור)</TableHead>
+                    <TableHead>מק״ט</TableHead>
                     <TableHead>תיאור פריט</TableHead>
                     <TableHead>סכום</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {!orphanPurchases?.length ? (
-                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">אין רכשים שגויים 🎉</TableCell></TableRow>
+                   <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">אין רכשים שגויים 🎉</TableCell></TableRow>
                   ) : (
                     orphanPurchases.map((r) => (
                       <TableRow key={r.id}>
                         <TableCell>{r.order_date ? formatDate(r.order_date) : "-"}</TableCell>
                         <TableCell className="font-mono text-xs">{r.order_number || "-"}</TableCell>
-                        <TableCell>{r.supplier_name || "-"}</TableCell>
                         <TableCell>{r.supplier_number || "-"}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{r.item_description || "-"}</TableCell>
+                        <TableCell className="font-mono text-xs">{r.item_code || "-"}</TableCell>
+                        <TableCell>{r.item_description || "-"}</TableCell>
                         <TableCell>₪{(r.total_amount || 0).toLocaleString()}</TableCell>
                       </TableRow>
                     ))
@@ -85,24 +87,22 @@ export default function Errors() {
                   <TableRow>
                     <TableHead>תאריך</TableHead>
                     <TableHead>מס׳ הזמנה</TableHead>
-                    <TableHead>שם ספק (מקור)</TableHead>
                     <TableHead>לקוח</TableHead>
+                    <TableHead>מק״ט</TableHead>
                     <TableHead>תיאור פריט</TableHead>
-                    <TableHead>מחיר מכירה</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {!orphanSales?.length ? (
-                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">אין מכירות שגויות 🎉</TableCell></TableRow>
+                   <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">אין מכירות שגויות 🎉</TableCell></TableRow>
                   ) : (
                     orphanSales.map((r) => (
                       <TableRow key={r.id}>
                         <TableCell>{r.sale_date ? formatDate(r.sale_date) : "-"}</TableCell>
                         <TableCell className="font-mono text-xs">{r.order_number || "-"}</TableCell>
-                        <TableCell>{r.supplier_name || "-"}</TableCell>
                         <TableCell>{r.customer_name || "-"}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{r.item_description || "-"}</TableCell>
-                        <TableCell>₪{(r.sale_price || 0).toLocaleString()}</TableCell>
+                        <TableCell className="font-mono text-xs">{r.item_code || "-"}</TableCell>
+                        <TableCell>{r.item_description || "-"}</TableCell>
                       </TableRow>
                     ))
                   )}
