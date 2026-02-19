@@ -14,6 +14,7 @@ export default function Errors() {
         .from("purchase_records")
         .select("*")
         .is("supplier_id", null)
+        .is("supplier_name", null)
         .not("item_description", "ilike", "%הובלה%")
         .order("order_date", { ascending: false });
       return data || [];
@@ -27,6 +28,7 @@ export default function Errors() {
         .from("sales_records")
         .select("*")
         .is("supplier_id", null)
+        .is("supplier_name", null)
         .not("item_description", "ilike", "%הובלה%")
         .order("sale_date", { ascending: false });
       return data || [];
