@@ -63,8 +63,8 @@ export default function Reports() {
     let totalBonus = 0;
 
     supplierAgreements.forEach((agreement: any) => {
-      // Skip money bonuses - they don't count in profit
-      if (agreement.bonus_payment_type === "money") return;
+      // Skip goods bonuses - only money bonuses count in profit
+      if (agreement.bonus_payment_type !== "money") return;
 
       if (agreement.bonus_type === "annual_target" || (agreement.bonus_type === "marketing" && agreement.bonus_tiers?.length > 0)) {
         const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => b.target_value - a.target_value);
