@@ -1,0 +1,117 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatDate } from "@/lib/formatDate";
+
+export default function Errors() {
+  const { data: orphanPurchases } = useQuery({
+    queryKey: ["orphan-purchases"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("purchase_records")
+        .select("*")
+        .is("supplier_id", null)
+        .order("order_date", { ascending: false });
+      return data || [];
+    },
+  });
+
+  const { data: orphanSales } = useQuery({
+    queryKey: ["orphan-sales"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("sales_records")
+        .select("*")
+        .is("supplier_id", null)
+        .order("sale_date", { ascending: false });
+      return data || [];
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">שגויים</h1>
+      <p className="text-muted-foreground">רכשים והזמנות שלא שויכו לספק במערכת</p>
+
+      <Tabs defaultValue="purchases" dir="rtl">
+        <TabsList>
+          <TabsTrigger value="purchases">רכשים ללא ספק ({orphanPurchases?.length || 0})</TabsTrigger>
+          <TabsTrigger value="sales">מכירות ללא ספק ({orphanSales?.length || 0})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="purchases">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>תאריך</TableHead>
+                    <TableHead>מס׳ הזמנה</TableHead>
+                    <TableHead>שם ספק (מקור)</TableHead>
+                    <TableHead>מס׳ ספק (מקור)</TableHead>
+                    <TableHead>תיאור פריט</TableHead>
+                    <TableHead>סכום</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {!orphanPurchases?.length ? (
+                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">אין רכשים שגויים 🎉</TableCell></TableRow>
+                  ) : (
+                    orphanPurchases.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell>{r.order_date ? formatDate(r.order_date) : "-"}</TableCell>
+                        <TableCell className="font-mono text-xs">{r.order_number || "-"}</TableCell>
+                        <TableCell>{r.supplier_name || "-"}</TableCell>
+                        <TableCell>{r.supplier_number || "-"}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{r.item_description || "-"}</TableCell>
+                        <TableCell>₪{(r.total_amount || 0).toLocaleString()}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="sales">
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>תאריך</TableHead>
+                    <TableHead>מס׳ הזמנה</TableHead>
+                    <TableHead>שם ספק (מקור)</TableHead>
+                    <TableHead>לקוח</TableHead>
+                    <TableHead>תיאור פריט</TableHead>
+                    <TableHead>מחיר מכירה</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {!orphanSales?.length ? (
+                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">אין מכירות שגויות 🎉</TableCell></TableRow>
+                  ) : (
+                    orphanSales.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell>{r.sale_date ? formatDate(r.sale_date) : "-"}</TableCell>
+                        <TableCell className="font-mono text-xs">{r.order_number || "-"}</TableCell>
+                        <TableCell>{r.supplier_name || "-"}</TableCell>
+                        <TableCell>{r.customer_name || "-"}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{r.item_description || "-"}</TableCell>
+                        <TableCell>₪{(r.sale_price || 0).toLocaleString()}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

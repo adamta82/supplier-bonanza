@@ -12,6 +12,7 @@ import Transactions from "@/pages/Transactions";
 import UploadPage from "@/pages/Upload";
 import Reports from "@/pages/Reports";
 import Alerts from "@/pages/Alerts";
+import Errors from "@/pages/Errors";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/upload" element={<UploadPage />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/alerts" element={<Alerts />} />
+            <Route path="/errors" element={<Errors />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>
