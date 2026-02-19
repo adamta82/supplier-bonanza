@@ -4,7 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Download } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
+import * as XLSX from "xlsx";
 
 export default function Errors() {
   const { data: orphanPurchases } = useQuery({
@@ -35,10 +38,43 @@ export default function Errors() {
     },
   });
 
+  const exportToExcel = () => {
+    const purchaseRows = (orphanPurchases || []).map((r) => ({
+      "תאריך": r.order_date ? formatDate(r.order_date) : "",
+      "מס׳ הזמנה": r.order_number || "",
+      "מס׳ ספק (מקור)": r.supplier_number || "",
+      "מק״ט": r.item_code || "",
+      "תיאור פריט": r.item_description || "",
+      "סכום": r.total_amount || 0,
+    }));
+    const salesRows = (orphanSales || []).map((r) => ({
+      "תאריך": r.sale_date ? formatDate(r.sale_date) : "",
+      "מס׳ הזמנה": r.order_number || "",
+      "לקוח": r.customer_name || "",
+      "מק״ט": r.item_code || "",
+      "תיאור פריט": r.item_description || "",
+    }));
+    const wb = XLSX.utils.book_new();
+    if (purchaseRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(purchaseRows), "רכשים ללא ספק");
+    if (salesRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(salesRows), "מכירות ללא ספק");
+    if (!purchaseRows.length && !salesRows.length) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{ "הודעה": "אין שגויים" }]), "ריק");
+    }
+    XLSX.writeFile(wb, "שגויים.xlsx");
+  };
+
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">שגויים</h1>
-      <p className="text-muted-foreground">רכשים והזמנות שלא שויכו לספק במערכת</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">שגויים</h1>
+          <p className="text-muted-foreground">רכשים והזמנות שלא שויכו לספק במערכת</p>
+        </div>
+        <Button variant="outline" onClick={exportToExcel}>
+          <Download className="h-4 w-4 ml-2" />
+          ייצוא לאקסל
+        </Button>
+      </div>
 
       <Tabs defaultValue="purchases" dir="rtl">
         <TabsList>
