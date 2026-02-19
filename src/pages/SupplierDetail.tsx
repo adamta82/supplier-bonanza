@@ -200,7 +200,17 @@ export default function SupplierDetail() {
   const totalPurchases = filteredPurchases.reduce((s, r) => s + (r.total_amount || 0), 0);
   const totalSales = filteredSales.reduce((s, r) => s + (r.sale_price || 0) * (r.quantity || 0), 0);
   const totalDirectProfit = filteredSales.reduce((s, r) => s + (r.profit_direct || 0), 0);
-  const totalBonusValue = filteredBonuses.reduce((s, r) => s + (r.bonus_value || 0), 0);
+  const totalTransactionBonus = filteredBonuses.reduce((s, r) => s + (r.bonus_value || 0), 0);
+
+  // Calculate total agreement-based bonuses (only money type) for KPI
+  const totalAgreementBonus = useMemo(() => {
+    if (!agreements) return 0;
+    return agreements
+      .filter((a: any) => (a as any).bonus_payment_type !== "goods" || !(a as any).bonus_payment_type)
+      .reduce((sum: number, a: any) => sum + calcAgreementBonusValue(a), 0);
+  }, [agreements, purchases, bonuses]);
+
+  const totalBonusValue = totalAgreementBonus;
   const weLoveProfit = totalDirectProfit + totalBonusValue;
 
   const monthlyData = useMemo(() => {
