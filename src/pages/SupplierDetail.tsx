@@ -534,9 +534,10 @@ export default function SupplierDetail() {
             </div>
             <div className="space-y-2">
               {brandData.map((b) => (
-                <div key={b.brand} className="flex items-center justify-between p-3 rounded-lg border">
+                <div key={b.brand} className="flex items-center justify-between p-3 rounded-lg border" dir="rtl">
                   <div className="flex items-center gap-3">
                     <Switch
+                      dir="ltr"
                       checked={!disabledBrands.has(b.brand)}
                       onCheckedChange={() => toggleBrand(b.brand)}
                     />
