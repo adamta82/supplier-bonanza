@@ -7,6 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
+const VAT_RATE = 0.18;
+const addVAT = (amount: number) => amount * (1 + VAT_RATE);
+
 type SortField = "name" | "purchaseVolume" | "totalSales" | "directProfit" | "directMargin" | "totalBonus" | "finalProfit" | "finalMargin";
 type SortDir = "asc" | "desc";
 
@@ -56,12 +59,12 @@ export default function Reports() {
 
   const supplierReport = suppliers?.map((supplier) => {
     const supplierSales = sales?.filter((s) => s.supplier_id === supplier.id || s.supplier_name === supplier.name) || [];
-    const totalSales = supplierSales.reduce((sum, s) => sum + ((s.sale_price || 0) * (s.quantity || 1)), 0);
-    const totalCost = supplierSales.reduce((sum, s) => sum + ((s.cost_price || 0) * (s.quantity || 1)), 0);
+    const totalSales = addVAT(supplierSales.reduce((sum, s) => sum + ((s.sale_price || 0) * (s.quantity || 1)), 0));
+    const totalCost = addVAT(supplierSales.reduce((sum, s) => sum + ((s.cost_price || 0) * (s.quantity || 1)), 0));
     const directProfit = totalSales - totalCost;
 
     const supplierPurchases = purchases?.filter((p) => p.supplier_id === supplier.id || p.supplier_name === supplier.name) || [];
-    const purchaseVolume = supplierPurchases.reduce((sum, p) => sum + (p.total_amount || 0), 0);
+    const purchaseVolume = addVAT(supplierPurchases.reduce((sum, p) => sum + (p.total_amount || 0), 0));
 
     const supplierAgreements = agreements?.filter((a) => a.supplier_id === supplier.id) || [];
     let totalBonus = 0;
