@@ -184,6 +184,7 @@ export type Database = {
       }
       sales_records: {
         Row: {
+          brand: string | null
           category: string | null
           cost_price: number | null
           created_at: string
@@ -202,6 +203,7 @@ export type Database = {
           upload_batch: string | null
         }
         Insert: {
+          brand?: string | null
           category?: string | null
           cost_price?: number | null
           created_at?: string
@@ -220,6 +222,7 @@ export type Database = {
           upload_batch?: string | null
         }
         Update: {
+          brand?: string | null
           category?: string | null
           cost_price?: number | null
           created_at?: string

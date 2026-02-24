@@ -1,11 +1,19 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+
+type SortField = "name" | "purchaseVolume" | "totalSales" | "directProfit" | "directMargin" | "totalBonus" | "finalProfit" | "finalMargin";
+type SortDir = "asc" | "desc";
 
 export default function Reports() {
+  const [sortField, setSortField] = useState<SortField>("finalProfit");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
   const { data: suppliers } = useQuery({
     queryKey: ["suppliers"],
     queryFn: async () => {
@@ -46,26 +54,20 @@ export default function Reports() {
     },
   });
 
-  // Calculate profitability per supplier
   const supplierReport = suppliers?.map((supplier) => {
-    // Direct profit from sales
     const supplierSales = sales?.filter((s) => s.supplier_id === supplier.id || s.supplier_name === supplier.name) || [];
     const totalSales = supplierSales.reduce((sum, s) => sum + ((s.sale_price || 0) * (s.quantity || 1)), 0);
     const totalCost = supplierSales.reduce((sum, s) => sum + ((s.cost_price || 0) * (s.quantity || 1)), 0);
     const directProfit = totalSales - totalCost;
 
-    // Purchase volume
     const supplierPurchases = purchases?.filter((p) => p.supplier_id === supplier.id || p.supplier_name === supplier.name) || [];
     const purchaseVolume = supplierPurchases.reduce((sum, p) => sum + (p.total_amount || 0), 0);
 
-    // Calculate bonuses
     const supplierAgreements = agreements?.filter((a) => a.supplier_id === supplier.id) || [];
     let totalBonus = 0;
 
     supplierAgreements.forEach((agreement: any) => {
-      // Skip goods bonuses - only money bonuses count in profit
       if (agreement.bonus_payment_type !== "money") return;
-
       if (agreement.bonus_type === "annual_target" || (agreement.bonus_type === "marketing" && agreement.bonus_tiers?.length > 0)) {
         const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => b.target_value - a.target_value);
         for (const tier of sortedTiers) {
@@ -81,12 +83,11 @@ export default function Reports() {
       }
     });
 
-    // Transaction bonuses
     const supplierTransactions = transactionBonuses?.filter((t) => t.supplier_id === supplier.id) || [];
     const transBonus = supplierTransactions.reduce((sum, t) => sum + (t.bonus_value || 0), 0);
     totalBonus += transBonus;
 
-    const weLoveProfit = directProfit + totalBonus;
+    const finalProfit = directProfit + totalBonus;
 
     return {
       id: supplier.id,
@@ -95,25 +96,49 @@ export default function Reports() {
       totalSales,
       directProfit,
       totalBonus,
-      weLoveProfit,
-      directMargin: totalSales > 0 ? ((directProfit / totalSales) * 100).toFixed(1) : "0",
-      weLoveMargin: totalSales > 0 ? ((weLoveProfit / totalSales) * 100).toFixed(1) : "0",
+      finalProfit,
+      directMargin: totalSales > 0 ? (directProfit / totalSales) * 100 : 0,
+      finalMargin: totalSales > 0 ? (finalProfit / totalSales) * 100 : 0,
     };
   }) || [];
 
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDir("desc");
+    }
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3 h-3 inline mr-1 opacity-40" />;
+    return sortDir === "asc" ? <ArrowUp className="w-3 h-3 inline mr-1" /> : <ArrowDown className="w-3 h-3 inline mr-1" />;
+  };
+
+  const sortedReport = useMemo(() => {
+    return [...supplierReport].sort((a, b) => {
+      const aVal = a[sortField];
+      const bVal = b[sortField];
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return sortDir === "asc" ? aVal.localeCompare(bVal, "he") : bVal.localeCompare(aVal, "he");
+      }
+      return sortDir === "asc" ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+    });
+  }, [supplierReport, sortField, sortDir]);
+
   const chartData = supplierReport
     .filter((s) => s.totalSales > 0 || s.purchaseVolume > 0)
-    .sort((a, b) => b.weLoveProfit - a.weLoveProfit);
+    .sort((a, b) => b.finalProfit - a.finalProfit);
 
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">דוחות רווחיות</h1>
 
-      {/* Profitability chart */}
       {chartData.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>רווחיות לפי ספק - ישיר מול וילוב</CardTitle>
+            <CardTitle>רווחיות לפי ספק - ישיר מול סופי</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={350}>
@@ -124,14 +149,13 @@ export default function Reports() {
                 <Tooltip formatter={(value: number) => `₪${value.toLocaleString()}`} />
                 <Legend />
                 <Bar dataKey="directProfit" name="רווח ישיר" fill="hsl(217, 71%, 45%)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="weLoveProfit" name="רווח וילוב" fill="hsl(142, 71%, 40%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="finalProfit" name="רווח סופי" fill="hsl(142, 71%, 40%)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       )}
 
-      {/* Detailed table */}
       <Card>
         <CardHeader>
           <CardTitle>טבלת רווחיות מפורטת</CardTitle>
@@ -140,30 +164,30 @@ export default function Reports() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ספק</TableHead>
-                <TableHead>מחזור רכישות</TableHead>
-                <TableHead>מחזור מכירות</TableHead>
-                <TableHead>רווח ישיר</TableHead>
-                <TableHead>% ישיר</TableHead>
-                <TableHead>סה"כ בונוסים</TableHead>
-                <TableHead>רווח וילוב</TableHead>
-                <TableHead>% וילוב</TableHead>
+                <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("name")}><SortIcon field="name" />ספק</TableHead>
+                <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("purchaseVolume")}><SortIcon field="purchaseVolume" />מחזור רכישות</TableHead>
+                <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("totalSales")}><SortIcon field="totalSales" />מחזור מכירות</TableHead>
+                <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("directProfit")}><SortIcon field="directProfit" />רווח ישיר</TableHead>
+                <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("directMargin")}><SortIcon field="directMargin" />% ישיר</TableHead>
+                <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("totalBonus")}><SortIcon field="totalBonus" />סה"כ בונוסים</TableHead>
+                <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("finalProfit")}><SortIcon field="finalProfit" />רווח סופי</TableHead>
+                <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("finalMargin")}><SortIcon field="finalMargin" />% סופי</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {supplierReport.length === 0 ? (
+              {sortedReport.length === 0 ? (
                 <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">אין נתונים. העלה נתוני רכישות ומכירות.</TableCell></TableRow>
               ) : (
-                supplierReport.map((s) => (
+                sortedReport.map((s) => (
                   <TableRow key={s.name}>
                     <TableCell className="font-medium"><Link to={`/suppliers/${s.id}`} className="text-primary hover:underline">{s.name}</Link></TableCell>
                     <TableCell>₪{s.purchaseVolume.toLocaleString()}</TableCell>
                     <TableCell>₪{s.totalSales.toLocaleString()}</TableCell>
                     <TableCell className={s.directProfit >= 0 ? "text-success" : "text-destructive"}>₪{s.directProfit.toLocaleString()}</TableCell>
-                    <TableCell>{s.directMargin}%</TableCell>
+                    <TableCell>{s.directMargin.toFixed(1)}%</TableCell>
                     <TableCell className="text-primary font-medium">₪{s.totalBonus.toLocaleString()}</TableCell>
-                    <TableCell className={s.weLoveProfit >= 0 ? "text-success font-bold" : "text-destructive font-bold"}>₪{s.weLoveProfit.toLocaleString()}</TableCell>
-                    <TableCell className="font-medium">{s.weLoveMargin}%</TableCell>
+                    <TableCell className={s.finalProfit >= 0 ? "text-success font-bold" : "text-destructive font-bold"}>₪{s.finalProfit.toLocaleString()}</TableCell>
+                    <TableCell className="font-medium">{s.finalMargin.toFixed(1)}%</TableCell>
                   </TableRow>
                 ))
               )}
