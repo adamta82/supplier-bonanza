@@ -196,6 +196,7 @@ export default function UploadPage() {
           upload_batch: batch,
           order_number: so || null,
           customer_po: customerPo || null,
+          brand: (row["מותג"] || row["brand"] || "")?.toString().trim() || null,
         };
       });
 

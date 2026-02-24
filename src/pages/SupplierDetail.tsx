@@ -11,11 +11,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { ArrowRight, TrendingUp, ShoppingCart, Award, Target, Pencil, CheckCircle, XCircle, Clock, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
+
+const VAT_RATE = 0.18;
+
 const bonusTypeLabels: Record<string, string> = {
   annual_target: "יעדים",
   marketing: "שיווק",
@@ -30,6 +34,8 @@ export default function SupplierDetail() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
+  const [brandDialogOpen, setBrandDialogOpen] = useState(false);
+  const [vatIncluded, setVatIncluded] = useState(true); // sales include VAT by default
   const [editForm, setEditForm] = useState({
     name: "", supplier_number: "", payment_terms: "", shotef: "", obligo: "", notes: "", annual_bonus_status: "pending", reconciliation_date: "",
   });
@@ -48,6 +54,7 @@ export default function SupplierDetail() {
   const [expandedSO, setExpandedSO] = useState<string | null>(null);
   const [purchaseSearch, setPurchaseSearch] = useState("");
   const [salesSearch, setSalesSearch] = useState("");
+  const [disabledBrands, setDisabledBrands] = useState<Set<string>>(new Set());
 
   const dateRange = useMemo(() => {
     const now = new Date();
@@ -197,20 +204,65 @@ export default function SupplierDetail() {
   const filteredSales = useMemo(() => filterByDate(sales || [], "sale_date"), [sales, dateRange]);
   const filteredBonuses = useMemo(() => filterByDate(bonuses || [], "transaction_date"), [bonuses, dateRange]);
 
+  // VAT adjustment helpers
+  // Purchases are ex-VAT, sales include VAT
+  // When vatIncluded=true: show as-is (sales with VAT)
+  // When vatIncluded=false: remove VAT from sales
+  const adjustSalePrice = (price: number) => vatIncluded ? price : price / (1 + VAT_RATE);
+  const adjustProfit = (salePrice: number, costPrice: number, qty: number) => {
+    const adjSale = adjustSalePrice(salePrice);
+    return (adjSale - costPrice) * qty;
+  };
+
   const totalPurchases = filteredPurchases.reduce((s, r) => s + (r.total_amount || 0), 0);
-  const totalSales = filteredSales.reduce((s, r) => s + (r.sale_price || 0) * (r.quantity || 0), 0);
-  const totalDirectProfit = filteredSales.reduce((s, r) => s + (r.profit_direct || 0), 0);
+  const totalSales = filteredSales.reduce((s, r) => s + adjustSalePrice(r.sale_price || 0) * (r.quantity || 0), 0);
+  const totalDirectProfit = filteredSales.reduce((s, r) => s + adjustProfit(r.sale_price || 0, r.cost_price || 0, r.quantity || 1), 0);
   const totalTransactionBonus = filteredBonuses.reduce((s, r) => s + (r.bonus_value || 0), 0);
+
+  // Brand breakdown
+  const brandData = useMemo(() => {
+    const map: Record<string, { sales: number; cost: number; profit: number }> = {};
+    filteredSales.forEach((r: any) => {
+      const brand = r.brand || "ללא מותג";
+      if (!map[brand]) map[brand] = { sales: 0, cost: 0, profit: 0 };
+      const saleTotal = adjustSalePrice(r.sale_price || 0) * (r.quantity || 1);
+      const costTotal = (r.cost_price || 0) * (r.quantity || 1);
+      map[brand].sales += saleTotal;
+      map[brand].cost += costTotal;
+      map[brand].profit += saleTotal - costTotal;
+    });
+    return Object.entries(map).map(([brand, data]) => ({
+      brand,
+      ...data,
+      margin: data.sales > 0 ? (data.profit / data.sales) * 100 : 0,
+    })).sort((a, b) => b.profit - a.profit);
+  }, [filteredSales, vatIncluded]);
+
+  // Filtered brand profit (based on toggles)
+  const filteredBrandProfit = useMemo(() => {
+    const active = brandData.filter(b => !disabledBrands.has(b.brand));
+    const totalProfit = active.reduce((s, b) => s + b.profit, 0);
+    const totalSalesActive = active.reduce((s, b) => s + b.sales, 0);
+    const margin = totalSalesActive > 0 ? (totalProfit / totalSalesActive) * 100 : 0;
+    return { totalProfit, margin };
+  }, [brandData, disabledBrands]);
+
+  const toggleBrand = (brand: string) => {
+    setDisabledBrands(prev => {
+      const next = new Set(prev);
+      if (next.has(brand)) next.delete(brand);
+      else next.add(brand);
+      return next;
+    });
+  };
 
   // Calculate bonus value for an agreement
   const calcAgreementBonusValue = (agreement: any) => {
-    // For transaction type - sum bonus_value from linked transaction_bonuses
     if (agreement.bonus_type === "transaction") {
       const linkedBonuses = (bonuses || []).filter((b: any) => b.agreement_id === agreement.id);
       return linkedBonuses.reduce((s: number, b: any) => s + (b.bonus_value || 0), 0);
     }
 
-    // For target-based agreements - calculate based on purchase volume
     const agrPurchases = (purchases || []).filter((p: any) => {
       if (!p.order_date) return false;
       if (agreement.period_start && p.order_date < agreement.period_start) return false;
@@ -219,21 +271,16 @@ export default function SupplierDetail() {
     });
     let volume = agrPurchases.reduce((s: number, p: any) => s + (p.total_amount || 0), 0);
 
-    // Add transaction bonuses that count toward target
     const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
     volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
 
-    // Fixed percentage
     if (agreement.fixed_percentage) {
       return volume * (agreement.fixed_percentage / 100);
     }
-
-    // Fixed amount
     if (agreement.fixed_amount) {
       return agreement.fixed_amount;
     }
 
-    // Tiered
     const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
     let achievedTier = null;
     for (let i = sortedTiers.length - 1; i >= 0; i--) {
@@ -248,7 +295,6 @@ export default function SupplierDetail() {
     return 0;
   };
 
-  // Calculate ALL agreement bonuses for display
   const totalAllBonus = useMemo(() => {
     if (!agreements) return 0;
     return agreements.reduce((sum: number, a: any) => {
@@ -257,7 +303,6 @@ export default function SupplierDetail() {
     }, 0);
   }, [agreements, purchases, bonuses]);
 
-  // Calculate only money-type agreement bonuses for wilove profit
   const totalMoneyBonus = useMemo(() => {
     if (!agreements) return 0;
     return agreements
@@ -269,29 +314,29 @@ export default function SupplierDetail() {
   }, [agreements, purchases, bonuses]);
 
   const totalBonusValue = totalAllBonus;
-  const weLoveProfit = totalDirectProfit + totalMoneyBonus;
+  const finalProfit = totalDirectProfit + totalMoneyBonus;
 
   const monthlyData = useMemo(() => {
-    const map: Record<string, { purchases: number; sales: number; profit: number; weLove: number }> = {};
+    const map: Record<string, { purchases: number; sales: number; profit: number; final: number }> = {};
     filteredPurchases.forEach((r) => {
       const m = r.order_date?.slice(0, 7) || "unknown";
-      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, weLove: 0 };
+      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, final: 0 };
       map[m].purchases += r.total_amount || 0;
     });
     filteredSales.forEach((r) => {
       const m = r.sale_date?.slice(0, 7) || "unknown";
-      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, weLove: 0 };
-      map[m].sales += (r.sale_price || 0) * (r.quantity || 0);
-      map[m].profit += r.profit_direct || 0;
+      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, final: 0 };
+      map[m].sales += adjustSalePrice(r.sale_price || 0) * (r.quantity || 0);
+      map[m].profit += adjustProfit(r.sale_price || 0, r.cost_price || 0, r.quantity || 1);
     });
     filteredBonuses.forEach((r) => {
       const m = r.transaction_date?.slice(0, 7) || "unknown";
-      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, weLove: 0 };
-      map[m].weLove += r.bonus_value || 0;
+      if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, final: 0 };
+      map[m].final += r.bonus_value || 0;
     });
-    Object.values(map).forEach((v) => { v.weLove += v.profit; });
+    Object.values(map).forEach((v) => { v.final += v.profit; });
     return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([month, v]) => ({ month, ...v }));
-  }, [filteredPurchases, filteredSales, filteredBonuses]);
+  }, [filteredPurchases, filteredSales, filteredBonuses, vatIncluded]);
 
   const months = useMemo(() => {
     const now = new Date();
@@ -307,7 +352,6 @@ export default function SupplierDetail() {
     return [`${y}-Q1`, `${y}-Q2`, `${y}-Q3`, `${y}-Q4`, `${y - 1}-Q1`, `${y - 1}-Q2`, `${y - 1}-Q3`, `${y - 1}-Q4`];
   }, []);
 
-  // Get agreement status
   const getAgreementStatus = (agreement: any) => {
     const today = new Date().toISOString().slice(0, 10);
     const hasReceivedBonus = (bonuses || []).some((b: any) => b.agreement_id === agreement.id);
@@ -367,6 +411,17 @@ export default function SupplierDetail() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 border rounded-lg px-3 py-1.5">
+            <span className="text-xs text-muted-foreground">מע״מ:</span>
+            <button
+              className={`text-xs px-2 py-0.5 rounded ${vatIncluded ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+              onClick={() => setVatIncluded(true)}
+            >כולל</button>
+            <button
+              className={`text-xs px-2 py-0.5 rounded ${!vatIncluded ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+              onClick={() => setVatIncluded(false)}
+            >לא כולל</button>
+          </div>
           <Select value={filterMode} onValueChange={(v) => setFilterMode(v as FilterMode)}>
             <SelectTrigger className="w-[120px] h-8 text-xs">
               <SelectValue />
@@ -389,9 +444,7 @@ export default function SupplierDetail() {
               </SelectTrigger>
               <SelectContent>
                 {months.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {m}
-                  </SelectItem>
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -403,9 +456,7 @@ export default function SupplierDetail() {
               </SelectTrigger>
               <SelectContent>
                 {quarters.map((q) => (
-                  <SelectItem key={q} value={q}>
-                    {q}
-                  </SelectItem>
+                  <SelectItem key={q} value={q}>{q}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -434,18 +485,18 @@ export default function SupplierDetail() {
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
             <ShoppingCart className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-            <div className="text-xs text-muted-foreground">רכישות</div>
+            <div className="text-xs text-muted-foreground">רכישות {!vatIncluded && "(לפני מע״מ)"}</div>
             <div className="text-lg font-bold">₪{totalPurchases.toLocaleString()}</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
             <TrendingUp className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-            <div className="text-xs text-muted-foreground">מכירות</div>
+            <div className="text-xs text-muted-foreground">מכירות {vatIncluded ? "(כולל מע״מ)" : "(לפני מע״מ)"}</div>
             <div className="text-lg font-bold">₪{totalSales.toLocaleString()}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => { setDisabledBrands(new Set()); setBrandDialogOpen(true); }}>
           <CardContent className="pt-4 pb-4 text-center">
             <Target className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">רווח ישיר</div>
@@ -463,14 +514,49 @@ export default function SupplierDetail() {
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="pt-4 pb-4 text-center">
             <TrendingUp className="w-5 h-5 mx-auto mb-1 text-primary" />
-            <div className="text-xs text-muted-foreground">רווח וילוב</div>
-            <div className="text-lg font-bold text-primary">₪{weLoveProfit.toLocaleString()}</div>
-            <div className="text-xs text-primary">{totalSales > 0 ? `${((weLoveProfit / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
+            <div className="text-xs text-muted-foreground">רווח סופי</div>
+            <div className="text-lg font-bold text-primary">₪{finalProfit.toLocaleString()}</div>
+            <div className="text-xs text-primary">{totalSales > 0 ? `${((finalProfit / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Agreements section - prominent at top */}
+      {/* Brand Profit Dialog */}
+      <Dialog open={brandDialogOpen} onOpenChange={setBrandDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>רווח ישיר לפי מותג</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-center p-4 bg-muted/50 rounded-lg">
+              <div className="text-2xl font-bold">₪{filteredBrandProfit.totalProfit.toLocaleString()}</div>
+              <div className="text-sm text-muted-foreground">{filteredBrandProfit.margin.toFixed(1)}% רווח</div>
+            </div>
+            <div className="space-y-2">
+              {brandData.map((b) => (
+                <div key={b.brand} className="flex items-center justify-between p-3 rounded-lg border">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={!disabledBrands.has(b.brand)}
+                      onCheckedChange={() => toggleBrand(b.brand)}
+                    />
+                    <span className="font-medium text-sm">{b.brand}</span>
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-semibold">₪{b.profit.toLocaleString()}</div>
+                    <div className="text-xs text-muted-foreground">{b.margin.toFixed(1)}%</div>
+                  </div>
+                </div>
+              ))}
+              {brandData.length === 0 && (
+                <p className="text-center text-muted-foreground py-4">אין נתוני מותגים</p>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Agreements section */}
       <div className="space-y-3">
         <h2 className="text-xl font-bold">הסכמי בונוס</h2>
         {agreements && agreements.length > 0 ? (
@@ -480,7 +566,6 @@ export default function SupplierDetail() {
             const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
             const highestTier = sortedTiers[sortedTiers.length - 1];
 
-            // Calculate volume for progress
             const agrPurchases = (purchases || []).filter((p: any) => {
               if (!p.order_date) return false;
               if (agreement.period_start && p.order_date < agreement.period_start) return false;
@@ -577,14 +662,14 @@ export default function SupplierDetail() {
                 <Bar dataKey="purchases" name="מחזור קניות" fill="hsl(217, 71%, 45%)" radius={[2, 2, 0, 0]} />
                 <Bar dataKey="sales" name="מחזור מכירות" fill="hsl(142, 71%, 45%)" radius={[2, 2, 0, 0]} />
                 <Bar dataKey="profit" name="רווח ישיר" fill="hsl(45, 93%, 47%)" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="weLove" name="רווח וילוב" fill="hsl(280, 60%, 50%)" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="final" name="רווח סופי" fill="hsl(280, 60%, 50%)" radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       )}
 
-      {/* Tabs - without agreements (moved to top) */}
+      {/* Tabs */}
       <Tabs defaultValue="purchases" dir="rtl">
         <TabsList>
           <TabsTrigger value="purchases">רכשים ({new Set(filteredPurchases.map((r: any) => r.order_number || r.id)).size})</TabsTrigger>
@@ -732,11 +817,13 @@ export default function SupplierDetail() {
                     const soMap = new Map<string, { date: string; customer: string; customerPo: string; items: typeof filteredSales; totalSale: number; totalProfit: number }>();
                     filteredSales.forEach((r: any) => {
                       const so = r.order_number || `_single_${r.id}`;
+                      const saleAmt = adjustSalePrice(r.sale_price || 0) * (r.quantity || 1);
+                      const profitAmt = adjustProfit(r.sale_price || 0, r.cost_price || 0, r.quantity || 1);
                       const existing = soMap.get(so);
                       if (existing) {
                         existing.items.push(r);
-                        existing.totalSale += (r.sale_price || 0) * (r.quantity || 1);
-                        existing.totalProfit += r.profit_direct || 0;
+                        existing.totalSale += saleAmt;
+                        existing.totalProfit += profitAmt;
                         if (!existing.customerPo && r.customer_po) existing.customerPo = r.customer_po;
                       } else {
                         soMap.set(so, {
@@ -744,8 +831,8 @@ export default function SupplierDetail() {
                           customer: r.customer_name || "-",
                           customerPo: r.customer_po || "",
                           items: [r],
-                          totalSale: (r.sale_price || 0) * (r.quantity || 1),
-                          totalProfit: r.profit_direct || 0,
+                          totalSale: saleAmt,
+                          totalProfit: profitAmt,
                         });
                       }
                     });
@@ -798,6 +885,7 @@ export default function SupplierDetail() {
                                 <TableHeader>
                                   <TableRow>
                                     <TableHead>פריט</TableHead>
+                                    <TableHead>מותג</TableHead>
                                     <TableHead>כמות</TableHead>
                                     <TableHead>מחיר מכירה</TableHead>
                                     <TableHead>עלות</TableHead>
@@ -808,10 +896,11 @@ export default function SupplierDetail() {
                                   {data.items.map((item: any) => (
                                     <TableRow key={item.id}>
                                       <TableCell>{item.item_description || item.item_code || "-"}</TableCell>
+                                      <TableCell>{item.brand || "-"}</TableCell>
                                       <TableCell>{item.quantity || "-"}</TableCell>
-                                      <TableCell>₪{(item.sale_price || 0).toLocaleString()}</TableCell>
+                                      <TableCell>₪{adjustSalePrice(item.sale_price || 0).toLocaleString()}</TableCell>
                                       <TableCell>₪{(item.cost_price || 0).toLocaleString()}</TableCell>
-                                      <TableCell>₪{(item.profit_direct || 0).toLocaleString()}</TableCell>
+                                      <TableCell>₪{adjustProfit(item.sale_price || 0, item.cost_price || 0, item.quantity || 1).toLocaleString()}</TableCell>
                                     </TableRow>
                                   ))}
                                 </TableBody>
