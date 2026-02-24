@@ -6,6 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TrendingUp, ShoppingCart, Award, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 
+const VAT_RATE = 0.18;
+const addVAT = (amount: number) => amount * (1 + VAT_RATE);
+
 type SortOption = "name-asc" | "name-desc" | "amount-desc" | "amount-asc";
 
 export default function Dashboard() {
@@ -45,14 +48,14 @@ export default function Dashboard() {
     },
   });
 
-  const totalPurchases = purchases?.reduce((sum, p) => sum + (p.total_amount || 0), 0) || 0;
+  const totalPurchases = addVAT(purchases?.reduce((sum, p) => sum + (p.total_amount || 0), 0) || 0);
   const totalTransactionBonus = transactionBonuses?.reduce((sum, t) => sum + (t.bonus_value || 0), 0) || 0;
   const activeAgreements = agreements?.length || 0;
 
   // Purchases by supplier for supplier cards
   const purchasesBySupplier = purchases?.reduce((acc, p) => {
     const name = p.supplier_name || "לא ידוע";
-    acc[name] = (acc[name] || 0) + (p.total_amount || 0);
+    acc[name] = (acc[name] || 0) + addVAT(p.total_amount || 0);
     return acc;
   }, {} as Record<string, number>);
 

@@ -35,7 +35,7 @@ export default function SupplierDetail() {
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [brandDialogOpen, setBrandDialogOpen] = useState(false);
-  const [vatIncluded, setVatIncluded] = useState(true); // sales include VAT by default
+  // All source data is ex-VAT; always display with VAT
   const [editForm, setEditForm] = useState({
     name: "", supplier_number: "", payment_terms: "", shotef: "", obligo: "", notes: "", annual_bonus_status: "pending", reconciliation_date: "",
   });
@@ -204,19 +204,12 @@ export default function SupplierDetail() {
   const filteredSales = useMemo(() => filterByDate(sales || [], "sale_date"), [sales, dateRange]);
   const filteredBonuses = useMemo(() => filterByDate(bonuses || [], "transaction_date"), [bonuses, dateRange]);
 
-  // VAT adjustment helpers
-  // Purchases are ex-VAT, sales include VAT
-  // When vatIncluded=true: show as-is (sales with VAT)
-  // When vatIncluded=false: remove VAT from sales
-  const adjustSalePrice = (price: number) => vatIncluded ? price : price / (1 + VAT_RATE);
-  const adjustProfit = (salePrice: number, costPrice: number, qty: number) => {
-    const adjSale = adjustSalePrice(salePrice);
-    return (adjSale - costPrice) * qty;
-  };
+  // All data is ex-VAT, always add VAT for display
+  const addVAT = (amount: number) => amount * (1 + VAT_RATE);
 
-  const totalPurchases = filteredPurchases.reduce((s, r) => s + (r.total_amount || 0), 0);
-  const totalSales = filteredSales.reduce((s, r) => s + adjustSalePrice(r.sale_price || 0) * (r.quantity || 0), 0);
-  const totalDirectProfit = filteredSales.reduce((s, r) => s + adjustProfit(r.sale_price || 0, r.cost_price || 0, r.quantity || 1), 0);
+  const totalPurchases = addVAT(filteredPurchases.reduce((s, r) => s + (r.total_amount || 0), 0));
+  const totalSales = addVAT(filteredSales.reduce((s, r) => s + (r.sale_price || 0) * (r.quantity || 0), 0));
+  const totalDirectProfit = addVAT(filteredSales.reduce((s, r) => s + ((r.sale_price || 0) - (r.cost_price || 0)) * (r.quantity || 1), 0));
   const totalTransactionBonus = filteredBonuses.reduce((s, r) => s + (r.bonus_value || 0), 0);
 
   // Brand breakdown
@@ -225,8 +218,8 @@ export default function SupplierDetail() {
     filteredSales.forEach((r: any) => {
       const brand = r.brand || "ללא מותג";
       if (!map[brand]) map[brand] = { sales: 0, cost: 0, profit: 0 };
-      const saleTotal = adjustSalePrice(r.sale_price || 0) * (r.quantity || 1);
-      const costTotal = (r.cost_price || 0) * (r.quantity || 1);
+      const saleTotal = addVAT((r.sale_price || 0) * (r.quantity || 1));
+      const costTotal = addVAT((r.cost_price || 0) * (r.quantity || 1));
       map[brand].sales += saleTotal;
       map[brand].cost += costTotal;
       map[brand].profit += saleTotal - costTotal;
@@ -236,7 +229,7 @@ export default function SupplierDetail() {
       ...data,
       margin: data.sales > 0 ? (data.profit / data.sales) * 100 : 0,
     })).sort((a, b) => b.profit - a.profit);
-  }, [filteredSales, vatIncluded]);
+  }, [filteredSales]);
 
   // Filtered brand profit (based on toggles)
   const filteredBrandProfit = useMemo(() => {
@@ -321,13 +314,13 @@ export default function SupplierDetail() {
     filteredPurchases.forEach((r) => {
       const m = r.order_date?.slice(0, 7) || "unknown";
       if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, final: 0 };
-      map[m].purchases += r.total_amount || 0;
+      map[m].purchases += addVAT(r.total_amount || 0);
     });
     filteredSales.forEach((r) => {
       const m = r.sale_date?.slice(0, 7) || "unknown";
       if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, final: 0 };
-      map[m].sales += adjustSalePrice(r.sale_price || 0) * (r.quantity || 0);
-      map[m].profit += adjustProfit(r.sale_price || 0, r.cost_price || 0, r.quantity || 1);
+      map[m].sales += addVAT((r.sale_price || 0) * (r.quantity || 0));
+      map[m].profit += addVAT(((r.sale_price || 0) - (r.cost_price || 0)) * (r.quantity || 1));
     });
     filteredBonuses.forEach((r) => {
       const m = r.transaction_date?.slice(0, 7) || "unknown";
@@ -336,7 +329,7 @@ export default function SupplierDetail() {
     });
     Object.values(map).forEach((v) => { v.final += v.profit; });
     return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([month, v]) => ({ month, ...v }));
-  }, [filteredPurchases, filteredSales, filteredBonuses, vatIncluded]);
+  }, [filteredPurchases, filteredSales, filteredBonuses]);
 
   const months = useMemo(() => {
     const now = new Date();
@@ -411,17 +404,6 @@ export default function SupplierDetail() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 border rounded-lg px-3 py-1.5">
-            <span className="text-xs text-muted-foreground">מע״מ:</span>
-            <button
-              className={`text-xs px-2 py-0.5 rounded ${vatIncluded ? "bg-primary text-primary-foreground" : "bg-muted"}`}
-              onClick={() => setVatIncluded(true)}
-            >כולל</button>
-            <button
-              className={`text-xs px-2 py-0.5 rounded ${!vatIncluded ? "bg-primary text-primary-foreground" : "bg-muted"}`}
-              onClick={() => setVatIncluded(false)}
-            >לא כולל</button>
-          </div>
           <Select value={filterMode} onValueChange={(v) => setFilterMode(v as FilterMode)}>
             <SelectTrigger className="w-[120px] h-8 text-xs">
               <SelectValue />
@@ -485,14 +467,14 @@ export default function SupplierDetail() {
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
             <ShoppingCart className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-            <div className="text-xs text-muted-foreground">רכישות {!vatIncluded && "(לפני מע״מ)"}</div>
+            <div className="text-xs text-muted-foreground">רכישות (כולל מע״מ)</div>
             <div className="text-lg font-bold">₪{totalPurchases.toLocaleString()}</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
             <TrendingUp className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-            <div className="text-xs text-muted-foreground">מכירות {vatIncluded ? "(כולל מע״מ)" : "(לפני מע״מ)"}</div>
+            <div className="text-xs text-muted-foreground">מכירות (כולל מע״מ)</div>
             <div className="text-lg font-bold">₪{totalSales.toLocaleString()}</div>
           </CardContent>
         </Card>
@@ -707,9 +689,9 @@ export default function SupplierDetail() {
                       const existing = poMap.get(po);
                       if (existing) {
                         existing.items.push(r);
-                        existing.total += r.total_amount || 0;
+                        existing.total += addVAT(r.total_amount || 0);
                       } else {
-                        poMap.set(po, { date: r.order_date, items: [r], total: r.total_amount || 0 });
+                        poMap.set(po, { date: r.order_date, items: [r], total: addVAT(r.total_amount || 0) });
                       }
                     });
                     let poList = Array.from(poMap.entries()).sort((a, b) =>
@@ -770,8 +752,8 @@ export default function SupplierDetail() {
                                       <TableRow key={item.id}>
                                         <TableCell>{item.item_description || item.item_code || "-"}</TableCell>
                                         <TableCell>{item.quantity || "-"}</TableCell>
-                                        <TableCell>₪{unitPrice.toLocaleString(undefined, { maximumFractionDigits: 2 })}</TableCell>
-                                        <TableCell>₪{(item.total_amount || 0).toLocaleString()}</TableCell>
+                                        <TableCell>₪{addVAT(unitPrice).toLocaleString(undefined, { maximumFractionDigits: 2 })}</TableCell>
+                                        <TableCell>₪{addVAT(item.total_amount || 0).toLocaleString()}</TableCell>
                                       </TableRow>
                                     );
                                   })}
@@ -818,8 +800,8 @@ export default function SupplierDetail() {
                     const soMap = new Map<string, { date: string; customer: string; customerPo: string; items: typeof filteredSales; totalSale: number; totalProfit: number }>();
                     filteredSales.forEach((r: any) => {
                       const so = r.order_number || `_single_${r.id}`;
-                      const saleAmt = adjustSalePrice(r.sale_price || 0) * (r.quantity || 1);
-                      const profitAmt = adjustProfit(r.sale_price || 0, r.cost_price || 0, r.quantity || 1);
+                      const saleAmt = addVAT((r.sale_price || 0) * (r.quantity || 1));
+                      const profitAmt = addVAT(((r.sale_price || 0) - (r.cost_price || 0)) * (r.quantity || 1));
                       const existing = soMap.get(so);
                       if (existing) {
                         existing.items.push(r);
@@ -899,9 +881,9 @@ export default function SupplierDetail() {
                                       <TableCell>{item.item_description || item.item_code || "-"}</TableCell>
                                       <TableCell>{item.brand || "-"}</TableCell>
                                       <TableCell>{item.quantity || "-"}</TableCell>
-                                      <TableCell>₪{adjustSalePrice(item.sale_price || 0).toLocaleString()}</TableCell>
-                                      <TableCell>₪{(item.cost_price || 0).toLocaleString()}</TableCell>
-                                      <TableCell>₪{adjustProfit(item.sale_price || 0, item.cost_price || 0, item.quantity || 1).toLocaleString()}</TableCell>
+                                      <TableCell>₪{addVAT(item.sale_price || 0).toLocaleString()}</TableCell>
+                                      <TableCell>₪{addVAT(item.cost_price || 0).toLocaleString()}</TableCell>
+                                      <TableCell>₪{addVAT(((item.sale_price || 0) - (item.cost_price || 0)) * (item.quantity || 1)).toLocaleString()}</TableCell>
                                     </TableRow>
                                   ))}
                                 </TableBody>

@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, Clock, TrendingUp } from "lucide-react";
 
+const VAT_RATE = 0.18;
+const addVAT = (amount: number) => amount * (1 + VAT_RATE);
+
 export default function Alerts() {
   const { data: suppliers } = useQuery({
     queryKey: ["suppliers"],
@@ -50,7 +53,7 @@ export default function Alerts() {
       const supplierPurchases = purchases?.filter(
         (p) => p.supplier_id === agreement.supplier_id || p.supplier_name === supplierName
       ) || [];
-      let currentVolume = supplierPurchases.reduce((sum, p) => sum + (p.total_amount || 0), 0);
+      let currentVolume = addVAT(supplierPurchases.reduce((sum, p) => sum + (p.total_amount || 0), 0));
 
       // Add transaction bonuses that count toward target
       const supplierTransactions = transactionBonuses?.filter(
