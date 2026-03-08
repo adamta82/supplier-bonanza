@@ -396,14 +396,30 @@ export default function SupplierDetail() {
             </p>
             <div className="flex items-center gap-4 mt-2">
               <div className="flex items-center gap-1.5">
-                {supplier.annual_bonus_status === "received" ? (
-                  <><CheckCircle className="w-4 h-4 text-primary" /><span className="text-xs font-medium text-primary">בונוס 2025: התקבל</span></>
-                ) : supplier.annual_bonus_status === "none" ? (
-                  <><XCircle className="w-4 h-4 text-muted-foreground" /><span className="text-xs text-muted-foreground">בונוס 2025: אין</span></>
-                ) : (
-                  <><Clock className="w-4 h-4 text-destructive" /><span className="text-xs font-medium text-destructive">בונוס 2025: ממתין</span></>
-                )}
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity">
+                    {supplier.annual_bonus_status === "received" ? (
+                      <><CheckCircle className="w-4 h-4 text-primary" /><span className="text-xs font-medium text-primary">בונוס 2025: התקבל</span></>
+                    ) : supplier.annual_bonus_status === "none" ? (
+                      <><XCircle className="w-4 h-4 text-muted-foreground" /><span className="text-xs text-muted-foreground">בונוס 2025: אין</span></>
+                    ) : (
+                      <><Clock className="w-4 h-4 text-destructive" /><span className="text-xs font-medium text-destructive">בונוס 2025: ממתין</span></>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => updateBonusStatusMutation.mutate("pending")}>
+                    <Clock className="w-3.5 h-3.5 ml-2 text-destructive" />ממתין
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => updateBonusStatusMutation.mutate("received")}>
+                    <CheckCircle className="w-3.5 h-3.5 ml-2 text-primary" />התקבל
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => updateBonusStatusMutation.mutate("none")}>
+                    <XCircle className="w-3.5 h-3.5 ml-2 text-muted-foreground" />אין
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <div className="flex items-center gap-1.5">
                 <FileText className="w-4 h-4 text-muted-foreground" />
                 {supplier.reconciliation_date ? (
