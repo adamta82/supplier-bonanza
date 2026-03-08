@@ -583,11 +583,11 @@ export default function SupplierDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Agreements section */}
+      {/* Agreements section - exclude transaction bonuses */}
       <div className="space-y-3">
         <h2 className="text-xl font-bold">הסכמי בונוס</h2>
-        {agreements && agreements.length > 0 ? (
-          agreements.map((agreement: any) => {
+        {agreements && agreements.filter((a: any) => a.bonus_type !== "transaction").length > 0 ? (
+          agreements.filter((a: any) => a.bonus_type !== "transaction").map((agreement: any) => {
             const status = getAgreementStatus(agreement);
             const bonusValue = calcAgreementBonusValue(agreement);
             const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
