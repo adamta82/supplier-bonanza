@@ -211,28 +211,35 @@ export default function Agreements() {
                 </div>
               </div>
 
-              {/* Period */}
-              <div className="grid grid-cols-3 gap-3">
+              {/* Period - not for transaction bonus */}
+              {form.bonus_type === "transaction" ? (
                 <div>
-                  <Label>סוג תקופה</Label>
-                  <Select value={form.period_type} onValueChange={(v) => setForm({ ...form, period_type: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(periodLabels).map(([k, v]) => (
-                        <SelectItem key={k} value={k}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>מתאריך</Label>
+                  <Label>תאריך הבונוס</Label>
                   <Input type="date" value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} />
                 </div>
-                <div>
-                  <Label>עד תאריך</Label>
-                  <Input type="date" value={form.period_end} onChange={(e) => setForm({ ...form, period_end: e.target.value })} />
+              ) : (
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label>סוג תקופה</Label>
+                    <Select value={form.period_type} onValueChange={(v) => setForm({ ...form, period_type: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(periodLabels).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>מתאריך</Label>
+                    <Input type="date" value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>עד תאריך</Label>
+                    <Input type="date" value={form.period_end} onChange={(e) => setForm({ ...form, period_end: e.target.value })} />
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* VAT & target type */}
               {(form.bonus_type === "annual_target" || form.bonus_type === "marketing") && (

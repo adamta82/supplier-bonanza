@@ -249,10 +249,25 @@ export default function Suppliers() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        {getAnnualBonusIcon(s.annual_bonus_status)}
-                        <span className="text-xs">{getAnnualBonusLabel(s.annual_bonus_status)}</span>
-                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity">
+                            {getAnnualBonusIcon(s.annual_bonus_status)}
+                            <span className="text-xs">{getAnnualBonusLabel(s.annual_bonus_status)}</span>
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem onClick={() => updateBonusStatus(s.id, "pending")}>
+                            <Clock className="w-3.5 h-3.5 ml-2 text-destructive" />ממתין
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateBonusStatus(s.id, "received")}>
+                            <CheckCircle className="w-3.5 h-3.5 ml-2 text-primary" />התקבל
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateBonusStatus(s.id, "none")}>
+                            <XCircle className="w-3.5 h-3.5 ml-2 text-muted-foreground" />אין
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                     <TableCell>
                       {s.reconciliation_date ? (
