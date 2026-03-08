@@ -1,0 +1,1 @@
+ALTER TABLE public.bonus_agreements ADD COLUMN deal_amount numeric DEFAULT NULL;
