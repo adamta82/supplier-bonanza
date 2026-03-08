@@ -613,6 +613,11 @@ export default function SupplierDetail() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-primary">₪{bonusValue.toLocaleString()}</span>
                       <Badge variant={status.variant}>{status.label}</Badge>
+                      <Link to="/agreements">
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                      </Link>
                     </div>
                   </div>
 
