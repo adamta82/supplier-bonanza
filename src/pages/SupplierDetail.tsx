@@ -1037,7 +1037,7 @@ export default function SupplierDetail() {
             </CardContent>
           </Card>
         </TabsContent>
-
+        <TabsContent value="bonuses">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">עסקאות בונוס</CardTitle>
