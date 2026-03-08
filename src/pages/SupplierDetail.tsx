@@ -358,17 +358,34 @@ export default function SupplierDetail() {
   }, []);
 
   const getAgreementStatus = (agreement: any) => {
+    // Manual override
+    if (agreement.bonus_status === "received") {
+      return { label: "התקבל", variant: "default" as const };
+    }
+    if (agreement.bonus_status === "needs_collection") {
+      return { label: "צריך לקבל", variant: "destructive" as const };
+    }
+    // Auto logic
     const today = new Date().toISOString().slice(0, 10);
-    const hasReceivedBonus = (bonuses || []).some((b: any) => b.agreement_id === agreement.id);
+    const isTransaction = agreement.bonus_type === "transaction";
     const periodEnded = agreement.period_end && agreement.period_end < today;
 
-    if (hasReceivedBonus) {
-      return { label: "התקבל", variant: "default" as const };
-    } else if (periodEnded) {
+    if (periodEnded || isTransaction) {
       return { label: "צריך לקבל", variant: "destructive" as const };
     }
     return { label: "פעיל", variant: "secondary" as const };
   };
+
+  const updateAgreementStatusMutation = useMutation({
+    mutationFn: async ({ agreementId, status }: { agreementId: string; status: string }) => {
+      const { error } = await supabase.from("bonus_agreements").update({ bonus_status: status } as any).eq("id", agreementId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier-agreements", id] });
+      toast.success("סטטוס הסכם עודכן");
+    },
+  });
 
   if (!supplier) return <div className="text-center py-12 text-muted-foreground">טוען...</div>;
 
@@ -612,7 +629,24 @@ export default function SupplierDetail() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-primary">₪{bonusValue.toLocaleString()}</span>
-                      <Badge variant={status.variant}>{status.label}</Badge>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="cursor-pointer">
+                            <Badge variant={status.variant} className="hover:opacity-80 transition-opacity">{status.label}</Badge>
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem onClick={() => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, status: "auto" })}>
+                            <Clock className="w-3.5 h-3.5 ml-2" />אוטומטי
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, status: "needs_collection" })}>
+                            <Target className="w-3.5 h-3.5 ml-2 text-destructive" />צריך לקבל
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, status: "received" })}>
+                            <CheckCircle className="w-3.5 h-3.5 ml-2 text-primary" />התקבל
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <Link to="/agreements">
                         <Button variant="ghost" size="icon" className="h-6 w-6">
                           <Pencil className="w-3 h-3" />

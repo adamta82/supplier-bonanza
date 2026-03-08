@@ -1,0 +1,1 @@
+ALTER TABLE public.bonus_agreements ADD COLUMN bonus_status text DEFAULT 'auto';
