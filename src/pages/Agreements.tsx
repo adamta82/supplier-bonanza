@@ -475,6 +475,7 @@ export default function Agreements() {
                             series_name: a.series_name || "",
                             notes: a.notes || "",
                             bonus_payment_type: a.bonus_payment_type || "goods",
+                            deal_amount: (a as any).deal_amount?.toString() || "",
                           });
                           setTiers(
                             a.bonus_tiers?.length > 0
