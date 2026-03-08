@@ -17,6 +17,7 @@ export type Database = {
       bonus_agreements: {
         Row: {
           bonus_payment_type: string
+          bonus_status: string | null
           bonus_type: string
           category_filter: string | null
           category_mode: string | null
@@ -38,6 +39,7 @@ export type Database = {
         }
         Insert: {
           bonus_payment_type?: string
+          bonus_status?: string | null
           bonus_type: string
           category_filter?: string | null
           category_mode?: string | null
@@ -59,6 +61,7 @@ export type Database = {
         }
         Update: {
           bonus_payment_type?: string
+          bonus_status?: string | null
           bonus_type?: string
           category_filter?: string | null
           category_mode?: string | null
