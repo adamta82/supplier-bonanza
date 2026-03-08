@@ -215,9 +215,15 @@ export default function Agreements() {
 
               {/* Period - not for transaction bonus */}
               {form.bonus_type === "transaction" ? (
-                <div>
-                  <Label>תאריך הבונוס</Label>
-                  <Input type="date" value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>תאריך הבונוס</Label>
+                    <Input type="date" value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} />
+                  </div>
+                  <div>
+                    <Label>סכום העסקה (₪)</Label>
+                    <Input type="number" value={form.deal_amount} onChange={(e) => setForm({ ...form, deal_amount: e.target.value })} placeholder="₪" />
+                  </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-3">
