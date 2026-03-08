@@ -724,7 +724,6 @@ export default function SupplierDetail() {
           <TabsTrigger value="purchases">רכשים ({new Set(filteredPurchases.map((r: any) => r.order_number || r.id)).size})</TabsTrigger>
           <TabsTrigger value="sales">הזמנות לקוח ({filteredSales.length})</TabsTrigger>
           <TabsTrigger value="transaction-bonuses">בונוס עסקה ({agreements?.filter((a: any) => a.bonus_type === "transaction").length || 0})</TabsTrigger>
-          <TabsTrigger value="bonuses">בונוסים ({filteredBonuses.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="purchases">
@@ -1037,49 +1036,8 @@ export default function SupplierDetail() {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="bonuses">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">עסקאות בונוס</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>תאריך</TableHead>
-                    <TableHead>סוג</TableHead>
-                    <TableHead>תיאור</TableHead>
-                    <TableHead>סכום עסקה</TableHead>
-                    <TableHead>ערך בונוס</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredBonuses.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                        אין בונוסים
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredBonuses.map((b: any) => (
-                      <TableRow key={b.id}>
-                        <TableCell>{formatDate(b.transaction_date)}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{bonusTypeLabels[b.bonus_agreements?.bonus_type] || "עסקה"}</Badge>
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate">{b.description || "-"}</TableCell>
-                        <TableCell>₪{(b.total_value || 0).toLocaleString()}</TableCell>
-                        <TableCell className="font-semibold text-primary">
-                          ₪{(b.bonus_value || 0).toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
+
+
       </Tabs>
 
       {/* Edit Supplier Dialog */}
