@@ -95,6 +95,7 @@ export default function Agreements() {
         series_name: form.series_name || null,
         notes: form.notes || null,
         bonus_payment_type: form.bonus_payment_type,
+        deal_amount: form.deal_amount ? parseFloat(form.deal_amount) : null,
         exclusions: exclusions.length > 0 ? JSON.stringify(exclusions) : "[]",
       };
 
