@@ -151,7 +151,7 @@ export default function Agreements() {
       supplier_id: "", bonus_type: "annual_target", period_type: "annual",
       period_start: "", period_end: "", vat_included: false, target_type: "amount",
       fixed_amount: "", fixed_percentage: "",
-      series_name: "", notes: "", bonus_payment_type: "goods",
+      series_name: "", notes: "", bonus_payment_type: "goods", deal_amount: "",
     });
     setTiers([{ target_value: "", bonus_percentage: "" }]);
     setExclusions([]);
