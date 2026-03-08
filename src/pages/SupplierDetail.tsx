@@ -140,6 +140,17 @@ export default function SupplierDetail() {
     onError: () => toast.error("שגיאה בעדכון הספק"),
   });
 
+  const updateBonusStatusMutation = useMutation({
+    mutationFn: async (status: string) => {
+      const { error } = await supabase.from("suppliers").update({ annual_bonus_status: status }).eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier", id] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      toast.success("סטטוס בונוס עודכן");
+    },
+  });
 
   const { data: agreements } = useQuery({
     queryKey: ["supplier-agreements", id],
