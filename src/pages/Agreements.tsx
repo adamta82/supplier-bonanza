@@ -54,6 +54,7 @@ export default function Agreements() {
     series_name: "",
     notes: "",
     bonus_payment_type: "goods",
+    deal_amount: "",
   });
   const [tiers, setTiers] = useState<TierForm[]>([{ target_value: "", bonus_percentage: "" }]);
   const [exclusions, setExclusions] = useState<ExclusionForm[]>([]);
