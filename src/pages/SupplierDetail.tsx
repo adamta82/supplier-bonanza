@@ -395,7 +395,6 @@ export default function SupplierDetail() {
               {(supplier as any).obligo != null && ` | אובליגו: ₪${Number((supplier as any).obligo).toLocaleString()}`}
             </p>
             <div className="flex items-center gap-4 mt-2">
-              <div className="flex items-center gap-1.5">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity">
