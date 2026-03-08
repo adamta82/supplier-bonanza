@@ -629,7 +629,24 @@ export default function SupplierDetail() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-primary">₪{bonusValue.toLocaleString()}</span>
-                      <Badge variant={status.variant}>{status.label}</Badge>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="cursor-pointer">
+                            <Badge variant={status.variant} className="hover:opacity-80 transition-opacity">{status.label}</Badge>
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem onClick={() => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, status: "auto" })}>
+                            <Clock className="w-3.5 h-3.5 ml-2" />אוטומטי
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, status: "needs_collection" })}>
+                            <Target className="w-3.5 h-3.5 ml-2 text-destructive" />צריך לקבל
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, status: "received" })}>
+                            <CheckCircle className="w-3.5 h-3.5 ml-2 text-primary" />התקבל
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <Link to="/agreements">
                         <Button variant="ghost" size="icon" className="h-6 w-6">
                           <Pencil className="w-3 h-3" />
