@@ -724,7 +724,6 @@ export default function SupplierDetail() {
           <TabsTrigger value="purchases">רכשים ({new Set(filteredPurchases.map((r: any) => r.order_number || r.id)).size})</TabsTrigger>
           <TabsTrigger value="sales">הזמנות לקוח ({filteredSales.length})</TabsTrigger>
           <TabsTrigger value="transaction-bonuses">בונוס עסקה ({agreements?.filter((a: any) => a.bonus_type === "transaction").length || 0})</TabsTrigger>
-          <TabsTrigger value="bonuses">בונוסים ({filteredBonuses.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="purchases">
