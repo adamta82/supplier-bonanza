@@ -259,11 +259,16 @@ export default function Suppliers() {
                     </TableCell>
                     <TableCell>{s.supplier_number || "-"}</TableCell>
                     <TableCell>
-                      {hasAgreements(s.id) ? (
-                        <Badge variant="default" className="gap-1"><FileCheck className="w-3 h-3" />יש</Badge>
-                      ) : (
-                        <Badge variant="outline" className="gap-1 text-muted-foreground">אין</Badge>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {hasAgreements(s.id) ? (
+                          <Badge variant="default" className="gap-1"><FileCheck className="w-3 h-3" />יש</Badge>
+                        ) : (
+                          <Badge variant="outline" className="gap-1 text-muted-foreground">אין</Badge>
+                        )}
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => navigate("/agreements")}>
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
