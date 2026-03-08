@@ -30,10 +30,26 @@ const emptyForm: SupplierForm = { name: "", supplier_number: "", payment_terms: 
 
 export default function Suppliers() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<SupplierForm>(emptyForm);
+
+  const updateBonusStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase.from("suppliers").update({ annual_bonus_status: status }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      toast.success("סטטוס בונוס עודכן");
+    },
+  });
+
+  const updateBonusStatus = (id: string, status: string) => {
+    updateBonusStatusMutation.mutate({ id, status });
+  };
 
   const { data: suppliers, isLoading } = useQuery({
     queryKey: ["suppliers"],
