@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { ArrowRight, TrendingUp, ShoppingCart, Award, Target, Pencil, CheckCircle, XCircle, Clock, FileText, ChevronDown, ChevronUp } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { formatDate } from "@/lib/formatDate";
@@ -139,6 +140,17 @@ export default function SupplierDetail() {
     onError: () => toast.error("שגיאה בעדכון הספק"),
   });
 
+  const updateBonusStatusMutation = useMutation({
+    mutationFn: async (status: string) => {
+      const { error } = await supabase.from("suppliers").update({ annual_bonus_status: status }).eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier", id] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      toast.success("סטטוס בונוס עודכן");
+    },
+  });
 
   const { data: agreements } = useQuery({
     queryKey: ["supplier-agreements", id],
@@ -383,15 +395,30 @@ export default function SupplierDetail() {
               {(supplier as any).obligo != null && ` | אובליגו: ₪${Number((supplier as any).obligo).toLocaleString()}`}
             </p>
             <div className="flex items-center gap-4 mt-2">
-              <div className="flex items-center gap-1.5">
-                {supplier.annual_bonus_status === "received" ? (
-                  <><CheckCircle className="w-4 h-4 text-primary" /><span className="text-xs font-medium text-primary">בונוס 2025: התקבל</span></>
-                ) : supplier.annual_bonus_status === "none" ? (
-                  <><XCircle className="w-4 h-4 text-muted-foreground" /><span className="text-xs text-muted-foreground">בונוס 2025: אין</span></>
-                ) : (
-                  <><Clock className="w-4 h-4 text-destructive" /><span className="text-xs font-medium text-destructive">בונוס 2025: ממתין</span></>
-                )}
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity">
+                    {supplier.annual_bonus_status === "received" ? (
+                      <><CheckCircle className="w-4 h-4 text-primary" /><span className="text-xs font-medium text-primary">בונוס 2025: התקבל</span></>
+                    ) : supplier.annual_bonus_status === "none" ? (
+                      <><XCircle className="w-4 h-4 text-muted-foreground" /><span className="text-xs text-muted-foreground">בונוס 2025: אין</span></>
+                    ) : (
+                      <><Clock className="w-4 h-4 text-destructive" /><span className="text-xs font-medium text-destructive">בונוס 2025: ממתין</span></>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => updateBonusStatusMutation.mutate("pending")}>
+                    <Clock className="w-3.5 h-3.5 ml-2 text-destructive" />ממתין
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => updateBonusStatusMutation.mutate("received")}>
+                    <CheckCircle className="w-3.5 h-3.5 ml-2 text-primary" />התקבל
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => updateBonusStatusMutation.mutate("none")}>
+                    <XCircle className="w-3.5 h-3.5 ml-2 text-muted-foreground" />אין
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <div className="flex items-center gap-1.5">
                 <FileText className="w-4 h-4 text-muted-foreground" />
                 {supplier.reconciliation_date ? (
@@ -586,6 +613,11 @@ export default function SupplierDetail() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-primary">₪{bonusValue.toLocaleString()}</span>
                       <Badge variant={status.variant}>{status.label}</Badge>
+                      <Link to="/agreements">
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                      </Link>
                     </div>
                   </div>
 
