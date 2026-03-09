@@ -539,93 +539,152 @@ export default function SupplierDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Agreements section */}
+      {/* Bonuses section with tabs */}
       <div className="space-y-3">
-        <h2 className="text-xl font-bold">הסכמי בונוס</h2>
-        {agreements && agreements.length > 0 ? (
-          agreements.map((agreement: any) => {
-            const status = getAgreementStatus(agreement);
-            const bonusValue = calcAgreementBonusValue(agreement);
-            const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
-            const highestTier = sortedTiers[sortedTiers.length - 1];
+        <h2 className="text-xl font-bold">בונוסים</h2>
+        <Tabs defaultValue="annual_fixed" dir="rtl">
+          <TabsList>
+            <TabsTrigger value="annual_fixed">שנתי</TabsTrigger>
+            <TabsTrigger value="annual_target">יעדים</TabsTrigger>
+            <TabsTrigger value="marketing">שיווק</TabsTrigger>
+            <TabsTrigger value="transaction">עסקה</TabsTrigger>
+          </TabsList>
 
-            const agrPurchases = (purchases || []).filter((p: any) => {
-              if (!p.order_date) return false;
-              if (agreement.period_start && p.order_date < agreement.period_start) return false;
-              if (agreement.period_end && p.order_date > agreement.period_end) return false;
-              return true;
-            });
-            let volume = agrPurchases.reduce((s: number, p: any) => s + (p.total_amount || 0), 0);
-            const agrTxBonuses = (bonuses || []).filter(
-              (b: any) => b.counts_toward_target && b.agreement_id === agreement.id,
-            );
-            volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
-            const progress = highestTier ? Math.min((volume / highestTier.target_value) * 100, 100) : 0;
-
+          {/* Annual Fixed, Annual Target, Marketing tabs */}
+          {["annual_fixed", "annual_target", "marketing"].map((tabType) => {
+            const tabAgreements = (agreements || []).filter((a: any) => a.bonus_type === tabType);
             return (
-              <Card key={agreement.id}>
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{bonusTypeLabels[agreement.bonus_type] || agreement.bonus_type}</Badge>
-                      {agreement.period_start && agreement.period_end && (
-                        <span className="text-xs text-muted-foreground">
-                          {formatDate(agreement.period_start)} - {formatDate(agreement.period_end)}
-                        </span>
-                      )}
-                      {agreement.category_mode === "include_only" && (
-                        <span className="text-xs text-muted-foreground">רק: {agreement.category_filter}</span>
-                      )}
-                      {agreement.category_mode === "exclude" && (
-                        <span className="text-xs text-muted-foreground">חוץ מ: {agreement.category_filter}</span>
-                      )}
-                      {agreement.series_name && (
-                        <span className="text-xs text-muted-foreground">סדרה: {agreement.series_name}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-primary">₪{bonusValue.toLocaleString()}</span>
-                      <Badge variant={status.variant}>{status.label}</Badge>
-                    </div>
+              <TabsContent key={tabType} value={tabType}>
+                {tabAgreements.length > 0 ? (
+                  <div className="space-y-3">
+                    {tabAgreements.map((agreement: any) => {
+                      const status = getAgreementStatus(agreement);
+                      const bonusValue = calcAgreementBonusValue(agreement);
+                      const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
+                      const highestTier = sortedTiers[sortedTiers.length - 1];
+
+                      const agrPurchases = (purchases || []).filter((p: any) => {
+                        if (!p.order_date) return false;
+                        if (agreement.period_start && p.order_date < agreement.period_start) return false;
+                        if (agreement.period_end && p.order_date > agreement.period_end) return false;
+                        return true;
+                      });
+                      let volume = agrPurchases.reduce((s: number, p: any) => s + (p.total_amount || 0), 0);
+                      const agrTxBonuses = (bonuses || []).filter(
+                        (b: any) => b.counts_toward_target && b.agreement_id === agreement.id,
+                      );
+                      volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
+                      const progress = highestTier ? Math.min((volume / highestTier.target_value) * 100, 100) : 0;
+
+                      return (
+                        <Card key={agreement.id}>
+                          <CardContent className="p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary">{bonusTypeLabels[agreement.bonus_type] || agreement.bonus_type}</Badge>
+                                {agreement.period_start && agreement.period_end && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatDate(agreement.period_start)} - {formatDate(agreement.period_end)}
+                                  </span>
+                                )}
+                                {agreement.category_mode === "include_only" && (
+                                  <span className="text-xs text-muted-foreground">רק: {agreement.category_filter}</span>
+                                )}
+                                {agreement.category_mode === "exclude" && (
+                                  <span className="text-xs text-muted-foreground">חוץ מ: {agreement.category_filter}</span>
+                                )}
+                                {agreement.series_name && (
+                                  <span className="text-xs text-muted-foreground">סדרה: {agreement.series_name}</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-bold text-primary">₪{bonusValue.toLocaleString()}</span>
+                                <Badge variant={status.variant}>{status.label}</Badge>
+                              </div>
+                            </div>
+
+                            {sortedTiers.length > 0 && (
+                              <>
+                                <div className="flex items-center justify-between text-sm">
+                                  <span>
+                                    התקדמות: ₪{volume.toLocaleString()} / ₪{highestTier?.target_value.toLocaleString()}
+                                  </span>
+                                  <span className="font-bold">{progress.toFixed(0)}%</span>
+                                </div>
+                                <Progress value={progress} className="h-2" />
+                                <div className="flex flex-wrap gap-2 text-xs">
+                                  {sortedTiers.map((tier: any, i: number) => (
+                                    <span
+                                      key={i}
+                                      className={`px-2 py-0.5 rounded-full ${volume >= tier.target_value ? "bg-primary/20 text-primary font-semibold" : "bg-muted text-muted-foreground"}`}
+                                    >
+                                      ₪{tier.target_value.toLocaleString()} → {tier.bonus_percentage}%
+                                    </span>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+
+                            {agreement.fixed_percentage && !sortedTiers.length && (
+                              <div className="text-sm">בונוס קבוע: {agreement.fixed_percentage}%</div>
+                            )}
+                            {agreement.fixed_amount && !sortedTiers.length && (
+                              <div className="text-sm">בונוס קבוע: ₪{agreement.fixed_amount.toLocaleString()}</div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
-
-                  {sortedTiers.length > 0 && (
-                    <>
-                      <div className="flex items-center justify-between text-sm">
-                        <span>
-                          התקדמות: ₪{volume.toLocaleString()} / ₪{highestTier?.target_value.toLocaleString()}
-                        </span>
-                        <span className="font-bold">{progress.toFixed(0)}%</span>
-                      </div>
-                      <Progress value={progress} className="h-2" />
-                      <div className="flex flex-wrap gap-2 text-xs">
-                        {sortedTiers.map((tier: any, i: number) => (
-                          <span
-                            key={i}
-                            className={`px-2 py-0.5 rounded-full ${volume >= tier.target_value ? "bg-primary/20 text-primary font-semibold" : "bg-muted text-muted-foreground"}`}
-                          >
-                            ₪{tier.target_value.toLocaleString()} → {tier.bonus_percentage}%
-                          </span>
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  {agreement.fixed_percentage && !sortedTiers.length && (
-                    <div className="text-sm">בונוס קבוע: {agreement.fixed_percentage}%</div>
-                  )}
-                  {agreement.fixed_amount && !sortedTiers.length && (
-                    <div className="text-sm">בונוס קבוע: ₪{agreement.fixed_amount.toLocaleString()}</div>
-                  )}
-                </CardContent>
-              </Card>
+                ) : (
+                  <Card>
+                    <CardContent className="py-6 text-center text-muted-foreground">אין הסכמים מסוג זה</CardContent>
+                  </Card>
+                )}
+              </TabsContent>
             );
-          })
-        ) : (
-          <Card>
-            <CardContent className="py-6 text-center text-muted-foreground">אין הסכמי בונוס</CardContent>
-          </Card>
-        )}
+          })}
+
+          {/* Transaction bonuses tab */}
+          <TabsContent value="transaction">
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>תאריך</TableHead>
+                      <TableHead>תיאור</TableHead>
+                      <TableHead>סכום עסקה</TableHead>
+                      <TableHead>ערך בונוס</TableHead>
+                      <TableHead>אופן קבלה</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredBonuses.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                          אין בונוסי עסקה
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredBonuses.map((b: any) => (
+                        <TableRow key={b.id}>
+                          <TableCell>{formatDate(b.transaction_date)}</TableCell>
+                          <TableCell className="max-w-[200px] truncate">{b.description || "-"}</TableCell>
+                          <TableCell>₪{(b.total_value || 0).toLocaleString()}</TableCell>
+                          <TableCell className="font-semibold text-primary">
+                            ₪{(b.bonus_value || 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell>{b.bonus_payment_type === "money" ? "כסף" : "סחורה"}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Monthly chart */}
@@ -657,7 +716,7 @@ export default function SupplierDetail() {
         <TabsList>
           <TabsTrigger value="purchases">רכשים ({new Set(filteredPurchases.map((r: any) => r.order_number || r.id)).size})</TabsTrigger>
           <TabsTrigger value="sales">הזמנות לקוח ({filteredSales.length})</TabsTrigger>
-          <TabsTrigger value="bonuses">בונוסים ({filteredBonuses.length})</TabsTrigger>
+          
         </TabsList>
 
         <TabsContent value="purchases">
@@ -900,49 +959,6 @@ export default function SupplierDetail() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="bonuses">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">עסקאות בונוס</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>תאריך</TableHead>
-                    <TableHead>סוג</TableHead>
-                    <TableHead>תיאור</TableHead>
-                    <TableHead>סכום עסקה</TableHead>
-                    <TableHead>ערך בונוס</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredBonuses.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                        אין בונוסים
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredBonuses.map((b: any) => (
-                      <TableRow key={b.id}>
-                        <TableCell>{formatDate(b.transaction_date)}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{bonusTypeLabels[b.bonus_agreements?.bonus_type] || "עסקה"}</Badge>
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate">{b.description || "-"}</TableCell>
-                        <TableCell>₪{(b.total_value || 0).toLocaleString()}</TableCell>
-                        <TableCell className="font-semibold text-primary">
-                          ₪{(b.bonus_value || 0).toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       {/* Edit Supplier Dialog */}
