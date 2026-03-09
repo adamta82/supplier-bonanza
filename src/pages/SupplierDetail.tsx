@@ -307,7 +307,68 @@ export default function SupplierDetail() {
   }, [agreements, purchases, bonuses]);
 
   const totalBonusValue = totalAllBonus;
-  const finalProfit = totalDirectProfit + totalMoneyBonus;
+
+  // Bonus breakdown by type and payment method
+  const bonusByTypeAndPayment = useMemo(() => {
+    const result = {
+      target: { money: 0, goods: 0 },
+      marketing: { money: 0, goods: 0 },
+      transaction: { money: 0, goods: 0 },
+    };
+    if (!agreements) return result;
+
+    agreements.forEach((a: any) => {
+      if (a.bonus_type === "transaction") return; // handled separately
+      const val = calcAgreementBonusValue(a);
+      if (isNaN(val) || val === 0) return;
+      const isMoney = a.bonus_payment_type === "money";
+      if (a.bonus_type === "annual_target") {
+        result.target[isMoney ? "money" : "goods"] += val;
+      } else if (a.bonus_type === "marketing") {
+        result.marketing[isMoney ? "money" : "goods"] += val;
+      }
+    });
+
+    // Transaction bonuses from transaction_bonuses table
+    (bonuses || []).forEach((b: any) => {
+      const isMoney = b.bonus_payment_type === "money";
+      result.transaction[isMoney ? "money" : "goods"] += (b.bonus_value || 0);
+    });
+
+    return result;
+  }, [agreements, purchases, bonuses]);
+
+  // Annual fixed bonuses (money only, for profit calc)
+  const annualFixedMoneyBonus = useMemo(() => {
+    if (!agreements) return 0;
+    return agreements
+      .filter((a: any) => a.bonus_type === "annual_fixed" && a.bonus_payment_type === "money")
+      .reduce((sum: number, a: any) => {
+        const v = calcAgreementBonusValue(a);
+        return sum + (isNaN(v) ? 0 : v);
+      }, 0);
+  }, [agreements, purchases, bonuses]);
+
+  // רווח ישיר + בונוס כספי (לא כולל שיווק)
+  const profitPlusMoneyBonus = totalDirectProfit + bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.transaction.money + annualFixedMoneyBonus;
+
+  // רווח סופי = הכל
+  const allBonusesTotal = bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.target.goods
+    + bonusByTypeAndPayment.marketing.money + bonusByTypeAndPayment.marketing.goods
+    + bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.transaction.goods
+    + annualFixedMoneyBonus;
+  // Also add annual_fixed goods
+  const annualFixedGoodsBonus = useMemo(() => {
+    if (!agreements) return 0;
+    return agreements
+      .filter((a: any) => a.bonus_type === "annual_fixed" && a.bonus_payment_type !== "money")
+      .reduce((sum: number, a: any) => {
+        const v = calcAgreementBonusValue(a);
+        return sum + (isNaN(v) ? 0 : v);
+      }, 0);
+  }, [agreements, purchases, bonuses]);
+
+  const finalProfit = totalDirectProfit + allBonusesTotal + annualFixedGoodsBonus;
 
   const monthlyData = useMemo(() => {
     const map: Record<string, { purchases: number; sales: number; profit: number; final: number }> = {};
