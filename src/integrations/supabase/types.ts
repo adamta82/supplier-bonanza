@@ -301,6 +301,7 @@ export type Database = {
       transaction_bonuses: {
         Row: {
           agreement_id: string | null
+          bonus_payment_type: string
           bonus_value: number
           counts_toward_target: boolean | null
           created_at: string
@@ -313,6 +314,7 @@ export type Database = {
         }
         Insert: {
           agreement_id?: string | null
+          bonus_payment_type?: string
           bonus_value: number
           counts_toward_target?: boolean | null
           created_at?: string
@@ -325,6 +327,7 @@ export type Database = {
         }
         Update: {
           agreement_id?: string | null
+          bonus_payment_type?: string
           bonus_value?: number
           counts_toward_target?: boolean | null
           created_at?: string
