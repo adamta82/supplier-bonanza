@@ -31,7 +31,7 @@ export default function Transactions() {
   const resetForm = () => {
     setIsOpen(false);
     setEditId(null);
-    setForm({ supplier_id: "", transaction_date: new Date().toISOString().split("T")[0], description: "", total_value: "", bonus_value: "", items_detail: "", counts_toward_target: true });
+    setForm({ supplier_id: "", transaction_date: new Date().toISOString().split("T")[0], description: "", total_value: "", bonus_value: "", items_detail: "", counts_toward_target: true, bonus_payment_type: "goods" });
   };
 
   const { data: suppliers } = useQuery({
