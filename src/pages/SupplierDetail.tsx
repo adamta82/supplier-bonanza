@@ -523,8 +523,8 @@ export default function SupplierDetail() {
         </div>
       </div>
 
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      {/* KPI cards - Row 1 */}
+      <div className="grid grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
             <ShoppingCart className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
@@ -547,18 +547,60 @@ export default function SupplierDetail() {
             <div className="text-xs text-muted-foreground">{totalSales > 0 ? `${((totalDirectProfit / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* KPI cards - Row 2: Bonuses + Profits */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
             <Award className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-            <div className="text-xs text-muted-foreground">בונוסים</div>
-            <div className="text-lg font-bold">₪{totalBonusValue.toLocaleString()}</div>
+            <div className="text-xs text-muted-foreground">בונוס יעדים</div>
+            <div className="text-sm font-bold">₪{(bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.target.goods).toLocaleString()}</div>
+            <div className="flex justify-center gap-2 mt-1 text-[10px] text-muted-foreground">
+              <span>כספי: ₪{bonusByTypeAndPayment.target.money.toLocaleString()}</span>
+              <span>|</span>
+              <span>סחורה: ₪{bonusByTypeAndPayment.target.goods.toLocaleString()}</span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4 text-center">
+            <Award className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+            <div className="text-xs text-muted-foreground">בונוס שיווק</div>
+            <div className="text-sm font-bold">₪{(bonusByTypeAndPayment.marketing.money + bonusByTypeAndPayment.marketing.goods).toLocaleString()}</div>
+            <div className="flex justify-center gap-2 mt-1 text-[10px] text-muted-foreground">
+              <span>כספי: ₪{bonusByTypeAndPayment.marketing.money.toLocaleString()}</span>
+              <span>|</span>
+              <span>סחורה: ₪{bonusByTypeAndPayment.marketing.goods.toLocaleString()}</span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4 text-center">
+            <Award className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+            <div className="text-xs text-muted-foreground">בונוס עסקאות</div>
+            <div className="text-sm font-bold">₪{(bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.transaction.goods).toLocaleString()}</div>
+            <div className="flex justify-center gap-2 mt-1 text-[10px] text-muted-foreground">
+              <span>כספי: ₪{bonusByTypeAndPayment.transaction.money.toLocaleString()}</span>
+              <span>|</span>
+              <span>סחורה: ₪{bonusByTypeAndPayment.transaction.goods.toLocaleString()}</span>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4 text-center">
+            <TrendingUp className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+            <div className="text-xs text-muted-foreground">רווח ישיר + בונוס כספי*</div>
+            <div className="text-sm font-bold">₪{profitPlusMoneyBonus.toLocaleString()}</div>
+            <div className="text-xs text-muted-foreground">{totalSales > 0 ? `${((profitPlusMoneyBonus / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
+            <div className="text-[10px] text-muted-foreground mt-1">*לא כולל בונוס שיווק</div>
           </CardContent>
         </Card>
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="pt-4 pb-4 text-center">
             <TrendingUp className="w-5 h-5 mx-auto mb-1 text-primary" />
             <div className="text-xs text-muted-foreground">רווח סופי</div>
-            <div className="text-lg font-bold text-primary">₪{finalProfit.toLocaleString()}</div>
+            <div className="text-sm font-bold text-primary">₪{finalProfit.toLocaleString()}</div>
             <div className="text-xs text-primary">{totalSales > 0 ? `${((finalProfit / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
           </CardContent>
         </Card>
