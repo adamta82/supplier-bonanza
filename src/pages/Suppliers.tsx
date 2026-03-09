@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Plus, Search, Pencil, FileCheck, Award, CheckCircle, XCircle, Clock } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
 
@@ -30,26 +29,10 @@ const emptyForm: SupplierForm = { name: "", supplier_number: "", payment_terms: 
 
 export default function Suppliers() {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<SupplierForm>(emptyForm);
-
-  const updateBonusStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("suppliers").update({ annual_bonus_status: status }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
-      toast.success("סטטוס בונוס עודכן");
-    },
-  });
-
-  const updateBonusStatus = (id: string, status: string) => {
-    updateBonusStatusMutation.mutate({ id, status });
-  };
 
   const { data: suppliers, isLoading } = useQuery({
     queryKey: ["suppliers"],
@@ -259,37 +242,17 @@ export default function Suppliers() {
                     </TableCell>
                     <TableCell>{s.supplier_number || "-"}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        {hasAgreements(s.id) ? (
-                          <Badge variant="default" className="gap-1"><FileCheck className="w-3 h-3" />יש</Badge>
-                        ) : (
-                          <Badge variant="outline" className="gap-1 text-muted-foreground">אין</Badge>
-                        )}
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => navigate("/agreements")}>
-                          <Pencil className="w-3 h-3" />
-                        </Button>
-                      </div>
+                      {hasAgreements(s.id) ? (
+                        <Badge variant="default" className="gap-1"><FileCheck className="w-3 h-3" />יש</Badge>
+                      ) : (
+                        <Badge variant="outline" className="gap-1 text-muted-foreground">אין</Badge>
+                      )}
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity">
-                            {getAnnualBonusIcon(s.annual_bonus_status)}
-                            <span className="text-xs">{getAnnualBonusLabel(s.annual_bonus_status)}</span>
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
-                          <DropdownMenuItem onClick={() => updateBonusStatus(s.id, "pending")}>
-                            <Clock className="w-3.5 h-3.5 ml-2 text-destructive" />ממתין
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateBonusStatus(s.id, "received")}>
-                            <CheckCircle className="w-3.5 h-3.5 ml-2 text-primary" />התקבל
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateBonusStatus(s.id, "none")}>
-                            <XCircle className="w-3.5 h-3.5 ml-2 text-muted-foreground" />אין
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center gap-1">
+                        {getAnnualBonusIcon(s.annual_bonus_status)}
+                        <span className="text-xs">{getAnnualBonusLabel(s.annual_bonus_status)}</span>
+                      </div>
                     </TableCell>
                     <TableCell>
                       {s.reconciliation_date ? (

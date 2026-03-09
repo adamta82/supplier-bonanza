@@ -54,7 +54,6 @@ export default function Agreements() {
     series_name: "",
     notes: "",
     bonus_payment_type: "goods",
-    deal_amount: "",
   });
   const [tiers, setTiers] = useState<TierForm[]>([{ target_value: "", bonus_percentage: "" }]);
   const [exclusions, setExclusions] = useState<ExclusionForm[]>([]);
@@ -95,7 +94,6 @@ export default function Agreements() {
         series_name: form.series_name || null,
         notes: form.notes || null,
         bonus_payment_type: form.bonus_payment_type,
-        deal_amount: form.deal_amount ? parseFloat(form.deal_amount) : null,
         exclusions: exclusions.length > 0 ? JSON.stringify(exclusions) : "[]",
       };
 
@@ -151,7 +149,7 @@ export default function Agreements() {
       supplier_id: "", bonus_type: "annual_target", period_type: "annual",
       period_start: "", period_end: "", vat_included: false, target_type: "amount",
       fixed_amount: "", fixed_percentage: "",
-      series_name: "", notes: "", bonus_payment_type: "goods", deal_amount: "",
+      series_name: "", notes: "", bonus_payment_type: "goods",
     });
     setTiers([{ target_value: "", bonus_percentage: "" }]);
     setExclusions([]);
@@ -213,41 +211,28 @@ export default function Agreements() {
                 </div>
               </div>
 
-              {/* Period - not for transaction bonus */}
-              {form.bonus_type === "transaction" ? (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>תאריך הבונוס</Label>
-                    <Input type="date" value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label>סכום העסקה (₪)</Label>
-                    <Input type="number" value={form.deal_amount} onChange={(e) => setForm({ ...form, deal_amount: e.target.value })} placeholder="₪" />
-                  </div>
+              {/* Period */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>סוג תקופה</Label>
+                  <Select value={form.period_type} onValueChange={(v) => setForm({ ...form, period_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(periodLabels).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              ) : (
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <Label>סוג תקופה</Label>
-                    <Select value={form.period_type} onValueChange={(v) => setForm({ ...form, period_type: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(periodLabels).map(([k, v]) => (
-                          <SelectItem key={k} value={k}>{v}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>מתאריך</Label>
-                    <Input type="date" value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} />
-                  </div>
-                  <div>
-                    <Label>עד תאריך</Label>
-                    <Input type="date" value={form.period_end} onChange={(e) => setForm({ ...form, period_end: e.target.value })} />
-                  </div>
+                <div>
+                  <Label>מתאריך</Label>
+                  <Input type="date" value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} />
                 </div>
-              )}
+                <div>
+                  <Label>עד תאריך</Label>
+                  <Input type="date" value={form.period_end} onChange={(e) => setForm({ ...form, period_end: e.target.value })} />
+                </div>
+              </div>
 
               {/* VAT & target type */}
               {(form.bonus_type === "annual_target" || form.bonus_type === "marketing") && (
@@ -481,7 +466,6 @@ export default function Agreements() {
                             series_name: a.series_name || "",
                             notes: a.notes || "",
                             bonus_payment_type: a.bonus_payment_type || "goods",
-                            deal_amount: (a as any).deal_amount?.toString() || "",
                           });
                           setTiers(
                             a.bonus_tiers?.length > 0

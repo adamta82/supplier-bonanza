@@ -13,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { ArrowRight, TrendingUp, ShoppingCart, Award, Target, Pencil, CheckCircle, XCircle, Clock, FileText, ChevronDown, ChevronUp } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { formatDate } from "@/lib/formatDate";
@@ -140,17 +139,6 @@ export default function SupplierDetail() {
     onError: () => toast.error("שגיאה בעדכון הספק"),
   });
 
-  const updateBonusStatusMutation = useMutation({
-    mutationFn: async (status: string) => {
-      const { error } = await supabase.from("suppliers").update({ annual_bonus_status: status }).eq("id", id!);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["supplier", id] });
-      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
-      toast.success("סטטוס בונוס עודכן");
-    },
-  });
 
   const { data: agreements } = useQuery({
     queryKey: ["supplier-agreements", id],
@@ -358,34 +346,17 @@ export default function SupplierDetail() {
   }, []);
 
   const getAgreementStatus = (agreement: any) => {
-    // Manual override
-    if (agreement.bonus_status === "received") {
-      return { label: "התקבל", variant: "default" as const };
-    }
-    if (agreement.bonus_status === "needs_collection") {
-      return { label: "צריך לקבל", variant: "destructive" as const };
-    }
-    // Auto logic
     const today = new Date().toISOString().slice(0, 10);
-    const isTransaction = agreement.bonus_type === "transaction";
+    const hasReceivedBonus = (bonuses || []).some((b: any) => b.agreement_id === agreement.id);
     const periodEnded = agreement.period_end && agreement.period_end < today;
 
-    if (periodEnded || isTransaction) {
+    if (hasReceivedBonus) {
+      return { label: "התקבל", variant: "default" as const };
+    } else if (periodEnded) {
       return { label: "צריך לקבל", variant: "destructive" as const };
     }
     return { label: "פעיל", variant: "secondary" as const };
   };
-
-  const updateAgreementStatusMutation = useMutation({
-    mutationFn: async ({ agreementId, status }: { agreementId: string; status: string }) => {
-      const { error } = await supabase.from("bonus_agreements").update({ bonus_status: status } as any).eq("id", agreementId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["supplier-agreements", id] });
-      toast.success("סטטוס הסכם עודכן");
-    },
-  });
 
   if (!supplier) return <div className="text-center py-12 text-muted-foreground">טוען...</div>;
 
@@ -412,30 +383,15 @@ export default function SupplierDetail() {
               {(supplier as any).obligo != null && ` | אובליגו: ₪${Number((supplier as any).obligo).toLocaleString()}`}
             </p>
             <div className="flex items-center gap-4 mt-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity">
-                    {supplier.annual_bonus_status === "received" ? (
-                      <><CheckCircle className="w-4 h-4 text-primary" /><span className="text-xs font-medium text-primary">בונוס 2025: התקבל</span></>
-                    ) : supplier.annual_bonus_status === "none" ? (
-                      <><XCircle className="w-4 h-4 text-muted-foreground" /><span className="text-xs text-muted-foreground">בונוס 2025: אין</span></>
-                    ) : (
-                      <><Clock className="w-4 h-4 text-destructive" /><span className="text-xs font-medium text-destructive">בונוס 2025: ממתין</span></>
-                    )}
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem onClick={() => updateBonusStatusMutation.mutate("pending")}>
-                    <Clock className="w-3.5 h-3.5 ml-2 text-destructive" />ממתין
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => updateBonusStatusMutation.mutate("received")}>
-                    <CheckCircle className="w-3.5 h-3.5 ml-2 text-primary" />התקבל
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => updateBonusStatusMutation.mutate("none")}>
-                    <XCircle className="w-3.5 h-3.5 ml-2 text-muted-foreground" />אין
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex items-center gap-1.5">
+                {supplier.annual_bonus_status === "received" ? (
+                  <><CheckCircle className="w-4 h-4 text-primary" /><span className="text-xs font-medium text-primary">בונוס 2025: התקבל</span></>
+                ) : supplier.annual_bonus_status === "none" ? (
+                  <><XCircle className="w-4 h-4 text-muted-foreground" /><span className="text-xs text-muted-foreground">בונוס 2025: אין</span></>
+                ) : (
+                  <><Clock className="w-4 h-4 text-destructive" /><span className="text-xs font-medium text-destructive">בונוס 2025: ממתין</span></>
+                )}
+              </div>
               <div className="flex items-center gap-1.5">
                 <FileText className="w-4 h-4 text-muted-foreground" />
                 {supplier.reconciliation_date ? (
@@ -583,11 +539,11 @@ export default function SupplierDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Agreements section - exclude transaction bonuses */}
+      {/* Agreements section */}
       <div className="space-y-3">
         <h2 className="text-xl font-bold">הסכמי בונוס</h2>
-        {agreements && agreements.filter((a: any) => a.bonus_type !== "transaction").length > 0 ? (
-          agreements.filter((a: any) => a.bonus_type !== "transaction").map((agreement: any) => {
+        {agreements && agreements.length > 0 ? (
+          agreements.map((agreement: any) => {
             const status = getAgreementStatus(agreement);
             const bonusValue = calcAgreementBonusValue(agreement);
             const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
@@ -629,29 +585,7 @@ export default function SupplierDetail() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-primary">₪{bonusValue.toLocaleString()}</span>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="cursor-pointer">
-                            <Badge variant={status.variant} className="hover:opacity-80 transition-opacity">{status.label}</Badge>
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
-                          <DropdownMenuItem onClick={() => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, status: "auto" })}>
-                            <Clock className="w-3.5 h-3.5 ml-2" />אוטומטי
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, status: "needs_collection" })}>
-                            <Target className="w-3.5 h-3.5 ml-2 text-destructive" />צריך לקבל
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, status: "received" })}>
-                            <CheckCircle className="w-3.5 h-3.5 ml-2 text-primary" />התקבל
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <Link to="/agreements">
-                        <Button variant="ghost" size="icon" className="h-6 w-6">
-                          <Pencil className="w-3 h-3" />
-                        </Button>
-                      </Link>
+                      <Badge variant={status.variant}>{status.label}</Badge>
                     </div>
                   </div>
 
@@ -723,7 +657,7 @@ export default function SupplierDetail() {
         <TabsList>
           <TabsTrigger value="purchases">רכשים ({new Set(filteredPurchases.map((r: any) => r.order_number || r.id)).size})</TabsTrigger>
           <TabsTrigger value="sales">הזמנות לקוח ({filteredSales.length})</TabsTrigger>
-          <TabsTrigger value="transaction-bonuses">בונוס עסקה ({agreements?.filter((a: any) => a.bonus_type === "transaction").length || 0})</TabsTrigger>
+          <TabsTrigger value="bonuses">בונוסים ({filteredBonuses.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="purchases">
@@ -966,78 +900,49 @@ export default function SupplierDetail() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="transaction-bonuses">
+        <TabsContent value="bonuses">
           <Card>
+            <CardHeader>
+              <CardTitle className="text-base">עסקאות בונוס</CardTitle>
+            </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>תאריך</TableHead>
+                    <TableHead>סוג</TableHead>
                     <TableHead>תיאור</TableHead>
                     <TableHead>סכום עסקה</TableHead>
-                    <TableHead>אחוז / סכום בונוס</TableHead>
                     <TableHead>ערך בונוס</TableHead>
-                    <TableHead>אופן קבלה</TableHead>
-                    <TableHead>סטטוס</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(() => {
-                    const txAgreements = agreements?.filter((a: any) => a.bonus_type === "transaction") || [];
-                    if (txAgreements.length === 0) {
-                      return (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">אין בונוסי עסקה</TableCell>
-                        </TableRow>
-                      );
-                    }
-                    return txAgreements.map((a: any) => {
-                      const status = getAgreementStatus(a);
-                      const bonusValue = calcAgreementBonusValue(a);
-                      return (
-                        <TableRow key={a.id}>
-                          <TableCell>{a.period_start ? formatDate(a.period_start) : "-"}</TableCell>
-                          <TableCell className="max-w-[200px] truncate">{a.notes || "-"}</TableCell>
-                          <TableCell>{(a as any).deal_amount ? `₪${Number((a as any).deal_amount).toLocaleString()}` : "-"}</TableCell>
-                          <TableCell>
-                            {a.fixed_percentage ? `${a.fixed_percentage}%` : ""}
-                            {a.fixed_amount ? `₪${a.fixed_amount.toLocaleString()}` : ""}
-                          </TableCell>
-                          <TableCell className="font-semibold text-primary">₪{bonusValue.toLocaleString()}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{a.bonus_payment_type === "money" ? "כסף" : "סחורה"}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <button className="cursor-pointer">
-                                  <Badge variant={status.variant} className="hover:opacity-80 transition-opacity">{status.label}</Badge>
-                                </button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="start">
-                                <DropdownMenuItem onClick={() => updateAgreementStatusMutation.mutate({ agreementId: a.id, status: "auto" })}>
-                                  <Clock className="w-3.5 h-3.5 ml-2" />אוטומטי
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => updateAgreementStatusMutation.mutate({ agreementId: a.id, status: "needs_collection" })}>
-                                  <Target className="w-3.5 h-3.5 ml-2 text-destructive" />צריך לקבל
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => updateAgreementStatusMutation.mutate({ agreementId: a.id, status: "received" })}>
-                                  <CheckCircle className="w-3.5 h-3.5 ml-2 text-primary" />התקבל
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    });
-                  })()}
+                  {filteredBonuses.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                        אין בונוסים
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredBonuses.map((b: any) => (
+                      <TableRow key={b.id}>
+                        <TableCell>{formatDate(b.transaction_date)}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{bonusTypeLabels[b.bonus_agreements?.bonus_type] || "עסקה"}</Badge>
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate">{b.description || "-"}</TableCell>
+                        <TableCell>₪{(b.total_value || 0).toLocaleString()}</TableCell>
+                        <TableCell className="font-semibold text-primary">
+                          ₪{(b.bonus_value || 0).toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
         </TabsContent>
-
-
       </Tabs>
 
       {/* Edit Supplier Dialog */}
