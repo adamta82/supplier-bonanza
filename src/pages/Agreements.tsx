@@ -17,9 +17,7 @@ import { formatDate } from "@/lib/formatDate";
 const bonusTypeLabels: Record<string, string> = {
   annual_target: "יעדים",
   marketing: "שיווק",
-  transaction: "עסקה",
   annual_fixed: "שנתי קבוע",
-  network: "רשתי",
 };
 
 const periodLabels: Record<string, string> = {
@@ -156,8 +154,7 @@ export default function Agreements() {
   };
 
   const needsTiers = form.bonus_type === "annual_target" || (form.bonus_type === "marketing" && !form.fixed_amount);
-  const needsFixed = form.bonus_type === "annual_fixed" || form.bonus_type === "marketing" || form.bonus_type === "transaction";
-  const needsSeries = form.bonus_type === "network";
+  const needsFixed = form.bonus_type === "annual_fixed" || form.bonus_type === "marketing";
   const needsExclusions = form.bonus_type === "annual_target" || form.bonus_type === "marketing";
 
   return (
@@ -268,13 +265,8 @@ export default function Agreements() {
                 </div>
               )}
 
-              {/* Series name for network bonus */}
-              {needsSeries && (
-                <div>
-                  <Label>שם סדרה/דגם (לזיהוי אוטומטי בפריטים)</Label>
-                  <Input value={form.series_name} onChange={(e) => setForm({ ...form, series_name: e.target.value })} placeholder="למשל: ELITE" />
-                </div>
-              )}
+
+
 
               {/* Exclusions */}
               {needsExclusions && (

@@ -1,0 +1,1 @@
+ALTER TABLE public.transaction_bonuses ADD COLUMN bonus_payment_type text NOT NULL DEFAULT 'goods';

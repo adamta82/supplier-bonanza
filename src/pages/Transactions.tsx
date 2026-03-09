@@ -25,12 +25,13 @@ export default function Transactions() {
     bonus_value: "",
     items_detail: "",
     counts_toward_target: true,
+    bonus_payment_type: "goods",
   });
 
   const resetForm = () => {
     setIsOpen(false);
     setEditId(null);
-    setForm({ supplier_id: "", transaction_date: new Date().toISOString().split("T")[0], description: "", total_value: "", bonus_value: "", items_detail: "", counts_toward_target: true });
+    setForm({ supplier_id: "", transaction_date: new Date().toISOString().split("T")[0], description: "", total_value: "", bonus_value: "", items_detail: "", counts_toward_target: true, bonus_payment_type: "goods" });
   };
 
   const { data: suppliers } = useQuery({
@@ -62,6 +63,7 @@ export default function Transactions() {
         bonus_value: parseFloat(form.bonus_value),
         items_detail: form.items_detail || null,
         counts_toward_target: form.counts_toward_target,
+        bonus_payment_type: form.bonus_payment_type,
       };
       if (editId) {
         const { error } = await supabase.from("transaction_bonuses").update(payload).eq("id", editId);
@@ -101,6 +103,7 @@ export default function Transactions() {
       bonus_value: t.bonus_value.toString(),
       items_detail: t.items_detail || "",
       counts_toward_target: t.counts_toward_target ?? true,
+      bonus_payment_type: t.bonus_payment_type || "goods",
     });
     setIsOpen(true);
   };
@@ -151,9 +154,21 @@ export default function Transactions() {
                 <Label>פירוט פריטים</Label>
                 <Input value={form.items_detail} onChange={(e) => setForm({ ...form, items_detail: e.target.value })} />
               </div>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" checked={form.counts_toward_target} onChange={(e) => setForm({ ...form, counts_toward_target: e.target.checked })} className="w-4 h-4" />
-                <Label>נספר ליעד שנתי</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" checked={form.counts_toward_target} onChange={(e) => setForm({ ...form, counts_toward_target: e.target.checked })} className="w-4 h-4" />
+                  <Label>נספר ליעד שנתי</Label>
+                </div>
+                <div>
+                  <Label>אופן קבלת הבונוס</Label>
+                  <Select value={form.bonus_payment_type} onValueChange={(v) => setForm({ ...form, bonus_payment_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="goods">סחורה</SelectItem>
+                      <SelectItem value="money">כסף</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <Button type="submit" className="w-full" disabled={saveMutation.isPending || !form.supplier_id}>
                 {saveMutation.isPending ? "שומר..." : editId ? "עדכן עסקה" : "שמור"}
@@ -185,15 +200,16 @@ export default function Transactions() {
                 <TableHead>תיאור</TableHead>
                 <TableHead>שווי עסקה</TableHead>
                 <TableHead>שווי בונוס</TableHead>
+                <TableHead>אופן קבלה</TableHead>
                 <TableHead>נספר ליעד</TableHead>
                 <TableHead>פעולות</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8">טוען...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-8">טוען...</TableCell></TableRow>
               ) : transactions?.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">אין עסקאות בונוס.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">אין עסקאות בונוס.</TableCell></TableRow>
               ) : (
                 transactions?.map((t: any) => (
                   <TableRow key={t.id}>
@@ -202,6 +218,7 @@ export default function Transactions() {
                     <TableCell>{t.description || "-"}</TableCell>
                     <TableCell>₪{t.total_value.toLocaleString()}</TableCell>
                     <TableCell className="text-success font-medium">₪{t.bonus_value.toLocaleString()}</TableCell>
+                    <TableCell>{t.bonus_payment_type === "money" ? "כסף" : "סחורה"}</TableCell>
                     <TableCell>{t.counts_toward_target ? "✓" : "✗"}</TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
