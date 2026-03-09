@@ -103,6 +103,7 @@ export default function Transactions() {
       bonus_value: t.bonus_value.toString(),
       items_detail: t.items_detail || "",
       counts_toward_target: t.counts_toward_target ?? true,
+      bonus_payment_type: t.bonus_payment_type || "goods",
     });
     setIsOpen(true);
   };
