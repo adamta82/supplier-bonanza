@@ -200,6 +200,7 @@ export default function Transactions() {
                 <TableHead>תיאור</TableHead>
                 <TableHead>שווי עסקה</TableHead>
                 <TableHead>שווי בונוס</TableHead>
+                <TableHead>אופן קבלה</TableHead>
                 <TableHead>נספר ליעד</TableHead>
                 <TableHead>פעולות</TableHead>
               </TableRow>
