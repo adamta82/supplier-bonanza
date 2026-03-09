@@ -63,6 +63,7 @@ export default function Transactions() {
         bonus_value: parseFloat(form.bonus_value),
         items_detail: form.items_detail || null,
         counts_toward_target: form.counts_toward_target,
+        bonus_payment_type: form.bonus_payment_type,
       };
       if (editId) {
         const { error } = await supabase.from("transaction_bonuses").update(payload).eq("id", editId);
