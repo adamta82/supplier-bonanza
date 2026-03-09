@@ -17,9 +17,7 @@ import { formatDate } from "@/lib/formatDate";
 const bonusTypeLabels: Record<string, string> = {
   annual_target: "יעדים",
   marketing: "שיווק",
-  transaction: "עסקה",
   annual_fixed: "שנתי קבוע",
-  network: "רשתי",
 };
 
 const periodLabels: Record<string, string> = {

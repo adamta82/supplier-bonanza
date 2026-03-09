@@ -218,6 +218,7 @@ export default function Transactions() {
                     <TableCell>{t.description || "-"}</TableCell>
                     <TableCell>₪{t.total_value.toLocaleString()}</TableCell>
                     <TableCell className="text-success font-medium">₪{t.bonus_value.toLocaleString()}</TableCell>
+                    <TableCell>{t.bonus_payment_type === "money" ? "כסף" : "סחורה"}</TableCell>
                     <TableCell>{t.counts_toward_target ? "✓" : "✗"}</TableCell>
                     <TableCell>
                       <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
