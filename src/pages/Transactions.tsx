@@ -154,9 +154,21 @@ export default function Transactions() {
                 <Label>פירוט פריטים</Label>
                 <Input value={form.items_detail} onChange={(e) => setForm({ ...form, items_detail: e.target.value })} />
               </div>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" checked={form.counts_toward_target} onChange={(e) => setForm({ ...form, counts_toward_target: e.target.checked })} className="w-4 h-4" />
-                <Label>נספר ליעד שנתי</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" checked={form.counts_toward_target} onChange={(e) => setForm({ ...form, counts_toward_target: e.target.checked })} className="w-4 h-4" />
+                  <Label>נספר ליעד שנתי</Label>
+                </div>
+                <div>
+                  <Label>אופן קבלת הבונוס</Label>
+                  <Select value={form.bonus_payment_type} onValueChange={(v) => setForm({ ...form, bonus_payment_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="goods">סחורה</SelectItem>
+                      <SelectItem value="money">כסף</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <Button type="submit" className="w-full" disabled={saveMutation.isPending || !form.supplier_id}>
                 {saveMutation.isPending ? "שומר..." : editId ? "עדכן עסקה" : "שמור"}
