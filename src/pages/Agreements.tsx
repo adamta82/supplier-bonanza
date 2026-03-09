@@ -265,13 +265,8 @@ export default function Agreements() {
                 </div>
               )}
 
-              {/* Series name for network bonus */}
-              {needsSeries && (
-                <div>
-                  <Label>שם סדרה/דגם (לזיהוי אוטומטי בפריטים)</Label>
-                  <Input value={form.series_name} onChange={(e) => setForm({ ...form, series_name: e.target.value })} placeholder="למשל: ELITE" />
-                </div>
-              )}
+
+
 
               {/* Exclusions */}
               {needsExclusions && (

@@ -209,7 +209,7 @@ export default function Transactions() {
               {isLoading ? (
                 <TableRow><TableCell colSpan={8} className="text-center py-8">טוען...</TableCell></TableRow>
               ) : transactions?.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">אין עסקאות בונוס.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">אין עסקאות בונוס.</TableCell></TableRow>
               ) : (
                 transactions?.map((t: any) => (
                   <TableRow key={t.id}>
