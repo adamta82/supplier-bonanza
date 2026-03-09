@@ -25,6 +25,7 @@ export default function Transactions() {
     bonus_value: "",
     items_detail: "",
     counts_toward_target: true,
+    bonus_payment_type: "goods",
   });
 
   const resetForm = () => {
