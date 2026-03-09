@@ -154,8 +154,7 @@ export default function Agreements() {
   };
 
   const needsTiers = form.bonus_type === "annual_target" || (form.bonus_type === "marketing" && !form.fixed_amount);
-  const needsFixed = form.bonus_type === "annual_fixed" || form.bonus_type === "marketing" || form.bonus_type === "transaction";
-  const needsSeries = form.bonus_type === "network";
+  const needsFixed = form.bonus_type === "annual_fixed" || form.bonus_type === "marketing";
   const needsExclusions = form.bonus_type === "annual_target" || form.bonus_type === "marketing";
 
   return (
