@@ -424,7 +424,7 @@ export default function Agreements() {
                       </TableCell>
                       <TableCell className="text-xs">
                         {excl.length > 0
-                          ? excl.map((e: any) => e.keyword).join(", ")
+                          ? excl.map((e: any) => `${e.mode === "include" ? "כולל" : "לא כולל"}: ${e.keyword}`).join(", ")
                           : a.series_name ? `סדרה: ${a.series_name}` : "-"}
                       </TableCell>
                       <TableCell>
