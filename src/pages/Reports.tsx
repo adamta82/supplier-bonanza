@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { fmtNum } from "@/lib/utils";
 
 const VAT_RATE = 0.18;
 const addVAT = (amount: number) => amount * (1 + VAT_RATE);
