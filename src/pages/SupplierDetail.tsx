@@ -168,6 +168,169 @@ export default function SupplierDetail() {
     onError: () => toast.error("שגיאה בעדכון הספק"),
   });
 
+  // Agreement save/delete mutations
+  const resetAgreementForm = () => {
+    setAgreementDialogOpen(false);
+    setAgreementEditId(null);
+    setAgreementForm({
+      bonus_type: "annual_target", period_start: "", period_end: "",
+      vat_included: false, target_type: "amount", fixed_amount: "", fixed_percentage: "",
+      notes: "", bonus_payment_type: "goods",
+    });
+    setTiers([{ target_value: "", bonus_percentage: "" }]);
+    setExclusions([]);
+  };
+
+  const saveAgreementMutation = useMutation({
+    mutationFn: async () => {
+      const payload: any = {
+        supplier_id: id!,
+        bonus_type: agreementForm.bonus_type,
+        period_start: agreementForm.period_start || null,
+        period_end: agreementForm.period_end || null,
+        vat_included: agreementForm.vat_included,
+        target_type: agreementForm.target_type || null,
+        fixed_amount: agreementForm.fixed_amount ? parseFloat(agreementForm.fixed_amount) : null,
+        fixed_percentage: agreementForm.fixed_percentage ? parseFloat(agreementForm.fixed_percentage) : null,
+        notes: agreementForm.notes || null,
+        bonus_payment_type: agreementForm.bonus_payment_type,
+        exclusions: exclusions.length > 0 ? JSON.stringify(exclusions) : "[]",
+      };
+      let agreementId = agreementEditId;
+      if (agreementEditId) {
+        const { error } = await supabase.from("bonus_agreements").update(payload).eq("id", agreementEditId);
+        if (error) throw error;
+        await supabase.from("bonus_tiers").delete().eq("agreement_id", agreementEditId);
+      } else {
+        const { data, error } = await supabase.from("bonus_agreements").insert(payload).select("id").single();
+        if (error) throw error;
+        agreementId = data.id;
+      }
+      const validTiers = tiers.filter((t) => t.target_value && t.bonus_percentage);
+      if (validTiers.length > 0 && agreementId) {
+        const { error } = await supabase.from("bonus_tiers").insert(
+          validTiers.map((t, i) => ({
+            agreement_id: agreementId!,
+            tier_order: i + 1,
+            target_value: parseFloat(t.target_value),
+            bonus_percentage: parseFloat(t.bonus_percentage),
+          }))
+        );
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier-agreements", id] });
+      queryClient.invalidateQueries({ queryKey: ["agreements"] });
+      toast.success(agreementEditId ? "הסכם עודכן" : "הסכם נוסף");
+      resetAgreementForm();
+    },
+    onError: () => toast.error("שגיאה בשמירה"),
+  });
+
+  const deleteAgreementMutation = useMutation({
+    mutationFn: async (agId: string) => {
+      const { error } = await supabase.from("bonus_agreements").delete().eq("id", agId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier-agreements", id] });
+      queryClient.invalidateQueries({ queryKey: ["agreements"] });
+      toast.success("הסכם נמחק");
+      resetAgreementForm();
+    },
+  });
+
+  const openEditAgreement = (a: any) => {
+    const excl = (() => {
+      try { return typeof a.exclusions === "string" ? JSON.parse(a.exclusions) : (a.exclusions || []); } catch { return []; }
+    })();
+    setAgreementEditId(a.id);
+    setAgreementForm({
+      bonus_type: a.bonus_type,
+      period_start: a.period_start || "",
+      period_end: a.period_end || "",
+      vat_included: a.vat_included || false,
+      target_type: a.target_type || "amount",
+      fixed_amount: a.fixed_amount?.toString() || "",
+      fixed_percentage: a.fixed_percentage?.toString() || "",
+      notes: a.notes || "",
+      bonus_payment_type: a.bonus_payment_type || "goods",
+    });
+    setTiers(
+      a.bonus_tiers?.length > 0
+        ? a.bonus_tiers.sort((x: any, y: any) => x.tier_order - y.tier_order).map((t: any) => ({ target_value: t.target_value.toString(), bonus_percentage: t.bonus_percentage.toString() }))
+        : [{ target_value: "", bonus_percentage: "" }]
+    );
+    setExclusions(excl);
+    setAgreementDialogOpen(true);
+  };
+
+  const openAddAgreement = (bonusType: string) => {
+    resetAgreementForm();
+    setAgreementForm(prev => ({ ...prev, bonus_type: bonusType }));
+    setAgreementDialogOpen(true);
+  };
+
+  // Transaction bonus save/delete mutations
+  const resetTxForm = () => {
+    setTxDialogOpen(false);
+    setTxEditId(null);
+    setTxForm({ transaction_date: "", description: "", total_value: "", bonus_value: "", bonus_payment_type: "goods" });
+  };
+
+  const saveTxMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        supplier_id: id!,
+        transaction_date: txForm.transaction_date,
+        description: txForm.description || null,
+        total_value: parseFloat(txForm.total_value),
+        bonus_value: parseFloat(txForm.bonus_value),
+        bonus_payment_type: txForm.bonus_payment_type,
+      };
+      if (txEditId) {
+        const { error } = await supabase.from("transaction_bonuses").update(payload).eq("id", txEditId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("transaction_bonuses").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier-bonuses", id] });
+      queryClient.invalidateQueries({ queryKey: ["transaction-bonuses"] });
+      toast.success(txEditId ? "בונוס עודכן" : "בונוס נוסף");
+      resetTxForm();
+    },
+    onError: () => toast.error("שגיאה בשמירה"),
+  });
+
+  const deleteTxMutation = useMutation({
+    mutationFn: async (txId: string) => {
+      const { error } = await supabase.from("transaction_bonuses").delete().eq("id", txId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier-bonuses", id] });
+      queryClient.invalidateQueries({ queryKey: ["transaction-bonuses"] });
+      toast.success("בונוס נמחק");
+      resetTxForm();
+    },
+  });
+
+  const openEditTx = (b: any) => {
+    setTxEditId(b.id);
+    setTxForm({
+      transaction_date: b.transaction_date || "",
+      description: b.description || "",
+      total_value: b.total_value?.toString() || "",
+      bonus_value: b.bonus_value?.toString() || "",
+      bonus_payment_type: b.bonus_payment_type || "goods",
+    });
+    setTxDialogOpen(true);
+  };
+
 
   const { data: agreements } = useQuery({
     queryKey: ["supplier-agreements", id],
