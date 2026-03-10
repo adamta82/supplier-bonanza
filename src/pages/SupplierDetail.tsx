@@ -1203,7 +1203,7 @@ export default function SupplierDetail() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v: number) => `₪${v.toLocaleString()}`} />
+                <Tooltip formatter={(v: number) => `₪${fmtNum(v)}`} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="purchases" name="מחזור קניות" fill="hsl(217, 71%, 45%)" radius={[2, 2, 0, 0]} />
                 <Bar dataKey="sales" name="מחזור מכירות" fill="hsl(142, 71%, 45%)" radius={[2, 2, 0, 0]} />
