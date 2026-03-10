@@ -807,7 +807,7 @@ export default function SupplierDetail() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-center p-4 bg-muted/50 rounded-lg">
-              <div className="text-2xl font-bold">₪{filteredBrandProfit.totalProfit.toLocaleString()}</div>
+              <div className="text-2xl font-bold">₪{fmtNum(filteredBrandProfit.totalProfit)}</div>
               <div className="text-sm text-muted-foreground">{filteredBrandProfit.margin.toFixed(1)}% רווח</div>
             </div>
             <div className="space-y-2">
