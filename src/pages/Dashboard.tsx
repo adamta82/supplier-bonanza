@@ -86,7 +86,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">סה"כ רכישות</p>
-                <p className="text-2xl font-bold mt-1">₪{totalPurchases.toLocaleString()}</p>
+                <p className="text-2xl font-bold mt-1">₪{fmtNum(totalPurchases)}</p>
               </div>
               <ShoppingCart className="w-10 h-10 text-primary opacity-80" />
             </div>
