@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { Plus, Trash2, Pencil, X } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
+import { fmtNum } from "@/lib/utils";
 
 const bonusTypeLabels: Record<string, string> = {
   annual_target: "יעדים",
