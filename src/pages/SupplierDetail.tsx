@@ -71,7 +71,7 @@ export default function SupplierDetail() {
     bonus_payment_type: "goods",
   });
   type TierForm = { target_value: string; bonus_percentage: string };
-  type ExclusionForm = { keyword: string; counts_toward_target: boolean; gets_bonus: boolean };
+  type ExclusionForm = { keyword: string; mode: "include" | "exclude"; counts_toward_target: boolean; gets_bonus: boolean };
   const [tiers, setTiers] = useState<TierForm[]>([{ target_value: "", bonus_percentage: "" }]);
   const [exclusions, setExclusions] = useState<ExclusionForm[]>([]);
 
@@ -917,6 +917,14 @@ export default function SupplierDetail() {
                             {agreement.fixed_amount && !sortedTiers.length && (
                               <div className="text-sm">בונוס קבוע: ₪{agreement.fixed_amount.toLocaleString()}</div>
                             )}
+                            {(() => {
+                              const excl = (() => { try { return typeof agreement.exclusions === "string" ? JSON.parse(agreement.exclusions) : (agreement.exclusions || []); } catch { return []; } })();
+                              return excl.length > 0 ? (
+                                <div className="text-xs text-muted-foreground border-t pt-2 mt-2">
+                                  🔍 חריגות: {excl.map((e: any) => `${e.mode === "include" ? "כולל" : "לא כולל"} "${e.keyword}"${e.gets_bonus ? " ✓בונוס" : " ✗בונוס"}${(agreement.bonus_type === "annual_target" || agreement.bonus_type === "marketing") ? (e.counts_toward_target ? " ✓יעד" : " ✗יעד") : ""}`).join(" | ")}
+                                </div>
+                              ) : null;
+                            })()}
                             {agreement.notes && (
                               <div className="text-xs text-muted-foreground border-t pt-2 mt-2">📝 {agreement.notes}</div>
                             )}
@@ -1057,26 +1065,39 @@ export default function SupplierDetail() {
             {(agreementForm.bonus_type === "annual_target" || agreementForm.bonus_type === "marketing" || agreementForm.bonus_type === "annual_fixed") && (
               <div className="space-y-3 border rounded-lg p-3">
                 <Label className="text-base font-semibold">חריגות</Label>
-                <p className="text-xs text-muted-foreground">פריטים שמילת המפתח מופיעה בשם שלהם יטופלו בהתאם להגדרות</p>
+                <p className="text-xs text-muted-foreground">סינון פריטים לפי מילת מפתח בשם הפריט</p>
                 {exclusions.map((exc, i) => (
-                  <div key={i} className="flex gap-2 items-center border-b pb-2">
-                    <div className="flex-1">
-                      <Input value={exc.keyword} onChange={(e) => { const n = [...exclusions]; n[i].keyword = e.target.value; setExclusions(n); }} placeholder="מילת מפתח" className="text-sm" />
+                  <div key={i} className="flex flex-col gap-2 border-b pb-3">
+                    <div className="flex gap-2 items-center">
+                      <Select value={exc.mode || "exclude"} onValueChange={(v) => { const n = [...exclusions]; n[i].mode = v as "include" | "exclude"; setExclusions(n); }}>
+                        <SelectTrigger className="w-[110px] text-xs h-8"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="include">כולל</SelectItem>
+                          <SelectItem value="exclude">לא כולל</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="flex-1">
+                        <Input value={exc.keyword} onChange={(e) => { const n = [...exclusions]; n[i].keyword = e.target.value; setExclusions(n); }} placeholder="מילת מפתח" className="text-sm h-8" />
+                      </div>
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExclusions(exclusions.filter((_, j) => j !== i))}>
+                        <X className="w-3.5 h-3.5 text-destructive" />
+                      </Button>
                     </div>
-                    <label className="flex items-center gap-1 text-xs whitespace-nowrap">
-                      <input type="checkbox" checked={exc.counts_toward_target} onChange={(e) => { const n = [...exclusions]; n[i].counts_toward_target = e.target.checked; setExclusions(n); }} className="w-3.5 h-3.5" />
-                      נספר ביעד
-                    </label>
-                    <label className="flex items-center gap-1 text-xs whitespace-nowrap">
-                      <input type="checkbox" checked={exc.gets_bonus} onChange={(e) => { const n = [...exclusions]; n[i].gets_bonus = e.target.checked; setExclusions(n); }} className="w-3.5 h-3.5" />
-                      מקבל בונוס
-                    </label>
-                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExclusions(exclusions.filter((_, j) => j !== i))}>
-                      <X className="w-3.5 h-3.5 text-destructive" />
-                    </Button>
+                    <div className="flex gap-4 pr-2">
+                      <label className="flex items-center gap-1 text-xs whitespace-nowrap">
+                        <input type="checkbox" checked={exc.gets_bonus} onChange={(e) => { const n = [...exclusions]; n[i].gets_bonus = e.target.checked; setExclusions(n); }} className="w-3.5 h-3.5" />
+                        מקבל בונוס
+                      </label>
+                      {(agreementForm.bonus_type === "annual_target" || agreementForm.bonus_type === "marketing") && (
+                        <label className="flex items-center gap-1 text-xs whitespace-nowrap">
+                          <input type="checkbox" checked={exc.counts_toward_target} onChange={(e) => { const n = [...exclusions]; n[i].counts_toward_target = e.target.checked; setExclusions(n); }} className="w-3.5 h-3.5" />
+                          נספר ביעד
+                        </label>
+                      )}
+                    </div>
                   </div>
                 ))}
-                <Button type="button" variant="outline" size="sm" onClick={() => setExclusions([...exclusions, { keyword: "", counts_toward_target: true, gets_bonus: false }])}>
+                <Button type="button" variant="outline" size="sm" onClick={() => setExclusions([...exclusions, { keyword: "", mode: "exclude", counts_toward_target: true, gets_bonus: false }])}>
                   + הוסף חריגה
                 </Button>
               </div>
