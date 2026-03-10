@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
+import { fmtNum } from "@/lib/utils";
 
 export default function Transactions() {
   const queryClient = useQueryClient();
