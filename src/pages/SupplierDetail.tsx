@@ -973,8 +973,8 @@ export default function SupplierDetail() {
                           <TableRow key={b.id}>
                             <TableCell>{formatDate(b.transaction_date)}</TableCell>
                             <TableCell className="max-w-[200px] truncate">{b.description || "-"}</TableCell>
-                            <TableCell>₪{(b.total_value || 0).toLocaleString()}</TableCell>
-                            <TableCell className="font-semibold text-primary">₪{(b.bonus_value || 0).toLocaleString()}</TableCell>
+                            <TableCell>₪{fmtNum(b.total_value)}</TableCell>
+                            <TableCell className="font-semibold text-primary">₪{fmtNum(b.bonus_value)}</TableCell>
                             <TableCell>{b.bonus_payment_type === "money" ? "כסף" : "סחורה"}</TableCell>
                             <TableCell>
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditTx(b)}>
