@@ -1421,8 +1421,8 @@ export default function SupplierDetail() {
                           <TableCell className="font-mono text-xs">{data.customerPo || "-"}</TableCell>
                           <TableCell>{data.customer}</TableCell>
                           <TableCell>{data.items.length}</TableCell>
-                          <TableCell>₪{data.totalSale.toLocaleString()}</TableCell>
-                          <TableCell>₪{data.totalProfit.toLocaleString()}</TableCell>
+                          <TableCell>₪{fmtNum(data.totalSale)}</TableCell>
+                          <TableCell>₪{fmtNum(data.totalProfit)}</TableCell>
                         </TableRow>
                         {expandedSO === so && (
                           <TableRow key={`${so}-detail`}>
