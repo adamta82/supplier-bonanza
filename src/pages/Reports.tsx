@@ -150,7 +150,7 @@ export default function Reports() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}K`} />
-                <Tooltip formatter={(value: number) => `₪${value.toLocaleString()}`} />
+                <Tooltip formatter={(value: number) => `₪${fmtNum(value)}`} />
                 <Legend />
                 <Bar dataKey="directProfit" name="רווח ישיר" fill="hsl(217, 71%, 45%)" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="finalProfit" name="רווח סופי" fill="hsl(142, 71%, 40%)" radius={[4, 4, 0, 0]} />
