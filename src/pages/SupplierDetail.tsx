@@ -845,19 +845,22 @@ export default function SupplierDetail() {
             <TabsTrigger value="transaction">עסקה</TabsTrigger>
           </TabsList>
 
-          {/* Annual Fixed, Annual Target, Marketing tabs */}
           {["annual_fixed", "annual_target", "marketing"].map((tabType) => {
             const tabAgreements = (agreements || []).filter((a: any) => a.bonus_type === tabType);
             return (
               <TabsContent key={tabType} value={tabType}>
-                {tabAgreements.length > 0 ? (
-                  <div className="space-y-3">
-                    {tabAgreements.map((agreement: any) => {
+                <div className="space-y-3">
+                  <div className="flex justify-end">
+                    <Button size="sm" onClick={() => openAddAgreement(tabType)}>
+                      <Plus className="w-4 h-4 ml-1" />הוסף הסכם
+                    </Button>
+                  </div>
+                  {tabAgreements.length > 0 ? (
+                    tabAgreements.map((agreement: any) => {
                       const status = getAgreementStatus(agreement);
                       const bonusValue = calcAgreementBonusValue(agreement);
                       const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
                       const highestTier = sortedTiers[sortedTiers.length - 1];
-
                       const agrPurchases = (purchases || []).filter((p: any) => {
                         if (!p.order_date) return false;
                         if (agreement.period_start && p.order_date < agreement.period_start) return false;
@@ -865,9 +868,7 @@ export default function SupplierDetail() {
                         return true;
                       });
                       let volume = agrPurchases.reduce((s: number, p: any) => s + (p.total_amount || 0), 0);
-                      const agrTxBonuses = (bonuses || []).filter(
-                        (b: any) => b.counts_toward_target && b.agreement_id === agreement.id,
-                      );
+                      const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
                       volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
                       const progress = highestTier ? Math.min((volume / highestTier.target_value) * 100, 100) : 0;
 
@@ -877,110 +878,296 @@ export default function SupplierDetail() {
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <Badge variant="secondary">{bonusTypeLabels[agreement.bonus_type] || agreement.bonus_type}</Badge>
+                                <Badge variant={agreement.bonus_payment_type === "money" ? "outline" : "default"}>
+                                  {agreement.bonus_payment_type === "money" ? "כסף" : "סחורה"}
+                                </Badge>
                                 {agreement.period_start && agreement.period_end && (
                                   <span className="text-xs text-muted-foreground">
                                     {formatDate(agreement.period_start)} - {formatDate(agreement.period_end)}
                                   </span>
                                 )}
-                                {agreement.category_mode === "include_only" && (
-                                  <span className="text-xs text-muted-foreground">רק: {agreement.category_filter}</span>
-                                )}
-                                {agreement.category_mode === "exclude" && (
-                                  <span className="text-xs text-muted-foreground">חוץ מ: {agreement.category_filter}</span>
-                                )}
-                                {agreement.series_name && (
-                                  <span className="text-xs text-muted-foreground">סדרה: {agreement.series_name}</span>
-                                )}
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-bold text-primary">₪{bonusValue.toLocaleString()}</span>
                                 <Badge variant={status.variant}>{status.label}</Badge>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditAgreement(agreement)}>
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </Button>
                               </div>
                             </div>
-
                             {sortedTiers.length > 0 && (
                               <>
                                 <div className="flex items-center justify-between text-sm">
-                                  <span>
-                                    התקדמות: ₪{volume.toLocaleString()} / ₪{highestTier?.target_value.toLocaleString()}
-                                  </span>
+                                  <span>התקדמות: ₪{volume.toLocaleString()} / ₪{highestTier?.target_value.toLocaleString()}</span>
                                   <span className="font-bold">{progress.toFixed(0)}%</span>
                                 </div>
                                 <Progress value={progress} className="h-2" />
                                 <div className="flex flex-wrap gap-2 text-xs">
                                   {sortedTiers.map((tier: any, i: number) => (
-                                    <span
-                                      key={i}
-                                      className={`px-2 py-0.5 rounded-full ${volume >= tier.target_value ? "bg-primary/20 text-primary font-semibold" : "bg-muted text-muted-foreground"}`}
-                                    >
+                                    <span key={i} className={`px-2 py-0.5 rounded-full ${volume >= tier.target_value ? "bg-primary/20 text-primary font-semibold" : "bg-muted text-muted-foreground"}`}>
                                       ₪{tier.target_value.toLocaleString()} → {tier.bonus_percentage}%
                                     </span>
                                   ))}
                                 </div>
                               </>
                             )}
-
                             {agreement.fixed_percentage && !sortedTiers.length && (
                               <div className="text-sm">בונוס קבוע: {agreement.fixed_percentage}%</div>
                             )}
                             {agreement.fixed_amount && !sortedTiers.length && (
                               <div className="text-sm">בונוס קבוע: ₪{agreement.fixed_amount.toLocaleString()}</div>
                             )}
+                            {agreement.notes && (
+                              <div className="text-xs text-muted-foreground border-t pt-2 mt-2">📝 {agreement.notes}</div>
+                            )}
                           </CardContent>
                         </Card>
                       );
-                    })}
-                  </div>
-                ) : (
-                  <Card>
-                    <CardContent className="py-6 text-center text-muted-foreground">אין הסכמים מסוג זה</CardContent>
-                  </Card>
-                )}
+                    })
+                  ) : (
+                    <Card>
+                      <CardContent className="py-6 text-center text-muted-foreground">אין הסכמים מסוג זה</CardContent>
+                    </Card>
+                  )}
+                </div>
               </TabsContent>
             );
           })}
 
-          {/* Transaction bonuses tab */}
           <TabsContent value="transaction">
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>תאריך</TableHead>
-                      <TableHead>תיאור</TableHead>
-                      <TableHead>סכום עסקה</TableHead>
-                      <TableHead>ערך בונוס</TableHead>
-                      <TableHead>אופן קבלה</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredBonuses.length === 0 ? (
+            <div className="space-y-3">
+              <div className="flex justify-end">
+                <Button size="sm" onClick={() => { resetTxForm(); setTxDialogOpen(true); }}>
+                  <Plus className="w-4 h-4 ml-1" />הוסף בונוס עסקה
+                </Button>
+              </div>
+              <Card>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                          אין בונוסי עסקה
-                        </TableCell>
+                        <TableHead>תאריך</TableHead>
+                        <TableHead>תיאור</TableHead>
+                        <TableHead>סכום עסקה</TableHead>
+                        <TableHead>ערך בונוס</TableHead>
+                        <TableHead>אופן קבלה</TableHead>
+                        <TableHead>פעולות</TableHead>
                       </TableRow>
-                    ) : (
-                      filteredBonuses.map((b: any) => (
-                        <TableRow key={b.id}>
-                          <TableCell>{formatDate(b.transaction_date)}</TableCell>
-                          <TableCell className="max-w-[200px] truncate">{b.description || "-"}</TableCell>
-                          <TableCell>₪{(b.total_value || 0).toLocaleString()}</TableCell>
-                          <TableCell className="font-semibold text-primary">
-                            ₪{(b.bonus_value || 0).toLocaleString()}
-                          </TableCell>
-                          <TableCell>{b.bonus_payment_type === "money" ? "כסף" : "סחורה"}</TableCell>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredBonuses.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">אין בונוסי עסקה</TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                      ) : (
+                        filteredBonuses.map((b: any) => (
+                          <TableRow key={b.id}>
+                            <TableCell>{formatDate(b.transaction_date)}</TableCell>
+                            <TableCell className="max-w-[200px] truncate">{b.description || "-"}</TableCell>
+                            <TableCell>₪{(b.total_value || 0).toLocaleString()}</TableCell>
+                            <TableCell className="font-semibold text-primary">₪{(b.bonus_value || 0).toLocaleString()}</TableCell>
+                            <TableCell>{b.bonus_payment_type === "money" ? "כסף" : "סחורה"}</TableCell>
+                            <TableCell>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditTx(b)}>
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Agreement Dialog */}
+      <Dialog open={agreementDialogOpen} onOpenChange={(open) => { if (!open) resetAgreementForm(); else setAgreementDialogOpen(true); }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{agreementEditId ? "עריכת הסכם" : "הסכם בונוס חדש"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); saveAgreementMutation.mutate(); }} className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>סוג בונוס *</Label>
+                <Select value={agreementForm.bonus_type} onValueChange={(v) => setAgreementForm({ ...agreementForm, bonus_type: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="annual_target">יעדים</SelectItem>
+                    <SelectItem value="marketing">שיווק</SelectItem>
+                    <SelectItem value="annual_fixed">שנתי קבוע</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>אופן קבלת הבונוס</Label>
+                <Select value={agreementForm.bonus_payment_type} onValueChange={(v) => setAgreementForm({ ...agreementForm, bonus_payment_type: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="goods">סחורה</SelectItem>
+                    <SelectItem value="money">כסף</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>מתאריך</Label>
+                <Input type="date" value={agreementForm.period_start} onChange={(e) => setAgreementForm({ ...agreementForm, period_start: e.target.value })} />
+              </div>
+              <div>
+                <Label>עד תאריך</Label>
+                <Input type="date" value={agreementForm.period_end} onChange={(e) => setAgreementForm({ ...agreementForm, period_end: e.target.value })} />
+              </div>
+            </div>
+            {(agreementForm.bonus_type === "annual_target" || agreementForm.bonus_type === "marketing") && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" checked={agreementForm.vat_included} onChange={(e) => setAgreementForm({ ...agreementForm, vat_included: e.target.checked })} className="w-4 h-4" />
+                  <Label>כולל מע"מ</Label>
+                </div>
+                <div>
+                  <Label>סוג יעד</Label>
+                  <Select value={agreementForm.target_type} onValueChange={(v) => setAgreementForm({ ...agreementForm, target_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="amount">שקלי (₪)</SelectItem>
+                      <SelectItem value="quantity">כמותי (יחידות)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            {(agreementForm.bonus_type === "annual_fixed" || agreementForm.bonus_type === "marketing") && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>אחוז קבוע</Label>
+                  <Input type="number" step="0.1" value={agreementForm.fixed_percentage} onChange={(e) => setAgreementForm({ ...agreementForm, fixed_percentage: e.target.value })} placeholder="%" />
+                </div>
+                <div>
+                  <Label>סכום קבוע (₪)</Label>
+                  <Input type="number" value={agreementForm.fixed_amount} onChange={(e) => setAgreementForm({ ...agreementForm, fixed_amount: e.target.value })} placeholder="₪" />
+                </div>
+              </div>
+            )}
+            {(agreementForm.bonus_type === "annual_target" || agreementForm.bonus_type === "marketing" || agreementForm.bonus_type === "annual_fixed") && (
+              <div className="space-y-3 border rounded-lg p-3">
+                <Label className="text-base font-semibold">חריגות</Label>
+                <p className="text-xs text-muted-foreground">פריטים שמילת המפתח מופיעה בשם שלהם יטופלו בהתאם להגדרות</p>
+                {exclusions.map((exc, i) => (
+                  <div key={i} className="flex gap-2 items-center border-b pb-2">
+                    <div className="flex-1">
+                      <Input value={exc.keyword} onChange={(e) => { const n = [...exclusions]; n[i].keyword = e.target.value; setExclusions(n); }} placeholder="מילת מפתח" className="text-sm" />
+                    </div>
+                    <label className="flex items-center gap-1 text-xs whitespace-nowrap">
+                      <input type="checkbox" checked={exc.counts_toward_target} onChange={(e) => { const n = [...exclusions]; n[i].counts_toward_target = e.target.checked; setExclusions(n); }} className="w-3.5 h-3.5" />
+                      נספר ביעד
+                    </label>
+                    <label className="flex items-center gap-1 text-xs whitespace-nowrap">
+                      <input type="checkbox" checked={exc.gets_bonus} onChange={(e) => { const n = [...exclusions]; n[i].gets_bonus = e.target.checked; setExclusions(n); }} className="w-3.5 h-3.5" />
+                      מקבל בונוס
+                    </label>
+                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExclusions(exclusions.filter((_, j) => j !== i))}>
+                      <X className="w-3.5 h-3.5 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={() => setExclusions([...exclusions, { keyword: "", counts_toward_target: true, gets_bonus: false }])}>
+                  + הוסף חריגה
+                </Button>
+              </div>
+            )}
+            {(agreementForm.bonus_type === "annual_target" || (agreementForm.bonus_type === "marketing" && !agreementForm.fixed_amount)) && (
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">מדרגות יעד</Label>
+                {tiers.map((tier, i) => (
+                  <div key={i} className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <Label className="text-xs">יעד {agreementForm.target_type === "quantity" ? "(כמות)" : "(₪)"}</Label>
+                      <Input type="number" value={tier.target_value} onChange={(e) => { const n = [...tiers]; n[i].target_value = e.target.value; setTiers(n); }} />
+                    </div>
+                    <div className="flex-1">
+                      <Label className="text-xs">אחוז בונוס</Label>
+                      <Input type="number" step="0.1" value={tier.bonus_percentage} onChange={(e) => { const n = [...tiers]; n[i].bonus_percentage = e.target.value; setTiers(n); }} />
+                    </div>
+                    {tiers.length > 1 && (
+                      <Button type="button" variant="ghost" size="icon" onClick={() => setTiers(tiers.filter((_, j) => j !== i))}>
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={() => setTiers([...tiers, { target_value: "", bonus_percentage: "" }])}>
+                  + הוסף מדרגה
+                </Button>
+              </div>
+            )}
+            <div>
+              <Label>הערות</Label>
+              <Input value={agreementForm.notes} onChange={(e) => setAgreementForm({ ...agreementForm, notes: e.target.value })} />
+            </div>
+            <Button type="submit" className="w-full" disabled={saveAgreementMutation.isPending}>
+              {saveAgreementMutation.isPending ? "שומר..." : agreementEditId ? "עדכן הסכם" : "שמור הסכם"}
+            </Button>
+            {agreementEditId && (
+              <Button type="button" variant="destructive" className="w-full" onClick={() => { if (confirm("למחוק את ההסכם?")) deleteAgreementMutation.mutate(agreementEditId); }} disabled={deleteAgreementMutation.isPending}>
+                <Trash2 className="w-4 h-4 ml-2" />{deleteAgreementMutation.isPending ? "מוחק..." : "מחק הסכם"}
+              </Button>
+            )}
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Transaction Bonus Dialog */}
+      <Dialog open={txDialogOpen} onOpenChange={(open) => { if (!open) resetTxForm(); else setTxDialogOpen(true); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{txEditId ? "עריכת בונוס עסקה" : "בונוס עסקה חדש"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={(e) => { e.preventDefault(); saveTxMutation.mutate(); }} className="space-y-4">
+            <div>
+              <Label>תאריך *</Label>
+              <Input type="date" value={txForm.transaction_date} onChange={(e) => setTxForm({ ...txForm, transaction_date: e.target.value })} required />
+            </div>
+            <div>
+              <Label>תיאור</Label>
+              <Input value={txForm.description} onChange={(e) => setTxForm({ ...txForm, description: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>סכום עסקה *</Label>
+                <Input type="number" value={txForm.total_value} onChange={(e) => setTxForm({ ...txForm, total_value: e.target.value })} required />
+              </div>
+              <div>
+                <Label>ערך בונוס *</Label>
+                <Input type="number" value={txForm.bonus_value} onChange={(e) => setTxForm({ ...txForm, bonus_value: e.target.value })} required />
+              </div>
+            </div>
+            <div>
+              <Label>אופן קבלה</Label>
+              <Select value={txForm.bonus_payment_type} onValueChange={(v) => setTxForm({ ...txForm, bonus_payment_type: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="goods">סחורה</SelectItem>
+                  <SelectItem value="money">כסף</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="submit" className="w-full" disabled={saveTxMutation.isPending || !txForm.transaction_date || !txForm.total_value || !txForm.bonus_value}>
+              {saveTxMutation.isPending ? "שומר..." : txEditId ? "עדכן בונוס" : "שמור בונוס"}
+            </Button>
+            {txEditId && (
+              <Button type="button" variant="destructive" className="w-full" onClick={() => { if (confirm("למחוק את הבונוס?")) deleteTxMutation.mutate(txEditId); }} disabled={deleteTxMutation.isPending}>
+                <Trash2 className="w-4 h-4 ml-2" />{deleteTxMutation.isPending ? "מוחק..." : "מחק בונוס"}
+              </Button>
+            )}
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Monthly chart */}
       {monthlyData.length > 0 && (
