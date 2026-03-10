@@ -161,7 +161,7 @@ export default function Dashboard() {
                   )}
                   {purchasesBySupplier?.[s.name] ? (
                     <div className="text-sm font-medium mt-2 text-primary">
-                      ₪{purchasesBySupplier[s.name].toLocaleString()}
+                      ₪{fmtNum(purchasesBySupplier[s.name])}
                     </div>
                   ) : null}
                 </Link>

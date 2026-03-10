@@ -415,12 +415,12 @@ export default function Agreements() {
                         {a.bonus_tiers?.length > 0
                           ? a.bonus_tiers
                               .sort((x: any, y: any) => x.tier_order - y.tier_order)
-                              .map((t: any) => `₪${t.target_value.toLocaleString()} → ${t.bonus_percentage}%`)
-                              .join(" | ")
+                               .map((t: any) => `₪${fmtNum(t.target_value)} → ${t.bonus_percentage}%`)
+                               .join(" | ")
                           : a.fixed_percentage
                           ? `${a.fixed_percentage}%`
                           : a.fixed_amount
-                          ? `₪${a.fixed_amount.toLocaleString()}`
+                          ? `₪${fmtNum(a.fixed_amount)}`
                           : "-"}
                       </TableCell>
                       <TableCell className="text-xs">

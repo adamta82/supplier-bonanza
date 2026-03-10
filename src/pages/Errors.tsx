@@ -108,7 +108,7 @@ export default function Errors() {
                         <TableCell>{r.supplier_number || "-"}</TableCell>
                         <TableCell className="font-mono text-xs">{r.item_code || "-"}</TableCell>
                         <TableCell>{r.item_description || "-"}</TableCell>
-                        <TableCell>₪{(r.total_amount || 0).toLocaleString()}</TableCell>
+                        <TableCell>₪{fmtNum(r.total_amount)}</TableCell>
                       </TableRow>
                     ))
                   )}
