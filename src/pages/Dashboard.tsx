@@ -110,7 +110,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">בונוס עסקאות</p>
-                <p className="text-2xl font-bold mt-1">₪{totalTransactionBonus.toLocaleString()}</p>
+                <p className="text-2xl font-bold mt-1">₪{fmtNum(totalTransactionBonus)}</p>
               </div>
               <TrendingUp className="w-10 h-10 text-success opacity-80" />
             </div>
