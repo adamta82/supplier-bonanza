@@ -1315,8 +1315,8 @@ export default function SupplierDetail() {
                                       <TableRow key={item.id}>
                                         <TableCell>{item.item_description || item.item_code || "-"}</TableCell>
                                         <TableCell>{item.quantity || "-"}</TableCell>
-                                        <TableCell>₪{addVAT(unitPrice).toLocaleString(undefined, { maximumFractionDigits: 2 })}</TableCell>
-                                        <TableCell>₪{addVAT(item.total_amount || 0).toLocaleString()}</TableCell>
+                                        <TableCell>₪{fmtNum(addVAT(unitPrice))}</TableCell>
+                                        <TableCell>₪{fmtNum(addVAT(item.total_amount || 0))}</TableCell>
                                       </TableRow>
                                     );
                                   })}
