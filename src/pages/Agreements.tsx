@@ -209,18 +209,7 @@ export default function Agreements() {
               </div>
 
               {/* Period */}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <Label>סוג תקופה</Label>
-                  <Select value={form.period_type} onValueChange={(v) => setForm({ ...form, period_type: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(periodLabels).map(([k, v]) => (
-                        <SelectItem key={k} value={k}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>מתאריך</Label>
                   <Input type="date" value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} />
