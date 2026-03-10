@@ -729,7 +729,7 @@ export default function SupplierDetail() {
           <CardContent className="pt-4 pb-4 text-center">
             <TrendingUp className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">מכירות (כולל מע״מ)</div>
-            <div className="text-lg font-bold">₪{totalSales.toLocaleString()}</div>
+            <div className="text-lg font-bold">₪{fmtNum(totalSales)}</div>
           </CardContent>
         </Card>
         <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => { setDisabledBrands(new Set()); setBrandDialogOpen(true); }}>
