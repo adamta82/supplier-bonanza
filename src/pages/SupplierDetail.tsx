@@ -634,7 +634,7 @@ export default function SupplierDetail() {
             <p className="text-muted-foreground text-sm">
               {supplier.supplier_number && `מס׳ ספק: ${supplier.supplier_number}`}
               {supplier.shotef != null && ` | שוטף+${supplier.shotef}`}
-              {(supplier as any).obligo != null && ` | אובליגו: ₪${Number((supplier as any).obligo).toLocaleString()}`}
+              {(supplier as any).obligo != null && ` | אובליגו: ₪${fmtNum(Number((supplier as any).obligo))}`}
             </p>
             <div className="flex items-center gap-4 mt-2">
               <div className="flex items-center gap-1.5">
