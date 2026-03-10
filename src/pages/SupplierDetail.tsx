@@ -906,7 +906,7 @@ export default function SupplierDetail() {
                                 <div className="flex flex-wrap gap-2 text-xs">
                                   {sortedTiers.map((tier: any, i: number) => (
                                     <span key={i} className={`px-2 py-0.5 rounded-full ${volume >= tier.target_value ? "bg-primary/20 text-primary font-semibold" : "bg-muted text-muted-foreground"}`}>
-                                      ₪{tier.target_value.toLocaleString()} → {tier.bonus_percentage}%
+                                      ₪{fmtNum(tier.target_value)} → {tier.bonus_percentage}%
                                     </span>
                                   ))}
                                 </div>
