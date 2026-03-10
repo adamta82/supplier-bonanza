@@ -793,7 +793,7 @@ export default function SupplierDetail() {
           <CardContent className="pt-4 pb-4 text-center">
             <TrendingUp className="w-5 h-5 mx-auto mb-1 text-primary" />
             <div className="text-xs text-muted-foreground">רווח סופי</div>
-            <div className="text-sm font-bold text-primary">₪{finalProfit.toLocaleString()}</div>
+            <div className="text-sm font-bold text-primary">₪{fmtNum(finalProfit)}</div>
             <div className="text-xs text-primary">{totalSales > 0 ? `${((finalProfit / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
           </CardContent>
         </Card>
