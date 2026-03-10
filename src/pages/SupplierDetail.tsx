@@ -772,11 +772,11 @@ export default function SupplierDetail() {
           <CardContent className="pt-4 pb-4 text-center">
             <Award className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">בונוס עסקאות</div>
-            <div className="text-sm font-bold">₪{(bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.transaction.goods).toLocaleString()}</div>
+            <div className="text-sm font-bold">₪{fmtNum(bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.transaction.goods)}</div>
             <div className="flex justify-center gap-2 mt-1 text-[10px] text-muted-foreground">
-              <span>כספי: ₪{bonusByTypeAndPayment.transaction.money.toLocaleString()}</span>
+              <span>כספי: ₪{fmtNum(bonusByTypeAndPayment.transaction.money)}</span>
               <span>|</span>
-              <span>סחורה: ₪{bonusByTypeAndPayment.transaction.goods.toLocaleString()}</span>
+              <span>סחורה: ₪{fmtNum(bonusByTypeAndPayment.transaction.goods)}</span>
             </div>
           </CardContent>
         </Card>
