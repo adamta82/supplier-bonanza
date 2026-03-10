@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, Clock, TrendingUp } from "lucide-react";
+import { fmtNum } from "@/lib/utils";
 
 const VAT_RATE = 0.18;
 const addVAT = (amount: number) => amount * (1 + VAT_RATE);
