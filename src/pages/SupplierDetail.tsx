@@ -17,6 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
+import { fmtNum } from "@/lib/utils";
 
 const VAT_RATE = 0.18;
 
