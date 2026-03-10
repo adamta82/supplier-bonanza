@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
+import { fmtNum } from "@/lib/utils";
 import * as XLSX from "xlsx";
 
 export default function Errors() {
