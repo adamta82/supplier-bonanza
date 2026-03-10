@@ -72,7 +72,7 @@ export default function SupplierDetail() {
     bonus_payment_type: "goods",
   });
   type TierForm = { target_value: string; bonus_percentage: string };
-  type ExclusionForm = { keyword: string; mode: "include" | "exclude"; counts_toward_target: boolean; gets_bonus: boolean };
+  type ExclusionForm = { keyword: string; mode: "include" | "exclude"; counts_toward_target: boolean };
   const [tiers, setTiers] = useState<TierForm[]>([{ target_value: "", bonus_percentage: "" }]);
   const [exclusions, setExclusions] = useState<ExclusionForm[]>([]);
 
@@ -922,7 +922,7 @@ export default function SupplierDetail() {
                               const excl = (() => { try { return typeof agreement.exclusions === "string" ? JSON.parse(agreement.exclusions) : (agreement.exclusions || []); } catch { return []; } })();
                               return excl.length > 0 ? (
                                 <div className="text-xs text-muted-foreground border-t pt-2 mt-2">
-                                  🔍 חריגות: {excl.map((e: any) => `${e.mode === "include" ? "כולל" : "לא כולל"} "${e.keyword}"${e.gets_bonus ? " ✓בונוס" : " ✗בונוס"}${(agreement.bonus_type === "annual_target" || agreement.bonus_type === "marketing") ? (e.counts_toward_target ? " ✓יעד" : " ✗יעד") : ""}`).join(" | ")}
+                                  🔍 חריגות: {excl.map((e: any) => `${e.mode === "include" ? "כולל" : "לא כולל"} "${e.keyword}"${(agreement.bonus_type === "annual_target" || agreement.bonus_type === "marketing") ? (e.counts_toward_target ? " ✓יעד" : " ✗יעד") : ""}`).join(" | ")}
                                 </div>
                               ) : null;
                             })()}
@@ -1085,10 +1085,6 @@ export default function SupplierDetail() {
                       </Button>
                     </div>
                     <div className="flex gap-4 pr-2">
-                      <label className="flex items-center gap-1 text-xs whitespace-nowrap">
-                        <input type="checkbox" checked={exc.gets_bonus} onChange={(e) => { const n = [...exclusions]; n[i].gets_bonus = e.target.checked; setExclusions(n); }} className="w-3.5 h-3.5" />
-                        מקבל בונוס
-                      </label>
                       {(agreementForm.bonus_type === "annual_target" || agreementForm.bonus_type === "marketing") && (
                         <label className="flex items-center gap-1 text-xs whitespace-nowrap">
                           <input type="checkbox" checked={exc.counts_toward_target} onChange={(e) => { const n = [...exclusions]; n[i].counts_toward_target = e.target.checked; setExclusions(n); }} className="w-3.5 h-3.5" />
@@ -1098,7 +1094,7 @@ export default function SupplierDetail() {
                     </div>
                   </div>
                 ))}
-                <Button type="button" variant="outline" size="sm" onClick={() => setExclusions([...exclusions, { keyword: "", mode: "exclude", counts_toward_target: true, gets_bonus: false }])}>
+                <Button type="button" variant="outline" size="sm" onClick={() => setExclusions([...exclusions, { keyword: "", mode: "exclude", counts_toward_target: true }])}>
                   + הוסף חריגה
                 </Button>
               </div>
