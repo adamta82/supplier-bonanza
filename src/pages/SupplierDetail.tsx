@@ -1292,7 +1292,7 @@ export default function SupplierDetail() {
                           <TableCell>{formatDate(data.date)}</TableCell>
                           <TableCell className="font-mono text-xs">{po}</TableCell>
                           <TableCell>{data.items.length} פריטים</TableCell>
-                          <TableCell>₪{data.total.toLocaleString()}</TableCell>
+                          <TableCell>₪{fmtNum(data.total)}</TableCell>
                         </TableRow>
                         {expandedPO === po && (
                           <TableRow key={`${po}-detail`}>
