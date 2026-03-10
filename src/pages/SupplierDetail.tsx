@@ -56,6 +56,35 @@ export default function SupplierDetail() {
   const [salesSearch, setSalesSearch] = useState("");
   const [disabledBrands, setDisabledBrands] = useState<Set<string>>(new Set());
 
+  // Agreement form state
+  const [agreementDialogOpen, setAgreementDialogOpen] = useState(false);
+  const [agreementEditId, setAgreementEditId] = useState<string | null>(null);
+  const [agreementForm, setAgreementForm] = useState({
+    bonus_type: "annual_target",
+    period_start: "",
+    period_end: "",
+    vat_included: false,
+    target_type: "amount",
+    fixed_amount: "",
+    fixed_percentage: "",
+    notes: "",
+    bonus_payment_type: "goods",
+  });
+  type TierForm = { target_value: string; bonus_percentage: string };
+  type ExclusionForm = { keyword: string; counts_toward_target: boolean; gets_bonus: boolean };
+  const [tiers, setTiers] = useState<TierForm[]>([{ target_value: "", bonus_percentage: "" }]);
+  const [exclusions, setExclusions] = useState<ExclusionForm[]>([]);
+
+  // Transaction bonus form state
+  const [txDialogOpen, setTxDialogOpen] = useState(false);
+  const [txEditId, setTxEditId] = useState<string | null>(null);
+  const [txForm, setTxForm] = useState({
+    transaction_date: "",
+    description: "",
+    total_value: "",
+    bonus_value: "",
+    bonus_payment_type: "goods",
+  });
   const dateRange = useMemo(() => {
     const now = new Date();
     if (filterMode === "month") {
