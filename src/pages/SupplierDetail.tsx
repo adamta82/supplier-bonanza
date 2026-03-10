@@ -889,7 +889,7 @@ export default function SupplierDetail() {
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-primary">₪{bonusValue.toLocaleString()}</span>
+                                <span className="text-sm font-bold text-primary">₪{fmtNum(bonusValue)}</span>
                                 <Badge variant={status.variant}>{status.label}</Badge>
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditAgreement(agreement)}>
                                   <Pencil className="w-3.5 h-3.5" />
