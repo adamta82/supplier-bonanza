@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { fmtNum } from "@/lib/utils";
 
 const VAT_RATE = 0.18;
 const addVAT = (amount: number) => amount * (1 + VAT_RATE);
@@ -149,7 +150,7 @@ export default function Reports() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}K`} />
-                <Tooltip formatter={(value: number) => `₪${value.toLocaleString()}`} />
+                <Tooltip formatter={(value: number) => `₪${fmtNum(value)}`} />
                 <Legend />
                 <Bar dataKey="directProfit" name="רווח ישיר" fill="hsl(217, 71%, 45%)" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="finalProfit" name="רווח סופי" fill="hsl(142, 71%, 40%)" radius={[4, 4, 0, 0]} />
@@ -184,12 +185,12 @@ export default function Reports() {
                 sortedReport.map((s) => (
                   <TableRow key={s.name}>
                     <TableCell className="font-medium"><Link to={`/suppliers/${s.id}`} className="text-primary hover:underline">{s.name}</Link></TableCell>
-                    <TableCell>₪{s.purchaseVolume.toLocaleString()}</TableCell>
-                    <TableCell>₪{s.totalSales.toLocaleString()}</TableCell>
-                    <TableCell className={s.directProfit >= 0 ? "text-success" : "text-destructive"}>₪{s.directProfit.toLocaleString()}</TableCell>
+                    <TableCell>₪{fmtNum(s.purchaseVolume)}</TableCell>
+                    <TableCell>₪{fmtNum(s.totalSales)}</TableCell>
+                    <TableCell className={s.directProfit >= 0 ? "text-success" : "text-destructive"}>₪{fmtNum(s.directProfit)}</TableCell>
                     <TableCell>{s.directMargin.toFixed(1)}%</TableCell>
-                    <TableCell className="text-primary font-medium">₪{s.totalBonus.toLocaleString()}</TableCell>
-                    <TableCell className={s.finalProfit >= 0 ? "text-success font-bold" : "text-destructive font-bold"}>₪{s.finalProfit.toLocaleString()}</TableCell>
+                    <TableCell className="text-primary font-medium">₪{fmtNum(s.totalBonus)}</TableCell>
+                    <TableCell className={s.finalProfit >= 0 ? "text-success font-bold" : "text-destructive font-bold"}>₪{fmtNum(s.finalProfit)}</TableCell>
                     <TableCell className="font-medium">{s.finalMargin.toFixed(1)}%</TableCell>
                   </TableRow>
                 ))

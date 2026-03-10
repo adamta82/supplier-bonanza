@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, ShoppingCart, Award, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { fmtNum } from "@/lib/utils";
 
 const VAT_RATE = 0.18;
 const addVAT = (amount: number) => amount * (1 + VAT_RATE);
@@ -85,7 +86,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">סה"כ רכישות</p>
-                <p className="text-2xl font-bold mt-1">₪{totalPurchases.toLocaleString()}</p>
+                <p className="text-2xl font-bold mt-1">₪{fmtNum(totalPurchases)}</p>
               </div>
               <ShoppingCart className="w-10 h-10 text-primary opacity-80" />
             </div>
@@ -109,7 +110,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">בונוס עסקאות</p>
-                <p className="text-2xl font-bold mt-1">₪{totalTransactionBonus.toLocaleString()}</p>
+                <p className="text-2xl font-bold mt-1">₪{fmtNum(totalTransactionBonus)}</p>
               </div>
               <TrendingUp className="w-10 h-10 text-success opacity-80" />
             </div>
@@ -160,7 +161,7 @@ export default function Dashboard() {
                   )}
                   {purchasesBySupplier?.[s.name] ? (
                     <div className="text-sm font-medium mt-2 text-primary">
-                      ₪{purchasesBySupplier[s.name].toLocaleString()}
+                      ₪{fmtNum(purchasesBySupplier[s.name])}
                     </div>
                   ) : null}
                 </Link>

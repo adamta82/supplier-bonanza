@@ -17,6 +17,7 @@ import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
+import { fmtNum } from "@/lib/utils";
 
 const VAT_RATE = 0.18;
 
@@ -633,7 +634,7 @@ export default function SupplierDetail() {
             <p className="text-muted-foreground text-sm">
               {supplier.supplier_number && `מס׳ ספק: ${supplier.supplier_number}`}
               {supplier.shotef != null && ` | שוטף+${supplier.shotef}`}
-              {(supplier as any).obligo != null && ` | אובליגו: ₪${Number((supplier as any).obligo).toLocaleString()}`}
+              {(supplier as any).obligo != null && ` | אובליגו: ₪${fmtNum(Number((supplier as any).obligo))}`}
             </p>
             <div className="flex items-center gap-4 mt-2">
               <div className="flex items-center gap-1.5">
@@ -721,21 +722,21 @@ export default function SupplierDetail() {
           <CardContent className="pt-4 pb-4 text-center">
             <ShoppingCart className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">רכישות (כולל מע״מ)</div>
-            <div className="text-lg font-bold">₪{totalPurchases.toLocaleString()}</div>
+            <div className="text-lg font-bold">₪{fmtNum(totalPurchases)}</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
             <TrendingUp className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">מכירות (כולל מע״מ)</div>
-            <div className="text-lg font-bold">₪{totalSales.toLocaleString()}</div>
+            <div className="text-lg font-bold">₪{fmtNum(totalSales)}</div>
           </CardContent>
         </Card>
         <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => { setDisabledBrands(new Set()); setBrandDialogOpen(true); }}>
           <CardContent className="pt-4 pb-4 text-center">
             <Target className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">רווח ישיר</div>
-            <div className="text-lg font-bold">₪{totalDirectProfit.toLocaleString()}</div>
+            <div className="text-lg font-bold">₪{fmtNum(totalDirectProfit)}</div>
             <div className="text-xs text-muted-foreground">{totalSales > 0 ? `${((totalDirectProfit / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
           </CardContent>
         </Card>
@@ -747,11 +748,11 @@ export default function SupplierDetail() {
           <CardContent className="pt-4 pb-4 text-center">
             <Award className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">בונוס יעדים</div>
-            <div className="text-sm font-bold">₪{(bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.target.goods).toLocaleString()}</div>
+            <div className="text-sm font-bold">₪{fmtNum(bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.target.goods)}</div>
             <div className="flex justify-center gap-2 mt-1 text-[10px] text-muted-foreground">
-              <span>כספי: ₪{bonusByTypeAndPayment.target.money.toLocaleString()}</span>
+              <span>כספי: ₪{fmtNum(bonusByTypeAndPayment.target.money)}</span>
               <span>|</span>
-              <span>סחורה: ₪{bonusByTypeAndPayment.target.goods.toLocaleString()}</span>
+              <span>סחורה: ₪{fmtNum(bonusByTypeAndPayment.target.goods)}</span>
             </div>
           </CardContent>
         </Card>
@@ -759,11 +760,11 @@ export default function SupplierDetail() {
           <CardContent className="pt-4 pb-4 text-center">
             <Award className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">בונוס שיווק</div>
-            <div className="text-sm font-bold">₪{(bonusByTypeAndPayment.marketing.money + bonusByTypeAndPayment.marketing.goods).toLocaleString()}</div>
+            <div className="text-sm font-bold">₪{fmtNum(bonusByTypeAndPayment.marketing.money + bonusByTypeAndPayment.marketing.goods)}</div>
             <div className="flex justify-center gap-2 mt-1 text-[10px] text-muted-foreground">
-              <span>כספי: ₪{bonusByTypeAndPayment.marketing.money.toLocaleString()}</span>
+              <span>כספי: ₪{fmtNum(bonusByTypeAndPayment.marketing.money)}</span>
               <span>|</span>
-              <span>סחורה: ₪{bonusByTypeAndPayment.marketing.goods.toLocaleString()}</span>
+              <span>סחורה: ₪{fmtNum(bonusByTypeAndPayment.marketing.goods)}</span>
             </div>
           </CardContent>
         </Card>
@@ -771,11 +772,11 @@ export default function SupplierDetail() {
           <CardContent className="pt-4 pb-4 text-center">
             <Award className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">בונוס עסקאות</div>
-            <div className="text-sm font-bold">₪{(bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.transaction.goods).toLocaleString()}</div>
+            <div className="text-sm font-bold">₪{fmtNum(bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.transaction.goods)}</div>
             <div className="flex justify-center gap-2 mt-1 text-[10px] text-muted-foreground">
-              <span>כספי: ₪{bonusByTypeAndPayment.transaction.money.toLocaleString()}</span>
+              <span>כספי: ₪{fmtNum(bonusByTypeAndPayment.transaction.money)}</span>
               <span>|</span>
-              <span>סחורה: ₪{bonusByTypeAndPayment.transaction.goods.toLocaleString()}</span>
+              <span>סחורה: ₪{fmtNum(bonusByTypeAndPayment.transaction.goods)}</span>
             </div>
           </CardContent>
         </Card>
@@ -783,7 +784,7 @@ export default function SupplierDetail() {
           <CardContent className="pt-4 pb-4 text-center">
             <TrendingUp className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">רווח ישיר + בונוס כספי*</div>
-            <div className="text-sm font-bold">₪{profitPlusMoneyBonus.toLocaleString()}</div>
+            <div className="text-sm font-bold">₪{fmtNum(profitPlusMoneyBonus)}</div>
             <div className="text-xs text-muted-foreground">{totalSales > 0 ? `${((profitPlusMoneyBonus / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
             <div className="text-[10px] text-muted-foreground mt-1">*לא כולל בונוס שיווק</div>
           </CardContent>
@@ -792,7 +793,7 @@ export default function SupplierDetail() {
           <CardContent className="pt-4 pb-4 text-center">
             <TrendingUp className="w-5 h-5 mx-auto mb-1 text-primary" />
             <div className="text-xs text-muted-foreground">רווח סופי</div>
-            <div className="text-sm font-bold text-primary">₪{finalProfit.toLocaleString()}</div>
+            <div className="text-sm font-bold text-primary">₪{fmtNum(finalProfit)}</div>
             <div className="text-xs text-primary">{totalSales > 0 ? `${((finalProfit / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
           </CardContent>
         </Card>
@@ -806,7 +807,7 @@ export default function SupplierDetail() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-center p-4 bg-muted/50 rounded-lg">
-              <div className="text-2xl font-bold">₪{filteredBrandProfit.totalProfit.toLocaleString()}</div>
+              <div className="text-2xl font-bold">₪{fmtNum(filteredBrandProfit.totalProfit)}</div>
               <div className="text-sm text-muted-foreground">{filteredBrandProfit.margin.toFixed(1)}% רווח</div>
             </div>
             <div className="space-y-2">
@@ -821,7 +822,7 @@ export default function SupplierDetail() {
                     <span className="font-medium text-sm">{b.brand}</span>
                   </div>
                   <div className="text-left">
-                    <div className="text-sm font-semibold">₪{b.profit.toLocaleString()}</div>
+                    <div className="text-sm font-semibold">₪{fmtNum(b.profit)}</div>
                     <div className="text-xs text-muted-foreground">{b.margin.toFixed(1)}%</div>
                   </div>
                 </div>
@@ -888,7 +889,7 @@ export default function SupplierDetail() {
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-primary">₪{bonusValue.toLocaleString()}</span>
+                                <span className="text-sm font-bold text-primary">₪{fmtNum(bonusValue)}</span>
                                 <Badge variant={status.variant}>{status.label}</Badge>
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditAgreement(agreement)}>
                                   <Pencil className="w-3.5 h-3.5" />
@@ -898,14 +899,14 @@ export default function SupplierDetail() {
                             {sortedTiers.length > 0 && (
                               <>
                                 <div className="flex items-center justify-between text-sm">
-                                  <span>התקדמות: ₪{volume.toLocaleString()} / ₪{highestTier?.target_value.toLocaleString()}</span>
+                                  <span>התקדמות: ₪{fmtNum(volume)} / ₪{fmtNum(highestTier?.target_value)}</span>
                                   <span className="font-bold">{progress.toFixed(0)}%</span>
                                 </div>
                                 <Progress value={progress} className="h-2" />
                                 <div className="flex flex-wrap gap-2 text-xs">
                                   {sortedTiers.map((tier: any, i: number) => (
                                     <span key={i} className={`px-2 py-0.5 rounded-full ${volume >= tier.target_value ? "bg-primary/20 text-primary font-semibold" : "bg-muted text-muted-foreground"}`}>
-                                      ₪{tier.target_value.toLocaleString()} → {tier.bonus_percentage}%
+                                      ₪{fmtNum(tier.target_value)} → {tier.bonus_percentage}%
                                     </span>
                                   ))}
                                 </div>
@@ -915,7 +916,7 @@ export default function SupplierDetail() {
                               <div className="text-sm">בונוס קבוע: {agreement.fixed_percentage}%</div>
                             )}
                             {agreement.fixed_amount && !sortedTiers.length && (
-                              <div className="text-sm">בונוס קבוע: ₪{agreement.fixed_amount.toLocaleString()}</div>
+                              <div className="text-sm">בונוס קבוע: ₪{fmtNum(agreement.fixed_amount)}</div>
                             )}
                             {(() => {
                               const excl = (() => { try { return typeof agreement.exclusions === "string" ? JSON.parse(agreement.exclusions) : (agreement.exclusions || []); } catch { return []; } })();
@@ -972,8 +973,8 @@ export default function SupplierDetail() {
                           <TableRow key={b.id}>
                             <TableCell>{formatDate(b.transaction_date)}</TableCell>
                             <TableCell className="max-w-[200px] truncate">{b.description || "-"}</TableCell>
-                            <TableCell>₪{(b.total_value || 0).toLocaleString()}</TableCell>
-                            <TableCell className="font-semibold text-primary">₪{(b.bonus_value || 0).toLocaleString()}</TableCell>
+                            <TableCell>₪{fmtNum(b.total_value)}</TableCell>
+                            <TableCell className="font-semibold text-primary">₪{fmtNum(b.bonus_value)}</TableCell>
                             <TableCell>{b.bonus_payment_type === "money" ? "כסף" : "סחורה"}</TableCell>
                             <TableCell>
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditTx(b)}>
@@ -1202,7 +1203,7 @@ export default function SupplierDetail() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v: number) => `₪${v.toLocaleString()}`} />
+                <Tooltip formatter={(v: number) => `₪${fmtNum(v)}`} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="purchases" name="מחזור קניות" fill="hsl(217, 71%, 45%)" radius={[2, 2, 0, 0]} />
                 <Bar dataKey="sales" name="מחזור מכירות" fill="hsl(142, 71%, 45%)" radius={[2, 2, 0, 0]} />
@@ -1291,7 +1292,7 @@ export default function SupplierDetail() {
                           <TableCell>{formatDate(data.date)}</TableCell>
                           <TableCell className="font-mono text-xs">{po}</TableCell>
                           <TableCell>{data.items.length} פריטים</TableCell>
-                          <TableCell>₪{data.total.toLocaleString()}</TableCell>
+                          <TableCell>₪{fmtNum(data.total)}</TableCell>
                         </TableRow>
                         {expandedPO === po && (
                           <TableRow key={`${po}-detail`}>
@@ -1314,8 +1315,8 @@ export default function SupplierDetail() {
                                       <TableRow key={item.id}>
                                         <TableCell>{item.item_description || item.item_code || "-"}</TableCell>
                                         <TableCell>{item.quantity || "-"}</TableCell>
-                                        <TableCell>₪{addVAT(unitPrice).toLocaleString(undefined, { maximumFractionDigits: 2 })}</TableCell>
-                                        <TableCell>₪{addVAT(item.total_amount || 0).toLocaleString()}</TableCell>
+                                        <TableCell>₪{fmtNum(addVAT(unitPrice))}</TableCell>
+                                        <TableCell>₪{fmtNum(addVAT(item.total_amount || 0))}</TableCell>
                                       </TableRow>
                                     );
                                   })}
@@ -1420,8 +1421,8 @@ export default function SupplierDetail() {
                           <TableCell className="font-mono text-xs">{data.customerPo || "-"}</TableCell>
                           <TableCell>{data.customer}</TableCell>
                           <TableCell>{data.items.length}</TableCell>
-                          <TableCell>₪{data.totalSale.toLocaleString()}</TableCell>
-                          <TableCell>₪{data.totalProfit.toLocaleString()}</TableCell>
+                          <TableCell>₪{fmtNum(data.totalSale)}</TableCell>
+                          <TableCell>₪{fmtNum(data.totalProfit)}</TableCell>
                         </TableRow>
                         {expandedSO === so && (
                           <TableRow key={`${so}-detail`}>
@@ -1443,9 +1444,9 @@ export default function SupplierDetail() {
                                       <TableCell>{item.item_description || item.item_code || "-"}</TableCell>
                                       <TableCell>{item.brand || "-"}</TableCell>
                                       <TableCell>{item.quantity || "-"}</TableCell>
-                                      <TableCell>₪{addVAT(item.sale_price || 0).toLocaleString()}</TableCell>
-                                      <TableCell>₪{addVAT(item.cost_price || 0).toLocaleString()}</TableCell>
-                                      <TableCell>₪{addVAT(((item.sale_price || 0) - (item.cost_price || 0)) * (item.quantity || 1)).toLocaleString()}</TableCell>
+                                      <TableCell>₪{fmtNum(addVAT(item.sale_price || 0))}</TableCell>
+                                      <TableCell>₪{fmtNum(addVAT(item.cost_price || 0))}</TableCell>
+                                      <TableCell>₪{fmtNum(addVAT(((item.sale_price || 0) - (item.cost_price || 0)) * (item.quantity || 1)))}</TableCell>
                                     </TableRow>
                                   ))}
                                 </TableBody>
