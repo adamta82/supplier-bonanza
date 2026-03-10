@@ -899,7 +899,7 @@ export default function SupplierDetail() {
                             {sortedTiers.length > 0 && (
                               <>
                                 <div className="flex items-center justify-between text-sm">
-                                  <span>התקדמות: ₪{volume.toLocaleString()} / ₪{highestTier?.target_value.toLocaleString()}</span>
+                                  <span>התקדמות: ₪{fmtNum(volume)} / ₪{fmtNum(highestTier?.target_value)}</span>
                                   <span className="font-bold">{progress.toFixed(0)}%</span>
                                 </div>
                                 <Progress value={progress} className="h-2" />
