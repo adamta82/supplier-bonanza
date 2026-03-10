@@ -822,7 +822,7 @@ export default function SupplierDetail() {
                     <span className="font-medium text-sm">{b.brand}</span>
                   </div>
                   <div className="text-left">
-                    <div className="text-sm font-semibold">₪{b.profit.toLocaleString()}</div>
+                    <div className="text-sm font-semibold">₪{fmtNum(b.profit)}</div>
                     <div className="text-xs text-muted-foreground">{b.margin.toFixed(1)}%</div>
                   </div>
                 </div>
