@@ -736,7 +736,7 @@ export default function SupplierDetail() {
           <CardContent className="pt-4 pb-4 text-center">
             <Target className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">רווח ישיר</div>
-            <div className="text-lg font-bold">₪{totalDirectProfit.toLocaleString()}</div>
+            <div className="text-lg font-bold">₪{fmtNum(totalDirectProfit)}</div>
             <div className="text-xs text-muted-foreground">{totalSales > 0 ? `${((totalDirectProfit / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
           </CardContent>
         </Card>
