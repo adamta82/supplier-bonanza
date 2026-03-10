@@ -1444,9 +1444,9 @@ export default function SupplierDetail() {
                                       <TableCell>{item.item_description || item.item_code || "-"}</TableCell>
                                       <TableCell>{item.brand || "-"}</TableCell>
                                       <TableCell>{item.quantity || "-"}</TableCell>
-                                      <TableCell>₪{addVAT(item.sale_price || 0).toLocaleString()}</TableCell>
-                                      <TableCell>₪{addVAT(item.cost_price || 0).toLocaleString()}</TableCell>
-                                      <TableCell>₪{addVAT(((item.sale_price || 0) - (item.cost_price || 0)) * (item.quantity || 1)).toLocaleString()}</TableCell>
+                                      <TableCell>₪{fmtNum(addVAT(item.sale_price || 0))}</TableCell>
+                                      <TableCell>₪{fmtNum(addVAT(item.cost_price || 0))}</TableCell>
+                                      <TableCell>₪{fmtNum(addVAT(((item.sale_price || 0) - (item.cost_price || 0)) * (item.quantity || 1)))}</TableCell>
                                     </TableRow>
                                   ))}
                                 </TableBody>
