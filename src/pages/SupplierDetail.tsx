@@ -916,7 +916,7 @@ export default function SupplierDetail() {
                               <div className="text-sm">בונוס קבוע: {agreement.fixed_percentage}%</div>
                             )}
                             {agreement.fixed_amount && !sortedTiers.length && (
-                              <div className="text-sm">בונוס קבוע: ₪{agreement.fixed_amount.toLocaleString()}</div>
+                              <div className="text-sm">בונוס קבוע: ₪{fmtNum(agreement.fixed_amount)}</div>
                             )}
                             {(() => {
                               const excl = (() => { try { return typeof agreement.exclusions === "string" ? JSON.parse(agreement.exclusions) : (agreement.exclusions || []); } catch { return []; } })();
