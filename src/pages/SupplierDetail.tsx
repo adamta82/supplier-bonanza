@@ -71,7 +71,7 @@ export default function SupplierDetail() {
     bonus_payment_type: "goods",
   });
   type TierForm = { target_value: string; bonus_percentage: string };
-  type ExclusionForm = { keyword: string; counts_toward_target: boolean; gets_bonus: boolean };
+  type ExclusionForm = { keyword: string; mode: "include" | "exclude"; counts_toward_target: boolean; gets_bonus: boolean };
   const [tiers, setTiers] = useState<TierForm[]>([{ target_value: "", bonus_percentage: "" }]);
   const [exclusions, setExclusions] = useState<ExclusionForm[]>([]);
 

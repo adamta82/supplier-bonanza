@@ -33,7 +33,7 @@ const paymentTypeLabels: Record<string, string> = {
 };
 
 type TierForm = { target_value: string; bonus_percentage: string };
-type ExclusionForm = { keyword: string; counts_toward_target: boolean; gets_bonus: boolean };
+type ExclusionForm = { keyword: string; mode: "include" | "exclude"; counts_toward_target: boolean; gets_bonus: boolean };
 
 export default function Agreements() {
   const queryClient = useQueryClient();
