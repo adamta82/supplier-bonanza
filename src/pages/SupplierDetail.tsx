@@ -784,7 +784,7 @@ export default function SupplierDetail() {
           <CardContent className="pt-4 pb-4 text-center">
             <TrendingUp className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">רווח ישיר + בונוס כספי*</div>
-            <div className="text-sm font-bold">₪{profitPlusMoneyBonus.toLocaleString()}</div>
+            <div className="text-sm font-bold">₪{fmtNum(profitPlusMoneyBonus)}</div>
             <div className="text-xs text-muted-foreground">{totalSales > 0 ? `${((profitPlusMoneyBonus / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
             <div className="text-[10px] text-muted-foreground mt-1">*לא כולל בונוס שיווק</div>
           </CardContent>
