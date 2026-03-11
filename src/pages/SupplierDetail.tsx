@@ -1025,7 +1025,7 @@ export default function SupplierDetail() {
                                   <span className="text-xs text-muted-foreground mr-1">({vatLabel})</span>
                                 </div>
                                 {/* Battery-style tier indicators - horizontal */}
-                                <div className="space-y-1.5">
+                                <div className="space-y-1">
                                   {sortedTiers.map((tier: any, i: number) => {
                                     const achieved = displayVolume >= tier.target_value;
                                     const prevAchieved = i === 0 || displayVolume >= sortedTiers[i - 1].target_value;
@@ -1035,7 +1035,7 @@ export default function SupplierDetail() {
                                     return (
                                       <div key={i} className="flex items-center gap-2">
                                         <div
-                                          className={`relative flex-1 h-6 rounded border-2 overflow-hidden ${achieved ? "border-green-500" : "border-muted-foreground/30"}`}
+                                          className={`relative flex-1 h-3 rounded border-2 overflow-hidden ${achieved ? "border-green-500" : "border-muted-foreground/30"}`}
                                         >
                                           <div
                                             className={`absolute top-0 bottom-0 right-0 transition-all duration-500 ${achieved ? "bg-green-500" : "bg-primary/40"}`}
