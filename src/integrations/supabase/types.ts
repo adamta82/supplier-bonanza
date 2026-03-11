@@ -129,6 +129,114 @@ export type Database = {
           },
         ]
       }
+      consolidated_invoice_items: {
+        Row: {
+          created_at: string
+          gr_number: string | null
+          id: string
+          internal_number: string | null
+          invoice_date: string | null
+          invoice_number: string | null
+          item_code: string | null
+          item_description: string | null
+          po_number: string | null
+          quantity: number | null
+          status: string | null
+          supplier_name: string | null
+          supplier_number: string | null
+          total_with_vat: number | null
+          unit_price: number | null
+          upload_batch: string | null
+        }
+        Insert: {
+          created_at?: string
+          gr_number?: string | null
+          id?: string
+          internal_number?: string | null
+          invoice_date?: string | null
+          invoice_number?: string | null
+          item_code?: string | null
+          item_description?: string | null
+          po_number?: string | null
+          quantity?: number | null
+          status?: string | null
+          supplier_name?: string | null
+          supplier_number?: string | null
+          total_with_vat?: number | null
+          unit_price?: number | null
+          upload_batch?: string | null
+        }
+        Update: {
+          created_at?: string
+          gr_number?: string | null
+          id?: string
+          internal_number?: string | null
+          invoice_date?: string | null
+          invoice_number?: string | null
+          item_code?: string | null
+          item_description?: string | null
+          po_number?: string | null
+          quantity?: number | null
+          status?: string | null
+          supplier_name?: string | null
+          supplier_number?: string | null
+          total_with_vat?: number | null
+          unit_price?: number | null
+          upload_batch?: string | null
+        }
+        Relationships: []
+      }
+      delivery_note_items: {
+        Row: {
+          created_at: string
+          customer_name: string | null
+          id: string
+          item_code: string | null
+          item_description: string | null
+          note_date: string | null
+          note_number: string | null
+          order_number: string | null
+          quantity: number | null
+          status: string | null
+          supplier_name: string | null
+          supplier_number: string | null
+          total_price: number | null
+          upload_batch: string | null
+        }
+        Insert: {
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          item_code?: string | null
+          item_description?: string | null
+          note_date?: string | null
+          note_number?: string | null
+          order_number?: string | null
+          quantity?: number | null
+          status?: string | null
+          supplier_name?: string | null
+          supplier_number?: string | null
+          total_price?: number | null
+          upload_batch?: string | null
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          item_code?: string | null
+          item_description?: string | null
+          note_date?: string | null
+          note_number?: string | null
+          order_number?: string | null
+          quantity?: number | null
+          status?: string | null
+          supplier_name?: string | null
+          supplier_number?: string | null
+          total_price?: number | null
+          upload_batch?: string | null
+        }
+        Relationships: []
+      }
       purchase_records: {
         Row: {
           category: string | null
@@ -187,6 +295,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reconciliation_approvals: {
+        Row: {
+          approval_notes: string | null
+          created_at: string
+          document_type: string
+          id: string
+          match_key: string
+          match_type: string
+          matched_value: number | null
+          original_value: number | null
+        }
+        Insert: {
+          approval_notes?: string | null
+          created_at?: string
+          document_type: string
+          id?: string
+          match_key: string
+          match_type: string
+          matched_value?: number | null
+          original_value?: number | null
+        }
+        Update: {
+          approval_notes?: string | null
+          created_at?: string
+          document_type?: string
+          id?: string
+          match_key?: string
+          match_type?: string
+          matched_value?: number | null
+          original_value?: number | null
+        }
+        Relationships: []
       }
       sales_records: {
         Row: {
@@ -255,6 +396,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      supplier_invoice_items: {
+        Row: {
+          created_at: string
+          id: string
+          internal_number: string | null
+          invoice_date: string | null
+          invoice_number: string | null
+          item_code: string | null
+          item_description: string | null
+          po_number: string | null
+          quantity: number | null
+          status: string | null
+          supplier_name: string | null
+          supplier_number: string | null
+          total_payment: number | null
+          total_with_vat: number | null
+          unit_price: number | null
+          upload_batch: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          internal_number?: string | null
+          invoice_date?: string | null
+          invoice_number?: string | null
+          item_code?: string | null
+          item_description?: string | null
+          po_number?: string | null
+          quantity?: number | null
+          status?: string | null
+          supplier_name?: string | null
+          supplier_number?: string | null
+          total_payment?: number | null
+          total_with_vat?: number | null
+          unit_price?: number | null
+          upload_batch?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          internal_number?: string | null
+          invoice_date?: string | null
+          invoice_number?: string | null
+          item_code?: string | null
+          item_description?: string | null
+          po_number?: string | null
+          quantity?: number | null
+          status?: string | null
+          supplier_name?: string | null
+          supplier_number?: string | null
+          total_payment?: number | null
+          total_with_vat?: number | null
+          unit_price?: number | null
+          upload_batch?: string | null
+        }
+        Relationships: []
       }
       suppliers: {
         Row: {
