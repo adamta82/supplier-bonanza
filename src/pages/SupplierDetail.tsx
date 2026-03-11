@@ -487,7 +487,8 @@ export default function SupplierDetail() {
     let bonusVolume = 0;
     let targetVolume = 0;
     agrPurchases.forEach((p: any) => {
-      const amount = p.total_amount || 0;
+      const rawAmount = p.total_amount || 0;
+      const amount = agreement.vat_included ? rawAmount : addVAT(rawAmount);
       const result = matchesExclusion(p.item_description || "");
       if (!result.excluded) {
         bonusVolume += amount;
