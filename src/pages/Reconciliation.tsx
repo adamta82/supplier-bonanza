@@ -673,7 +673,7 @@ export default function ReconciliationPage() {
                   <TableCell>{fmtNum(row.documentValue)}</TableCell>
                   <TableCell>{fmtNum(row.referenceValue)}</TableCell>
                   <TableCell className={row.diff !== 0 ? "text-destructive font-medium" : "text-[hsl(var(--success))]"}>
-                    {fmtNum(row.diff)}
+                    {fmtDiff(row.diff)}
                   </TableCell>
                   <TableCell>{statusBadge(row.status)}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{row.details || ""}</TableCell>
