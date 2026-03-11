@@ -554,6 +554,7 @@ export default function SupplierDetail() {
   // Bonus breakdown by type and payment method
   const bonusByTypeAndPayment = useMemo(() => {
     const result = {
+      annual_fixed: { money: 0, goods: 0 },
       target: { money: 0, goods: 0 },
       marketing: { money: 0, goods: 0 },
       transaction: { money: 0, goods: 0 },
@@ -565,7 +566,9 @@ export default function SupplierDetail() {
       const val = calcAgreementBonusValue(a);
       if (isNaN(val) || val === 0) return;
       const isMoney = a.bonus_payment_type === "money";
-      if (a.bonus_type === "annual_target") {
+      if (a.bonus_type === "annual_fixed") {
+        result.annual_fixed[isMoney ? "money" : "goods"] += val;
+      } else if (a.bonus_type === "annual_target") {
         result.target[isMoney ? "money" : "goods"] += val;
       } else if (a.bonus_type === "marketing") {
         result.marketing[isMoney ? "money" : "goods"] += val;
