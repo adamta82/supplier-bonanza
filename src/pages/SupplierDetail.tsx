@@ -905,17 +905,59 @@ export default function SupplierDetail() {
                       const status = getAgreementStatus(agreement);
                       const bonusValue = calcAgreementBonusValue(agreement);
                       const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
-                      const highestTier = sortedTiers[sortedTiers.length - 1];
+
+                      // Calculate volume properly with exclusions (same logic as calcAgreementBonusValue)
+                      const cardExcl: { keyword: string; mode: "include" | "exclude"; counts_toward_target: boolean }[] = (() => {
+                        try { return typeof agreement.exclusions === "string" ? JSON.parse(agreement.exclusions) : (agreement.exclusions || []); } catch { return []; }
+                      })();
+                      const cardMatchExcl = (desc: string) => {
+                        if (!desc || cardExcl.length === 0) return { excluded: false, countsTowardTarget: true };
+                        const ld = desc.toLowerCase();
+                        for (const rule of cardExcl) {
+                          const kw = rule.keyword.toLowerCase();
+                          if (!kw) continue;
+                          if (ld.includes(kw)) {
+                            if (rule.mode === "exclude") return { excluded: true, countsTowardTarget: rule.counts_toward_target };
+                            return { excluded: false, countsTowardTarget: true };
+                          }
+                        }
+                        if (cardExcl.some(r => r.mode === "include")) return { excluded: true, countsTowardTarget: false };
+                        return { excluded: false, countsTowardTarget: true };
+                      };
                       const agrPurchases = (purchases || []).filter((p: any) => {
                         if (!p.order_date) return false;
                         if (agreement.period_start && p.order_date < agreement.period_start) return false;
                         if (agreement.period_end && p.order_date > agreement.period_end) return false;
                         return true;
                       });
-                      let volume = agrPurchases.reduce((s: number, p: any) => s + (p.total_amount || 0), 0);
+                      let cardBonusVolume = 0;
+                      let cardTargetWithVAT = 0;
+                      let cardTargetExVAT = 0;
+                      agrPurchases.forEach((p: any) => {
+                        const raw = p.total_amount || 0;
+                        const wVAT = addVAT(raw);
+                        const res = cardMatchExcl(p.item_description || "");
+                        if (!res.excluded) { cardBonusVolume += wVAT; cardTargetWithVAT += wVAT; cardTargetExVAT += raw; }
+                        else if (res.countsTowardTarget) { cardTargetWithVAT += wVAT; cardTargetExVAT += raw; }
+                      });
+                      const cardVolume = agreement.vat_included ? cardTargetWithVAT : cardTargetExVAT;
                       const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
-                      volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
-                      const progress = highestTier ? Math.min((volume / highestTier.target_value) * 100, 100) : 0;
+                      const volumeWithTx = cardVolume + agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
+
+                      // Find current achieved tier and next unachieved tier
+                      let currentTierIdx = -1;
+                      for (let i = sortedTiers.length - 1; i >= 0; i--) {
+                        if (volumeWithTx >= sortedTiers[i].target_value) { currentTierIdx = i; break; }
+                      }
+                      const nextTier = sortedTiers[currentTierIdx + 1];
+                      const displayVolume = volumeWithTx;
+                      const progress = nextTier ? Math.min((displayVolume / nextTier.target_value) * 100, 100) : 100;
+
+                      // Theoretical bonus: current tier % applied to bonusVolume
+                      const theoreticalBonus = currentTierIdx >= 0
+                        ? cardBonusVolume * (sortedTiers[currentTierIdx].bonus_percentage / 100)
+                        : 0;
+                      const vatLabel = agreement.vat_included ? "כולל מע\"מ" : "לפני מע\"מ";
 
                       return (
                         <Card key={agreement.id}>
