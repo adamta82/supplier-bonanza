@@ -432,8 +432,7 @@ export default function ReconciliationPage() {
                       <TableCell className="text-xs">{item.item_description || "—"}</TableCell>
                       <TableCell className="text-xs">{fmtNum(item.quantity)}</TableCell>
                       <TableCell className="text-xs">{fmtNum(item.unit_price)}</TableCell>
-                      <TableCell className="text-xs">{fmtNum(item.total_with_vat)}</TableCell>
-                      <TableCell className="text-xs font-medium">{fmtNum(item.total_payment)}</TableCell>
+                      <TableCell className="text-xs font-medium">{fmtNum(item.total_with_vat)}</TableCell>
                       <TableCell className="text-xs">{item.status || "—"}</TableCell>
                     </TableRow>
                   ))}
