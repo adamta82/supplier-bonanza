@@ -1025,7 +1025,7 @@ export default function SupplierDetail() {
                                   <span className="text-xs text-muted-foreground mr-1">({vatLabel})</span>
                                 </div>
                                 {/* Battery-style tier indicators - horizontal */}
-                                <div className="space-y-1.5">
+                                <div className="space-y-1">
                                   {sortedTiers.map((tier: any, i: number) => {
                                     const achieved = displayVolume >= tier.target_value;
                                     const prevAchieved = i === 0 || displayVolume >= sortedTiers[i - 1].target_value;
