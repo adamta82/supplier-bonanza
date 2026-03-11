@@ -25,7 +25,7 @@ const bonusTypeLabels: Record<string, string> = {
   annual_target: "יעדים",
   marketing: "שיווק",
   transaction: "עסקה",
-  annual_fixed: "שנתי קבוע",
+  annual_fixed: "שנתי",
   network: "רשתי",
 };
 
