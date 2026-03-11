@@ -503,7 +503,7 @@ export default function SupplierDetail() {
     volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
 
     if (agreement.fixed_percentage) {
-      return volume * (agreement.fixed_percentage / 100);
+      return bonusVolume * (agreement.fixed_percentage / 100);
     }
     if (agreement.fixed_amount) {
       return agreement.fixed_amount;
@@ -518,7 +518,7 @@ export default function SupplierDetail() {
       }
     }
     if (achievedTier) {
-      return volume * (achievedTier.bonus_percentage / 100);
+      return bonusVolume * (achievedTier.bonus_percentage / 100);
     }
     return 0;
   };
