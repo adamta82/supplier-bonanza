@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { fmtNum } from "@/lib/utils";
 
@@ -13,6 +12,95 @@ const addVAT = (amount: number) => amount * (1 + VAT_RATE);
 
 type SortField = "name" | "purchaseVolume" | "totalSales" | "directProfit" | "directMargin" | "totalBonus" | "finalProfit" | "finalMargin";
 type SortDir = "asc" | "desc";
+
+type Exclusion = { keyword: string; mode: "include" | "exclude"; counts_toward_target: boolean };
+
+function parseExclusions(raw: any): Exclusion[] {
+  try {
+    return typeof raw === "string" ? JSON.parse(raw) : (raw || []);
+  } catch {
+    return [];
+  }
+}
+
+function calcAgreementBonus(agreement: any, purchases: any[], transactionBonuses: any[]) {
+  if (agreement.bonus_type === "transaction") {
+    return transactionBonuses
+      .filter((b: any) => b.agreement_id === agreement.id)
+      .reduce((s: number, b: any) => s + (b.bonus_value || 0), 0);
+  }
+
+  const excl = parseExclusions(agreement.exclusions);
+
+  const matchesExclusion = (desc: string) => {
+    if (!desc || excl.length === 0) return { excluded: false, countsTowardTarget: true };
+    const lowerDesc = desc.toLowerCase();
+    for (const rule of excl) {
+      const kw = rule.keyword.toLowerCase();
+      if (!kw) continue;
+      if (lowerDesc.includes(kw)) {
+        if (rule.mode === "exclude") {
+          return { excluded: true, countsTowardTarget: rule.counts_toward_target };
+        }
+        return { excluded: false, countsTowardTarget: true };
+      }
+    }
+    const hasIncludeRules = excl.some(r => r.mode === "include");
+    if (hasIncludeRules) {
+      return { excluded: true, countsTowardTarget: false };
+    }
+    return { excluded: false, countsTowardTarget: true };
+  };
+
+  const agrPurchases = purchases.filter((p: any) => {
+    if (!p.order_date) return false;
+    if (agreement.period_start && p.order_date < agreement.period_start) return false;
+    if (agreement.period_end && p.order_date > agreement.period_end) return false;
+    return true;
+  });
+
+  let bonusVolume = 0;
+  let targetVolumeWithVAT = 0;
+  let targetVolumeExVAT = 0;
+  agrPurchases.forEach((p: any) => {
+    const rawAmount = p.total_amount || 0;
+    const withVAT = addVAT(rawAmount);
+    const result = matchesExclusion(p.item_description || "");
+    if (!result.excluded) {
+      bonusVolume += withVAT;
+      targetVolumeWithVAT += withVAT;
+      targetVolumeExVAT += rawAmount;
+    } else if (result.countsTowardTarget) {
+      targetVolumeWithVAT += withVAT;
+      targetVolumeExVAT += rawAmount;
+    }
+  });
+
+  let volume = agreement.vat_included ? targetVolumeWithVAT : targetVolumeExVAT;
+
+  const agrTxBonuses = transactionBonuses.filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
+  volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
+
+  if (agreement.fixed_percentage) {
+    return bonusVolume * (agreement.fixed_percentage / 100);
+  }
+  if (agreement.fixed_amount) {
+    return agreement.fixed_amount;
+  }
+
+  const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
+  let achievedTier = null;
+  for (let i = sortedTiers.length - 1; i >= 0; i--) {
+    if (volume >= sortedTiers[i].target_value) {
+      achievedTier = sortedTiers[i];
+      break;
+    }
+  }
+  if (achievedTier) {
+    return bonusVolume * (achievedTier.bonus_percentage / 100);
+  }
+  return 0;
+}
 
 export default function Reports() {
   const [sortField, setSortField] = useState<SortField>("finalProfit");
@@ -68,28 +156,31 @@ export default function Reports() {
     const purchaseVolume = addVAT(supplierPurchases.reduce((sum, p) => sum + (p.total_amount || 0), 0));
 
     const supplierAgreements = agreements?.filter((a) => a.supplier_id === supplier.id) || [];
-    let totalBonus = 0;
+    const supplierTxBonuses = transactionBonuses?.filter((t) => t.supplier_id === supplier.id) || [];
 
+    // Use proper per-agreement calculation with exclusions
+    let totalBonus = 0;
     supplierAgreements.forEach((agreement: any) => {
-      if (agreement.bonus_payment_type !== "money") return;
-      if (agreement.bonus_type === "annual_target" || (agreement.bonus_type === "marketing" && agreement.bonus_tiers?.length > 0)) {
-        const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => b.target_value - a.target_value);
-        for (const tier of sortedTiers) {
-          if (purchaseVolume >= tier.target_value) {
-            totalBonus += purchaseVolume * (tier.bonus_percentage / 100);
-            break;
-          }
-        }
-      } else if (agreement.fixed_percentage) {
-        totalBonus += purchaseVolume * (agreement.fixed_percentage / 100);
-      } else if (agreement.fixed_amount) {
-        totalBonus += agreement.fixed_amount;
-      }
+      if (agreement.bonus_type === "transaction") return; // handled below
+      const val = calcAgreementBonus(agreement, supplierPurchases, supplierTxBonuses);
+      if (!isNaN(val)) totalBonus += val;
     });
 
-    const supplierTransactions = transactionBonuses?.filter((t) => t.supplier_id === supplier.id) || [];
-    const transBonus = supplierTransactions.reduce((sum, t) => sum + (t.bonus_value || 0), 0);
-    totalBonus += transBonus;
+    // Transaction bonuses (unlinked ones)
+    const linkedTxIds = new Set(supplierAgreements.flatMap((a: any) => 
+      supplierTxBonuses.filter(t => t.agreement_id === a.id).map(t => t.id)
+    ));
+    const unlinkedTxBonus = supplierTxBonuses
+      .filter(t => !linkedTxIds.has(t.id) && !t.agreement_id)
+      .reduce((sum, t) => sum + (t.bonus_value || 0), 0);
+    totalBonus += unlinkedTxBonus;
+
+    // Also add linked transaction agreement bonuses
+    supplierAgreements.forEach((agreement: any) => {
+      if (agreement.bonus_type !== "transaction") return;
+      const val = calcAgreementBonus(agreement, supplierPurchases, supplierTxBonuses);
+      if (!isNaN(val)) totalBonus += val;
+    });
 
     const finalProfit = directProfit + totalBonus;
 
@@ -131,34 +222,9 @@ export default function Reports() {
     });
   }, [supplierReport, sortField, sortDir]);
 
-  const chartData = supplierReport
-    .filter((s) => s.totalSales > 0 || s.purchaseVolume > 0)
-    .sort((a, b) => b.finalProfit - a.finalProfit);
-
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">דוחות רווחיות</h1>
-
-      {chartData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>רווחיות לפי ספק - ישיר מול סופי</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis tickFormatter={(v) => `₪${(v / 1000).toFixed(0)}K`} />
-                <Tooltip formatter={(value: number) => `₪${fmtNum(value)}`} />
-                <Legend />
-                <Bar dataKey="directProfit" name="רווח ישיר" fill="hsl(217, 71%, 45%)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="finalProfit" name="רווח סופי" fill="hsl(142, 71%, 40%)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
 
       <Card>
         <CardHeader>
