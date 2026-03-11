@@ -449,19 +449,61 @@ export default function SupplierDetail() {
       return linkedBonuses.reduce((s: number, b: any) => s + (b.bonus_value || 0), 0);
     }
 
+    // Parse exclusions for this agreement
+    const excl: { keyword: string; mode: "include" | "exclude"; counts_toward_target: boolean }[] = (() => {
+      try { return typeof agreement.exclusions === "string" ? JSON.parse(agreement.exclusions) : (agreement.exclusions || []); } catch { return []; }
+    })();
+
+    const matchesExclusion = (desc: string) => {
+      if (!desc || excl.length === 0) return { excluded: false, countsTowardTarget: true };
+      const lowerDesc = desc.toLowerCase();
+      for (const rule of excl) {
+        const kw = rule.keyword.toLowerCase();
+        if (!kw) continue;
+        if (lowerDesc.includes(kw)) {
+          if (rule.mode === "exclude") {
+            return { excluded: true, countsTowardTarget: rule.counts_toward_target };
+          }
+          // mode "include" — this item matches a required keyword, keep it
+          return { excluded: false, countsTowardTarget: true };
+        }
+      }
+      // If there are "include" rules and none matched, exclude the item
+      const hasIncludeRules = excl.some(r => r.mode === "include");
+      if (hasIncludeRules) {
+        return { excluded: true, countsTowardTarget: false };
+      }
+      return { excluded: false, countsTowardTarget: true };
+    };
+
     const agrPurchases = (purchases || []).filter((p: any) => {
       if (!p.order_date) return false;
       if (agreement.period_start && p.order_date < agreement.period_start) return false;
       if (agreement.period_end && p.order_date > agreement.period_end) return false;
       return true;
     });
-    let volume = agrPurchases.reduce((s: number, p: any) => s + (p.total_amount || 0), 0);
+
+    // Separate purchases into bonus-eligible and target-eligible
+    let bonusVolume = 0;
+    let targetVolume = 0;
+    agrPurchases.forEach((p: any) => {
+      const amount = p.total_amount || 0;
+      const result = matchesExclusion(p.item_description || "");
+      if (!result.excluded) {
+        bonusVolume += amount;
+        targetVolume += amount;
+      } else if (result.countsTowardTarget) {
+        targetVolume += amount;
+      }
+    });
+
+    let volume = targetVolume;
 
     const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
     volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
 
     if (agreement.fixed_percentage) {
-      return volume * (agreement.fixed_percentage / 100);
+      return bonusVolume * (agreement.fixed_percentage / 100);
     }
     if (agreement.fixed_amount) {
       return agreement.fixed_amount;
@@ -476,7 +518,7 @@ export default function SupplierDetail() {
       }
     }
     if (achievedTier) {
-      return volume * (achievedTier.bonus_percentage / 100);
+      return bonusVolume * (achievedTier.bonus_percentage / 100);
     }
     return 0;
   };

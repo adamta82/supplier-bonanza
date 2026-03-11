@@ -30,7 +30,7 @@ export default function Alerts() {
   const { data: purchases } = useQuery({
     queryKey: ["purchases-all"],
     queryFn: async () => {
-      const { data } = await supabase.from("purchase_records").select("supplier_id, supplier_name, total_amount");
+      const { data } = await supabase.from("purchase_records").select("supplier_id, supplier_name, total_amount, item_description");
       return data || [];
     },
   });
@@ -50,11 +50,31 @@ export default function Alerts() {
       const supplier = suppliers?.find((s) => s.id === agreement.supplier_id);
       const supplierName = agreement.suppliers?.name || supplier?.name || "לא ידוע";
 
-      // Calculate current volume for this supplier
+      // Parse exclusions
+      const excl: { keyword: string; mode: "include" | "exclude"; counts_toward_target: boolean }[] = (() => {
+        try { return typeof agreement.exclusions === "string" ? JSON.parse(agreement.exclusions) : (agreement.exclusions || []); } catch { return []; }
+      })();
+
+      const isExcluded = (desc: string) => {
+        if (!desc || excl.length === 0) return false;
+        const lowerDesc = desc.toLowerCase();
+        for (const rule of excl) {
+          const kw = rule.keyword.toLowerCase();
+          if (!kw) continue;
+          if (lowerDesc.includes(kw) && rule.mode === "exclude") return true;
+        }
+        const hasIncludeRules = excl.some(r => r.mode === "include");
+        if (hasIncludeRules && !excl.some(r => r.mode === "include" && r.keyword && lowerDesc.includes(r.keyword.toLowerCase()))) return true;
+        return false;
+      };
+
+      // Calculate current volume for this supplier (excluding excluded items)
       const supplierPurchases = purchases?.filter(
         (p) => p.supplier_id === agreement.supplier_id || p.supplier_name === supplierName
       ) || [];
-      let currentVolume = addVAT(supplierPurchases.reduce((sum, p) => sum + (p.total_amount || 0), 0));
+      let currentVolume = addVAT(supplierPurchases
+        .filter(p => !isExcluded(p.item_description || ""))
+        .reduce((sum, p) => sum + (p.total_amount || 0), 0));
 
       // Add transaction bonuses that count toward target
       const supplierTransactions = transactionBonuses?.filter(
