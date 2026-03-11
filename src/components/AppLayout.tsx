@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, FileText, Upload, BarChart3, AlertTriangle, TrendingUp, CircleAlert } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Upload, BarChart3, AlertTriangle, TrendingUp, CircleAlert, FileCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -10,7 +10,8 @@ const navItems = [
 { path: "/upload", label: "העלאת נתונים", icon: Upload },
 { path: "/reports", label: "דוחות ורווחיות", icon: BarChart3 },
 { path: "/alerts", label: "התראות יעדים", icon: AlertTriangle },
-{ path: "/errors", label: "שגויים", icon: CircleAlert }];
+{ path: "/errors", label: "שגויים", icon: CircleAlert },
+{ path: "/reconciliation", label: "התאמת מסמכים", icon: FileCheck }];
 
 
 export default function AppLayout({ children }: {children: React.ReactNode;}) {
