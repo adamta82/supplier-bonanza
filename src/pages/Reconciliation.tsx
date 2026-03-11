@@ -84,10 +84,10 @@ export default function ReconciliationPage() {
   const uploadMutation = (table: string, queryKey: string) => useMutation({
     mutationFn: async (records: any[]) => {
       // Delete existing
-      await supabase.from(table).delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      await (supabase as any).from(table).delete().neq("id", "00000000-0000-0000-0000-000000000000");
       const chunkSize = 100;
       for (let i = 0; i < records.length; i += chunkSize) {
-        const { error } = await supabase.from(table).insert(records.slice(i, i + chunkSize));
+        const { error } = await (supabase as any).from(table).insert(records.slice(i, i + chunkSize));
         if (error) throw error;
       }
     },
