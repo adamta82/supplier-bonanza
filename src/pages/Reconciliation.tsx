@@ -12,7 +12,7 @@ import FileUploadPreview from "@/components/FileUploadPreview";
 import { parseDate, type ParsedFile } from "@/lib/parseExcelFile";
 import { formatDate } from "@/lib/formatDate";
 
-const fmtNum = (n: number | null) => n != null ? n.toLocaleString("he-IL", { maximumFractionDigits: 2 }) : "—";
+const fmtNum = (n: number | null) => n != null ? Math.round(n).toLocaleString("he-IL") : "—";
 const roundAgora = (n: number) => Math.round(n * 100) / 100;
 
 type MatchStatus = "matched" | "mismatch" | "approved" | "missing";
