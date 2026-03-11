@@ -419,7 +419,6 @@ export default function ReconciliationPage() {
                     <TableHead>כמות</TableHead>
                     <TableHead>מחיר יחידה</TableHead>
                     <TableHead>סה״כ כולל מע״מ</TableHead>
-                    <TableHead>סה״כ לתשלום</TableHead>
                     <TableHead>סטטוס</TableHead>
                   </TableRow>
                 </TableHeader>
