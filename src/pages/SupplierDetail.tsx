@@ -584,37 +584,16 @@ export default function SupplierDetail() {
     return result;
   }, [agreements, purchases, bonuses]);
 
-  // Annual fixed bonuses (money only, for profit calc)
-  const annualFixedMoneyBonus = useMemo(() => {
-    if (!agreements) return 0;
-    return agreements
-      .filter((a: any) => a.bonus_type === "annual_fixed" && a.bonus_payment_type === "money")
-      .reduce((sum: number, a: any) => {
-        const v = calcAgreementBonusValue(a);
-        return sum + (isNaN(v) ? 0 : v);
-      }, 0);
-  }, [agreements, purchases, bonuses]);
-
   // רווח ישיר + בונוס כספי (לא כולל שיווק)
-  const profitPlusMoneyBonus = totalDirectProfit + bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.transaction.money + annualFixedMoneyBonus;
+  const profitPlusMoneyBonus = totalDirectProfit + bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.annual_fixed.money;
 
   // רווח סופי = הכל
-  const allBonusesTotal = bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.target.goods
+  const allBonusesTotal = bonusByTypeAndPayment.annual_fixed.money + bonusByTypeAndPayment.annual_fixed.goods
+    + bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.target.goods
     + bonusByTypeAndPayment.marketing.money + bonusByTypeAndPayment.marketing.goods
-    + bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.transaction.goods
-    + annualFixedMoneyBonus;
-  // Also add annual_fixed goods
-  const annualFixedGoodsBonus = useMemo(() => {
-    if (!agreements) return 0;
-    return agreements
-      .filter((a: any) => a.bonus_type === "annual_fixed" && a.bonus_payment_type !== "money")
-      .reduce((sum: number, a: any) => {
-        const v = calcAgreementBonusValue(a);
-        return sum + (isNaN(v) ? 0 : v);
-      }, 0);
-  }, [agreements, purchases, bonuses]);
+    + bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.transaction.goods;
 
-  const finalProfit = totalDirectProfit + allBonusesTotal + annualFixedGoodsBonus;
+  const finalProfit = totalDirectProfit + allBonusesTotal;
 
   const monthlyData = useMemo(() => {
     const map: Record<string, { purchases: number; sales: number; profit: number; final: number }> = {};
