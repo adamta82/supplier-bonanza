@@ -509,6 +509,22 @@ export default function SupplierDetail() {
     const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
     volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
 
+    // For agreements with tiers, use tier logic (ignore fixed_percentage/fixed_amount)
+    const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
+    if (sortedTiers.length > 0) {
+      let achievedTier = null;
+      for (let i = sortedTiers.length - 1; i >= 0; i--) {
+        if (volume >= sortedTiers[i].target_value) {
+          achievedTier = sortedTiers[i];
+          break;
+        }
+      }
+      if (achievedTier) {
+        return bonusVolume * (achievedTier.bonus_percentage / 100);
+      }
+      return 0;
+    }
+
     if (agreement.fixed_percentage) {
       return bonusVolume * (agreement.fixed_percentage / 100);
     }
@@ -516,17 +532,7 @@ export default function SupplierDetail() {
       return agreement.fixed_amount;
     }
 
-    const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
-    let achievedTier = null;
-    for (let i = sortedTiers.length - 1; i >= 0; i--) {
-      if (volume >= sortedTiers[i].target_value) {
-        achievedTier = sortedTiers[i];
-        break;
-      }
-    }
-    if (achievedTier) {
-      return bonusVolume * (achievedTier.bonus_percentage / 100);
-    }
+
     return 0;
   };
 
