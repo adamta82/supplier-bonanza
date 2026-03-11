@@ -975,7 +975,7 @@ export default function SupplierDetail() {
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-primary">₪{fmtNum(bonusValue)}</span>
+                                <span className="text-sm font-bold text-primary">₪{fmtNum(sortedTiers.length > 0 ? theoreticalBonus : bonusValue)}</span>
                                 <Badge variant={status.variant}>{status.label}</Badge>
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditAgreement(agreement)}>
                                   <Pencil className="w-3.5 h-3.5" />
@@ -985,14 +985,18 @@ export default function SupplierDetail() {
                             {sortedTiers.length > 0 && (
                               <>
                                 <div className="flex items-center justify-between text-sm">
-                                  <span>התקדמות: ₪{fmtNum(volume)} / ₪{fmtNum(highestTier?.target_value)}</span>
+                                  <span>
+                                    {nextTier ? "התקדמות למדרגה הבאה: " : "הושגה מדרגה עליונה: "}
+                                    ₪{fmtNum(displayVolume)} / ₪{fmtNum(nextTier ? nextTier.target_value : sortedTiers[sortedTiers.length - 1]?.target_value)}
+                                    <span className="text-xs text-muted-foreground mr-1">({vatLabel})</span>
+                                  </span>
                                   <span className="font-bold">{progress.toFixed(0)}%</span>
                                 </div>
                                 <Progress value={progress} className="h-2" />
                                 <div className="flex flex-wrap gap-2 text-xs">
                                   {sortedTiers.map((tier: any, i: number) => (
-                                    <span key={i} className={`px-2 py-0.5 rounded-full ${volume >= tier.target_value ? "bg-primary/20 text-primary font-semibold" : "bg-muted text-muted-foreground"}`}>
-                                      ₪{fmtNum(tier.target_value)} → {tier.bonus_percentage}%
+                                    <span key={i} className={`px-2 py-0.5 rounded-full ${displayVolume >= tier.target_value ? "bg-primary/20 text-primary font-semibold" : "bg-muted text-muted-foreground"}`}>
+                                      ₪{fmtNum(tier.target_value)} → {tier.bonus_percentage}% <span className="opacity-60">({vatLabel})</span>
                                     </span>
                                   ))}
                                 </div>
