@@ -117,16 +117,34 @@ export default function Reports() {
   const { data: sales } = useQuery({
     queryKey: ["sales-all"],
     queryFn: async () => {
-      const { data } = await supabase.from("sales_records").select("*");
-      return data || [];
+      const all: any[] = [];
+      let from = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data } = await supabase.from("sales_records").select("*").range(from, from + PAGE - 1);
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+      return all;
     },
   });
 
   const { data: purchases } = useQuery({
     queryKey: ["purchases-all"],
     queryFn: async () => {
-      const { data } = await supabase.from("purchase_records").select("*");
-      return data || [];
+      const all: any[] = [];
+      let from = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data } = await supabase.from("purchase_records").select("*").range(from, from + PAGE - 1);
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+      return all;
     },
   });
 
