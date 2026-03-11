@@ -1033,7 +1033,7 @@ export default function SupplierDetail() {
                                     const tierRange = tier.target_value - prevTarget;
                                     const fillAmount = prevAchieved ? Math.min(Math.max(displayVolume - prevTarget, 0) / tierRange * 100, 100) : 0;
                                     return (
-                                      <div key={i} className="flex justify-end">
+                                      <div key={i} className="flex justify-start">
                                         <div className="w-1/2 flex items-center gap-2">
                                           <div
                                             className={`relative flex-1 h-6 rounded border-2 overflow-hidden ${achieved ? "border-green-500" : "border-muted-foreground/30"}`}
