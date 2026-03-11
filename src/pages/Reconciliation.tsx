@@ -211,14 +211,9 @@ export default function ReconciliationPage() {
     });
 
     const invoiceTotals = new Map<string, number>();
-    const invoiceByPO = new Map<string, Set<string>>();
     supplierInvoices.forEach((inv: any) => {
       if (!inv.po_number) return;
-      if (!invoiceByPO.has(inv.po_number)) invoiceByPO.set(inv.po_number, new Set());
-      if (inv.internal_number && !invoiceByPO.get(inv.po_number)!.has(inv.internal_number)) {
-        invoiceByPO.get(inv.po_number)!.add(inv.internal_number);
-        invoiceTotals.set(inv.po_number, (invoiceTotals.get(inv.po_number) || 0) + (inv.total_payment || 0));
-      }
+      invoiceTotals.set(inv.po_number, (invoiceTotals.get(inv.po_number) || 0) + (inv.total_with_vat || 0));
     });
 
     const rows: ReconciliationRow[] = [];
@@ -726,7 +721,7 @@ export default function ReconciliationPage() {
         </TabsList>
 
         <TabsContent value="upload" className="space-y-4">
-          <FileUploadPreview title="חשבוניות ספק" description="העמודות: תאריך, הזמנה (PO), סטטוס, מס' ספק, שם ספק, מספר חשבונית, מס. פנימי, סה'כ לתשלום, מק'ט, תאור מוצר, כמות, מחיר ליחידה, סה'כ כולל מע'מ." buttonLabel="העלה חשבוניות ספק" onUpload={handleUploadSupplierInvoices} isUploading={isUploading} />
+          <FileUploadPreview title="חשבוניות ספק" description="העמודות: תאריך, הזמנה (PO), סטטוס, מס' ספק, שם ספק, מספר חשבונית, מס. פנימי, מק'ט, תאור מוצר, כמות, מחיר ליחידה, סה'כ כולל מע'מ." buttonLabel="העלה חשבוניות ספק" onUpload={handleUploadSupplierInvoices} isUploading={isUploading} />
           <FileUploadPreview title="תעודות משלוח" description="העמודות: תעודה (SH), הזמנה (SO), כמות פריטים, מחיר סופי, סטטוס." buttonLabel="העלה תעודות משלוח" onUpload={handleUploadDeliveryNotes} isUploading={isUploading} />
           <FileUploadPreview title="חשבוניות ספק מרכזות (כולל GR)" description="העמודות: תאריך, הזמנה (PO), סטטוס, שם ספק, מס' ספק, מספר חשבונית, מס. פנימי, תעודה (GR), מק'ט, תאור מוצר, מחיר ליחידה, כמות בחשבונית, סה'כ כולל מע'מ." buttonLabel="העלה חשבוניות מרכזות" onUpload={handleUploadConsolidated} isUploading={isUploading} />
         </TabsContent>
