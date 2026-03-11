@@ -484,21 +484,28 @@ export default function SupplierDetail() {
     });
 
     // Separate purchases into bonus-eligible and target-eligible
+    // bonusVolume: always with VAT (for display/payout)
+    // targetVolumeRaw: ex-VAT amount for comparing against targets when vat_included=false
     let bonusVolume = 0;
-    let targetVolume = 0;
+    let targetVolumeWithVAT = 0;
+    let targetVolumeExVAT = 0;
     agrPurchases.forEach((p: any) => {
       const rawAmount = p.total_amount || 0;
-      const amount = agreement.vat_included ? rawAmount : addVAT(rawAmount);
+      const withVAT = addVAT(rawAmount);
       const result = matchesExclusion(p.item_description || "");
       if (!result.excluded) {
-        bonusVolume += amount;
-        targetVolume += amount;
+        bonusVolume += withVAT;
+        targetVolumeWithVAT += withVAT;
+        targetVolumeExVAT += rawAmount;
       } else if (result.countsTowardTarget) {
-        targetVolume += amount;
+        targetVolumeWithVAT += withVAT;
+        targetVolumeExVAT += rawAmount;
       }
     });
 
-    let volume = targetVolume;
+    // vat_included means the target values were written WITH VAT
+    // so compare accordingly
+    let volume = agreement.vat_included ? targetVolumeWithVAT : targetVolumeExVAT;
 
     const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
     volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
