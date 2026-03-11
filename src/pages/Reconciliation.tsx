@@ -381,7 +381,8 @@ export default function ReconciliationPage() {
                     <TableHead>ספק</TableHead>
                     <TableHead>כמות</TableHead>
                     <TableHead>מחיר יחידה</TableHead>
-                    <TableHead>סה״כ</TableHead>
+                    <TableHead>סה״כ (לפני מע״מ)</TableHead>
+                    <TableHead>סה״כ כולל מע״מ</TableHead>
                     <TableHead>קטגוריה</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -394,7 +395,8 @@ export default function ReconciliationPage() {
                       <TableCell className="text-xs">{item.supplier_name || "—"}</TableCell>
                       <TableCell className="text-xs">{fmtNum(item.quantity)}</TableCell>
                       <TableCell className="text-xs">{fmtNum(item.unit_price)}</TableCell>
-                      <TableCell className="text-xs font-medium">{fmtNum(item.total_amount)}</TableCell>
+                      <TableCell className="text-xs">{fmtNum(item.total_amount)}</TableCell>
+                      <TableCell className="text-xs font-medium">{fmtNum(item.total_amount != null ? item.total_amount * 1.18 : null)}</TableCell>
                       <TableCell className="text-xs">{item.category || "—"}</TableCell>
                     </TableRow>
                   ))}
