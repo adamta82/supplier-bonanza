@@ -992,7 +992,21 @@ export default function SupplierDetail() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-bold text-primary">₪{fmtNum(sortedTiers.length > 0 ? theoreticalBonus : bonusValue)}</span>
-                                <Badge variant={status.variant}>{status.label}</Badge>
+                                {status.label === "צריך לקבל" ? (
+                                  <button
+                                    className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-destructive text-destructive-foreground hover:bg-green-600 hover:text-white transition-colors cursor-pointer"
+                                    title="לחץ לסמן כהתקבל"
+                                    onClick={() => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, newStatus: "received" })}
+                                  >
+                                    {status.label}
+                                  </button>
+                                ) : status.label === "התקבל" ? (
+                                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-600 text-white">
+                                    <CheckCircle className="w-3 h-3" />{status.label}
+                                  </span>
+                                ) : (
+                                  <Badge variant={status.variant}>{status.label}</Badge>
+                                )}
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditAgreement(agreement)}>
                                   <Pencil className="w-3.5 h-3.5" />
                                 </Button>
@@ -1000,21 +1014,36 @@ export default function SupplierDetail() {
                             </div>
                             {sortedTiers.length > 0 && (
                               <>
-                                <div className="flex items-center justify-between text-sm">
-                                  <span>
-                                    {nextTier ? "התקדמות למדרגה הבאה: " : "הושגה מדרגה עליונה: "}
-                                    ₪{fmtNum(displayVolume)} / ₪{fmtNum(nextTier ? nextTier.target_value : sortedTiers[sortedTiers.length - 1]?.target_value)}
-                                    <span className="text-xs text-muted-foreground mr-1">({vatLabel})</span>
-                                  </span>
-                                  <span className="font-bold">{progress.toFixed(0)}%</span>
+                                <div className="text-sm">
+                                  {nextTier ? "התקדמות למדרגה הבאה: " : "הושגה מדרגה עליונה: "}
+                                  ₪{fmtNum(displayVolume)} / ₪{fmtNum(nextTier ? nextTier.target_value : sortedTiers[sortedTiers.length - 1]?.target_value)}
+                                  <span className="text-xs text-muted-foreground mr-1">({vatLabel})</span>
                                 </div>
-                                <Progress value={progress} className="h-2" />
-                                <div className="flex flex-wrap gap-2 text-xs">
-                                  {sortedTiers.map((tier: any, i: number) => (
-                                    <span key={i} className={`px-2 py-0.5 rounded-full ${displayVolume >= tier.target_value ? "bg-primary/20 text-primary font-semibold" : "bg-muted text-muted-foreground"}`}>
-                                      ₪{fmtNum(tier.target_value)} → {tier.bonus_percentage}% <span className="opacity-60">({vatLabel})</span>
-                                    </span>
-                                  ))}
+                                {/* Battery-style tier indicators */}
+                                <div className="flex gap-2 flex-wrap">
+                                  {sortedTiers.map((tier: any, i: number) => {
+                                    const tierProgress = Math.min((displayVolume / tier.target_value) * 100, 100);
+                                    const achieved = displayVolume >= tier.target_value;
+                                    return (
+                                      <div key={i} className="flex flex-col items-center gap-1">
+                                        <div
+                                          className={`relative w-14 h-8 rounded-md border-2 overflow-hidden ${achieved ? "border-green-500" : "border-muted-foreground/30"}`}
+                                        >
+                                          <div
+                                            className={`absolute bottom-0 left-0 right-0 transition-all duration-500 ${achieved ? "bg-green-500" : "bg-primary/40"}`}
+                                            style={{ height: `${tierProgress}%` }}
+                                          />
+                                          <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold z-10">
+                                            {tier.bonus_percentage}%
+                                          </div>
+                                        </div>
+                                        <span className={`text-[10px] ${achieved ? "text-green-600 font-semibold" : "text-muted-foreground"}`}>
+                                          ₪{fmtNum(tier.target_value)}
+                                        </span>
+                                        <span className="text-[8px] text-muted-foreground opacity-60">{vatLabel}</span>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </>
                             )}
