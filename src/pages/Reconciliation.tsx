@@ -166,7 +166,7 @@ export default function ReconciliationPage() {
   // Approval mutation
   const approveMismatch = useMutation({
     mutationFn: async (row: ReconciliationRow & { matchType: string; documentType: string }) => {
-      const { error } = await supabase.from("reconciliation_approvals").upsert({
+      const { error } = await (supabase as any).from("reconciliation_approvals").upsert({
         match_type: row.matchType,
         match_key: row.key,
         document_type: row.documentType,
