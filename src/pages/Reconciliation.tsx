@@ -202,8 +202,9 @@ export default function ReconciliationPage() {
     purchaseRecords.forEach((pr) => {
       if (!pr.order_number) return;
       const existing = poTotals.get(pr.order_number);
+      const amountWithVat = (pr.total_amount || 0) * 1.18;
       poTotals.set(pr.order_number, {
-        total: (existing?.total || 0) + (pr.total_amount || 0),
+        total: (existing?.total || 0) + amountWithVat,
         supplier: existing?.supplier || pr.supplier_name || "",
       });
     });
