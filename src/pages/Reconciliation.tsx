@@ -211,14 +211,9 @@ export default function ReconciliationPage() {
     });
 
     const invoiceTotals = new Map<string, number>();
-    const invoiceByPO = new Map<string, Set<string>>();
     supplierInvoices.forEach((inv: any) => {
       if (!inv.po_number) return;
-      if (!invoiceByPO.has(inv.po_number)) invoiceByPO.set(inv.po_number, new Set());
-      if (inv.internal_number && !invoiceByPO.get(inv.po_number)!.has(inv.internal_number)) {
-        invoiceByPO.get(inv.po_number)!.add(inv.internal_number);
-        invoiceTotals.set(inv.po_number, (invoiceTotals.get(inv.po_number) || 0) + (inv.total_payment || 0));
-      }
+      invoiceTotals.set(inv.po_number, (invoiceTotals.get(inv.po_number) || 0) + (inv.total_with_vat || 0));
     });
 
     const rows: ReconciliationRow[] = [];
