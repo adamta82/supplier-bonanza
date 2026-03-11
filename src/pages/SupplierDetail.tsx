@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { ArrowRight, TrendingUp, ShoppingCart, Award, Target, Pencil, CheckCircle, XCircle, Clock, FileText, ChevronDown, ChevronUp, Plus, Trash2, X, Handshake } from "lucide-react";
+import { ArrowRight, TrendingUp, ShoppingCart, Award, Target, Pencil, CheckCircle, XCircle, Clock, FileText, ChevronDown, ChevronUp, Plus, Trash2, X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { formatDate } from "@/lib/formatDate";
@@ -25,20 +25,20 @@ const bonusTypeLabels: Record<string, string> = {
   annual_target: "יעדים",
   marketing: "שיווק",
   transaction: "עסקה",
-  annual_fixed: "שנתי קבוע",
-  network: "רשתי"
+  annual_fixed: "שנתי",
+  network: "רשתי",
 };
 
 type FilterMode = "all" | "month" | "quarter" | "year" | "ytd" | "last30" | "last90" | "custom";
 
 export default function SupplierDetail() {
-  const { id } = useParams<{id: string;}>();
+  const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
   const [brandDialogOpen, setBrandDialogOpen] = useState(false);
   // All source data is ex-VAT; always display with VAT
   const [editForm, setEditForm] = useState({
-    name: "", supplier_number: "", payment_terms: "", shotef: "", obligo: "", notes: "", annual_bonus_status: "pending", reconciliation_date: ""
+    name: "", supplier_number: "", payment_terms: "", shotef: "", obligo: "", notes: "", annual_bonus_status: "pending", reconciliation_date: "",
   });
   const [filterMode, setFilterMode] = useState<FilterMode>("all");
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -69,10 +69,10 @@ export default function SupplierDetail() {
     fixed_amount: "",
     fixed_percentage: "",
     notes: "",
-    bonus_payment_type: "goods"
+    bonus_payment_type: "goods",
   });
-  type TierForm = {target_value: string;bonus_percentage: string;};
-  type ExclusionForm = {keyword: string;mode: "include" | "exclude";counts_toward_target: boolean;};
+  type TierForm = { target_value: string; bonus_percentage: string };
+  type ExclusionForm = { keyword: string; mode: "include" | "exclude"; counts_toward_target: boolean };
   const [tiers, setTiers] = useState<TierForm[]>([{ target_value: "", bonus_percentage: "" }]);
   const [exclusions, setExclusions] = useState<ExclusionForm[]>([]);
 
@@ -84,7 +84,7 @@ export default function SupplierDetail() {
     description: "",
     total_value: "",
     bonus_value: "",
-    bonus_payment_type: "goods"
+    bonus_payment_type: "goods",
   });
   const dateRange = useMemo(() => {
     const now = new Date();
@@ -128,7 +128,7 @@ export default function SupplierDetail() {
       const { data } = await supabase.from("suppliers").select("*").eq("id", id!).single();
       return data;
     },
-    enabled: !!id
+    enabled: !!id,
   });
 
   const openEdit = () => {
@@ -141,7 +141,7 @@ export default function SupplierDetail() {
       obligo: (supplier as any).obligo?.toString() || "",
       notes: supplier.notes || "",
       annual_bonus_status: supplier.annual_bonus_status || "pending",
-      reconciliation_date: supplier.reconciliation_date || ""
+      reconciliation_date: supplier.reconciliation_date || "",
     });
     setEditOpen(true);
   };
@@ -156,7 +156,7 @@ export default function SupplierDetail() {
         obligo: editForm.obligo ? parseFloat(editForm.obligo) : null,
         notes: editForm.notes || null,
         annual_bonus_status: editForm.annual_bonus_status || "pending",
-        reconciliation_date: editForm.reconciliation_date || null
+        reconciliation_date: editForm.reconciliation_date || null,
       }).eq("id", id!);
       if (error) throw error;
     },
@@ -166,7 +166,7 @@ export default function SupplierDetail() {
       toast.success("ספק עודכן בהצלחה");
       setEditOpen(false);
     },
-    onError: () => toast.error("שגיאה בעדכון הספק")
+    onError: () => toast.error("שגיאה בעדכון הספק"),
   });
 
   // Agreement save/delete mutations
@@ -176,7 +176,7 @@ export default function SupplierDetail() {
     setAgreementForm({
       bonus_type: "annual_target", period_start: "", period_end: "",
       vat_included: false, target_type: "amount", fixed_amount: "", fixed_percentage: "",
-      notes: "", bonus_payment_type: "goods"
+      notes: "", bonus_payment_type: "goods",
     });
     setTiers([{ target_value: "", bonus_percentage: "" }]);
     setExclusions([]);
@@ -195,7 +195,7 @@ export default function SupplierDetail() {
         fixed_percentage: agreementForm.fixed_percentage ? parseFloat(agreementForm.fixed_percentage) : null,
         notes: agreementForm.notes || null,
         bonus_payment_type: agreementForm.bonus_payment_type,
-        exclusions: exclusions.length > 0 ? JSON.stringify(exclusions) : "[]"
+        exclusions: exclusions.length > 0 ? JSON.stringify(exclusions) : "[]",
       };
       let agreementId = agreementEditId;
       if (agreementEditId) {
@@ -214,7 +214,7 @@ export default function SupplierDetail() {
             agreement_id: agreementId!,
             tier_order: i + 1,
             target_value: parseFloat(t.target_value),
-            bonus_percentage: parseFloat(t.bonus_percentage)
+            bonus_percentage: parseFloat(t.bonus_percentage),
           }))
         );
         if (error) throw error;
@@ -226,7 +226,7 @@ export default function SupplierDetail() {
       toast.success(agreementEditId ? "הסכם עודכן" : "הסכם נוסף");
       resetAgreementForm();
     },
-    onError: () => toast.error("שגיאה בשמירה")
+    onError: () => toast.error("שגיאה בשמירה"),
   });
 
   const deleteAgreementMutation = useMutation({
@@ -239,12 +239,12 @@ export default function SupplierDetail() {
       queryClient.invalidateQueries({ queryKey: ["agreements"] });
       toast.success("הסכם נמחק");
       resetAgreementForm();
-    }
+    },
   });
 
   const openEditAgreement = (a: any) => {
     const excl = (() => {
-      try {return typeof a.exclusions === "string" ? JSON.parse(a.exclusions) : a.exclusions || [];} catch {return [];}
+      try { return typeof a.exclusions === "string" ? JSON.parse(a.exclusions) : (a.exclusions || []); } catch { return []; }
     })();
     setAgreementEditId(a.id);
     setAgreementForm({
@@ -256,12 +256,12 @@ export default function SupplierDetail() {
       fixed_amount: a.fixed_amount?.toString() || "",
       fixed_percentage: a.fixed_percentage?.toString() || "",
       notes: a.notes || "",
-      bonus_payment_type: a.bonus_payment_type || "goods"
+      bonus_payment_type: a.bonus_payment_type || "goods",
     });
     setTiers(
-      a.bonus_tiers?.length > 0 ?
-      a.bonus_tiers.sort((x: any, y: any) => x.tier_order - y.tier_order).map((t: any) => ({ target_value: t.target_value.toString(), bonus_percentage: t.bonus_percentage.toString() })) :
-      [{ target_value: "", bonus_percentage: "" }]
+      a.bonus_tiers?.length > 0
+        ? a.bonus_tiers.sort((x: any, y: any) => x.tier_order - y.tier_order).map((t: any) => ({ target_value: t.target_value.toString(), bonus_percentage: t.bonus_percentage.toString() }))
+        : [{ target_value: "", bonus_percentage: "" }]
     );
     setExclusions(excl);
     setAgreementDialogOpen(true);
@@ -269,7 +269,7 @@ export default function SupplierDetail() {
 
   const openAddAgreement = (bonusType: string) => {
     resetAgreementForm();
-    setAgreementForm((prev) => ({ ...prev, bonus_type: bonusType }));
+    setAgreementForm(prev => ({ ...prev, bonus_type: bonusType }));
     setAgreementDialogOpen(true);
   };
 
@@ -288,7 +288,7 @@ export default function SupplierDetail() {
         description: txForm.description || null,
         total_value: parseFloat(txForm.total_value),
         bonus_value: parseFloat(txForm.bonus_value),
-        bonus_payment_type: txForm.bonus_payment_type
+        bonus_payment_type: txForm.bonus_payment_type,
       };
       if (txEditId) {
         const { error } = await supabase.from("transaction_bonuses").update(payload).eq("id", txEditId);
@@ -304,7 +304,7 @@ export default function SupplierDetail() {
       toast.success(txEditId ? "בונוס עודכן" : "בונוס נוסף");
       resetTxForm();
     },
-    onError: () => toast.error("שגיאה בשמירה")
+    onError: () => toast.error("שגיאה בשמירה"),
   });
 
   const deleteTxMutation = useMutation({
@@ -317,7 +317,7 @@ export default function SupplierDetail() {
       queryClient.invalidateQueries({ queryKey: ["transaction-bonuses"] });
       toast.success("בונוס נמחק");
       resetTxForm();
-    }
+    },
   });
 
   const openEditTx = (b: any) => {
@@ -327,7 +327,7 @@ export default function SupplierDetail() {
       description: b.description || "",
       total_value: b.total_value?.toString() || "",
       bonus_value: b.bonus_value?.toString() || "",
-      bonus_payment_type: b.bonus_payment_type || "goods"
+      bonus_payment_type: b.bonus_payment_type || "goods",
     });
     setTxDialogOpen(true);
   };
@@ -336,56 +336,56 @@ export default function SupplierDetail() {
   const { data: agreements } = useQuery({
     queryKey: ["supplier-agreements", id],
     queryFn: async () => {
-      const { data } = await supabase.
-      from("bonus_agreements").
-      select("*, bonus_tiers(*)").
-      eq("supplier_id", id!).
-      order("created_at", { ascending: false });
+      const { data } = await supabase
+        .from("bonus_agreements")
+        .select("*, bonus_tiers(*)")
+        .eq("supplier_id", id!)
+        .order("created_at", { ascending: false });
       return data || [];
     },
-    enabled: !!id
+    enabled: !!id,
   });
 
   const { data: purchases } = useQuery({
     queryKey: ["supplier-purchases", id],
     queryFn: async () => {
-      const { data } = await supabase.
-      from("purchase_records").
-      select("*").
-      eq("supplier_id", id!).
-      order("order_date", { ascending: false });
+      const { data } = await supabase
+        .from("purchase_records")
+        .select("*")
+        .eq("supplier_id", id!)
+        .order("order_date", { ascending: false });
       return data || [];
     },
-    enabled: !!id
+    enabled: !!id,
   });
 
   const { data: sales } = useQuery({
     queryKey: ["supplier-sales", id],
     queryFn: async () => {
-      const { data } = await supabase.
-      from("sales_records").
-      select("*").
-      eq("supplier_id", id!).
-      order("sale_date", { ascending: false });
+      const { data } = await supabase
+        .from("sales_records")
+        .select("*")
+        .eq("supplier_id", id!)
+        .order("sale_date", { ascending: false });
       return data || [];
     },
-    enabled: !!id
+    enabled: !!id,
   });
 
   const { data: bonuses } = useQuery({
     queryKey: ["supplier-bonuses", id],
     queryFn: async () => {
-      const { data } = await supabase.
-      from("transaction_bonuses").
-      select("*, bonus_agreements(bonus_type)").
-      eq("supplier_id", id!).
-      order("transaction_date", { ascending: false });
+      const { data } = await supabase
+        .from("transaction_bonuses")
+        .select("*, bonus_agreements(bonus_type)")
+        .eq("supplier_id", id!)
+        .order("transaction_date", { ascending: false });
       return data || [];
     },
-    enabled: !!id
+    enabled: !!id,
   });
 
-  const filterByDate = <T extends Record<string, any>,>(items: T[], dateField: string) => {
+  const filterByDate = <T extends Record<string, any>>(items: T[], dateField: string) => {
     if (!dateRange) return items;
     return items.filter((item) => {
       const d = item[dateField];
@@ -407,7 +407,7 @@ export default function SupplierDetail() {
 
   // Brand breakdown
   const brandData = useMemo(() => {
-    const map: Record<string, {sales: number;cost: number;profit: number;}> = {};
+    const map: Record<string, { sales: number; cost: number; profit: number }> = {};
     filteredSales.forEach((r: any) => {
       const brand = r.brand || "ללא מותג";
       if (!map[brand]) map[brand] = { sales: 0, cost: 0, profit: 0 };
@@ -420,24 +420,24 @@ export default function SupplierDetail() {
     return Object.entries(map).map(([brand, data]) => ({
       brand,
       ...data,
-      margin: data.sales > 0 ? data.profit / data.sales * 100 : 0
+      margin: data.sales > 0 ? (data.profit / data.sales) * 100 : 0,
     })).sort((a, b) => b.profit - a.profit);
   }, [filteredSales]);
 
   // Filtered brand profit (based on toggles)
   const filteredBrandProfit = useMemo(() => {
-    const active = brandData.filter((b) => !disabledBrands.has(b.brand));
+    const active = brandData.filter(b => !disabledBrands.has(b.brand));
     const totalProfit = active.reduce((s, b) => s + b.profit, 0);
     const totalSalesActive = active.reduce((s, b) => s + b.sales, 0);
-    const margin = totalSalesActive > 0 ? totalProfit / totalSalesActive * 100 : 0;
+    const margin = totalSalesActive > 0 ? (totalProfit / totalSalesActive) * 100 : 0;
     return { totalProfit, margin };
   }, [brandData, disabledBrands]);
 
   const toggleBrand = (brand: string) => {
-    setDisabledBrands((prev) => {
+    setDisabledBrands(prev => {
       const next = new Set(prev);
-      if (next.has(brand)) next.delete(brand);else
-      next.add(brand);
+      if (next.has(brand)) next.delete(brand);
+      else next.add(brand);
       return next;
     });
   };
@@ -450,8 +450,8 @@ export default function SupplierDetail() {
     }
 
     // Parse exclusions for this agreement
-    const excl: {keyword: string;mode: "include" | "exclude";counts_toward_target: boolean;}[] = (() => {
-      try {return typeof agreement.exclusions === "string" ? JSON.parse(agreement.exclusions) : agreement.exclusions || [];} catch {return [];}
+    const excl: { keyword: string; mode: "include" | "exclude"; counts_toward_target: boolean }[] = (() => {
+      try { return typeof agreement.exclusions === "string" ? JSON.parse(agreement.exclusions) : (agreement.exclusions || []); } catch { return []; }
     })();
 
     const matchesExclusion = (desc: string) => {
@@ -469,7 +469,7 @@ export default function SupplierDetail() {
         }
       }
       // If there are "include" rules and none matched, exclude the item
-      const hasIncludeRules = excl.some((r) => r.mode === "include");
+      const hasIncludeRules = excl.some(r => r.mode === "include");
       if (hasIncludeRules) {
         return { excluded: true, countsTowardTarget: false };
       }
@@ -541,12 +541,12 @@ export default function SupplierDetail() {
 
   const totalMoneyBonus = useMemo(() => {
     if (!agreements) return 0;
-    return agreements.
-    filter((a: any) => a.bonus_payment_type === "money").
-    reduce((sum: number, a: any) => {
-      const v = calcAgreementBonusValue(a);
-      return sum + (isNaN(v) ? 0 : v);
-    }, 0);
+    return agreements
+      .filter((a: any) => a.bonus_payment_type === "money")
+      .reduce((sum: number, a: any) => {
+        const v = calcAgreementBonusValue(a);
+        return sum + (isNaN(v) ? 0 : v);
+      }, 0);
   }, [agreements, purchases, bonuses]);
 
   const totalBonusValue = totalAllBonus;
@@ -554,9 +554,10 @@ export default function SupplierDetail() {
   // Bonus breakdown by type and payment method
   const bonusByTypeAndPayment = useMemo(() => {
     const result = {
+      annual_fixed: { money: 0, goods: 0 },
       target: { money: 0, goods: 0 },
       marketing: { money: 0, goods: 0 },
-      transaction: { money: 0, goods: 0 }
+      transaction: { money: 0, goods: 0 },
     };
     if (!agreements) return result;
 
@@ -565,7 +566,9 @@ export default function SupplierDetail() {
       const val = calcAgreementBonusValue(a);
       if (isNaN(val) || val === 0) return;
       const isMoney = a.bonus_payment_type === "money";
-      if (a.bonus_type === "annual_target") {
+      if (a.bonus_type === "annual_fixed") {
+        result.annual_fixed[isMoney ? "money" : "goods"] += val;
+      } else if (a.bonus_type === "annual_target") {
         result.target[isMoney ? "money" : "goods"] += val;
       } else if (a.bonus_type === "marketing") {
         result.marketing[isMoney ? "money" : "goods"] += val;
@@ -575,46 +578,25 @@ export default function SupplierDetail() {
     // Transaction bonuses from transaction_bonuses table
     (bonuses || []).forEach((b: any) => {
       const isMoney = b.bonus_payment_type === "money";
-      result.transaction[isMoney ? "money" : "goods"] += b.bonus_value || 0;
+      result.transaction[isMoney ? "money" : "goods"] += (b.bonus_value || 0);
     });
 
     return result;
   }, [agreements, purchases, bonuses]);
 
-  // Annual fixed bonuses (money only, for profit calc)
-  const annualFixedMoneyBonus = useMemo(() => {
-    if (!agreements) return 0;
-    return agreements.
-    filter((a: any) => a.bonus_type === "annual_fixed" && a.bonus_payment_type === "money").
-    reduce((sum: number, a: any) => {
-      const v = calcAgreementBonusValue(a);
-      return sum + (isNaN(v) ? 0 : v);
-    }, 0);
-  }, [agreements, purchases, bonuses]);
-
   // רווח ישיר + בונוס כספי (לא כולל שיווק)
-  const profitPlusMoneyBonus = totalDirectProfit + bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.transaction.money + annualFixedMoneyBonus;
+  const profitPlusMoneyBonus = totalDirectProfit + bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.annual_fixed.money;
 
   // רווח סופי = הכל
-  const allBonusesTotal = bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.target.goods +
-  bonusByTypeAndPayment.marketing.money + bonusByTypeAndPayment.marketing.goods +
-  bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.transaction.goods +
-  annualFixedMoneyBonus;
-  // Also add annual_fixed goods
-  const annualFixedGoodsBonus = useMemo(() => {
-    if (!agreements) return 0;
-    return agreements.
-    filter((a: any) => a.bonus_type === "annual_fixed" && a.bonus_payment_type !== "money").
-    reduce((sum: number, a: any) => {
-      const v = calcAgreementBonusValue(a);
-      return sum + (isNaN(v) ? 0 : v);
-    }, 0);
-  }, [agreements, purchases, bonuses]);
+  const allBonusesTotal = bonusByTypeAndPayment.annual_fixed.money + bonusByTypeAndPayment.annual_fixed.goods
+    + bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.target.goods
+    + bonusByTypeAndPayment.marketing.money + bonusByTypeAndPayment.marketing.goods
+    + bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.transaction.goods;
 
-  const finalProfit = totalDirectProfit + allBonusesTotal + annualFixedGoodsBonus;
+  const finalProfit = totalDirectProfit + allBonusesTotal;
 
   const monthlyData = useMemo(() => {
-    const map: Record<string, {purchases: number;sales: number;profit: number;final: number;}> = {};
+    const map: Record<string, { purchases: number; sales: number; profit: number; final: number }> = {};
     filteredPurchases.forEach((r) => {
       const m = r.order_date?.slice(0, 7) || "unknown";
       if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, final: 0 };
@@ -631,7 +613,7 @@ export default function SupplierDetail() {
       if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, final: 0 };
       map[m].final += r.bonus_value || 0;
     });
-    Object.values(map).forEach((v) => {v.final += v.profit;});
+    Object.values(map).forEach((v) => { v.final += v.profit; });
     return Object.entries(map).sort(([a], [b]) => a.localeCompare(b)).map(([month, v]) => ({ month, ...v }));
   }, [filteredPurchases, filteredSales, filteredBonuses]);
 
@@ -688,21 +670,21 @@ export default function SupplierDetail() {
             </p>
             <div className="flex items-center gap-4 mt-2">
               <div className="flex items-center gap-1.5">
-                {supplier.annual_bonus_status === "received" ?
-                <><CheckCircle className="w-4 h-4 text-primary" /><span className="text-xs font-medium text-primary">בונוס 2025: התקבל</span></> :
-                supplier.annual_bonus_status === "none" ?
-                <><XCircle className="w-4 h-4 text-muted-foreground" /><span className="text-xs text-muted-foreground">בונוס 2025: אין</span></> :
-
-                <><Clock className="w-4 h-4 text-destructive" /><span className="text-xs font-medium text-destructive">בונוס 2025: ממתין</span></>
-                }
+                {supplier.annual_bonus_status === "received" ? (
+                  <><CheckCircle className="w-4 h-4 text-primary" /><span className="text-xs font-medium text-primary">בונוס 2025: התקבל</span></>
+                ) : supplier.annual_bonus_status === "none" ? (
+                  <><XCircle className="w-4 h-4 text-muted-foreground" /><span className="text-xs text-muted-foreground">בונוס 2025: אין</span></>
+                ) : (
+                  <><Clock className="w-4 h-4 text-destructive" /><span className="text-xs font-medium text-destructive">בונוס 2025: ממתין</span></>
+                )}
               </div>
               <div className="flex items-center gap-1.5">
                 <FileText className="w-4 h-4 text-muted-foreground" />
-                {supplier.reconciliation_date ?
-                <span className="text-xs">כרטסת מתואמת עד {formatDate(supplier.reconciliation_date)}</span> :
-
-                <span className="text-xs text-muted-foreground">כרטסת לא מתואמת</span>
-                }
+                {supplier.reconciliation_date ? (
+                  <span className="text-xs">כרטסת מתואמת עד {formatDate(supplier.reconciliation_date)}</span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">כרטסת לא מתואמת</span>
+                )}
               </div>
             </div>
           </div>
@@ -723,46 +705,46 @@ export default function SupplierDetail() {
               <SelectItem value="custom">תאריכים</SelectItem>
             </SelectContent>
           </Select>
-          {filterMode === "month" &&
-          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+          {filterMode === "month" && (
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
               <SelectTrigger className="w-[120px] h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {months.map((m) =>
-              <SelectItem key={m} value={m}>{m}</SelectItem>
-              )}
+                {months.map((m) => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
-          }
-          {filterMode === "quarter" &&
-          <Select value={selectedQuarter} onValueChange={setSelectedQuarter}>
+          )}
+          {filterMode === "quarter" && (
+            <Select value={selectedQuarter} onValueChange={setSelectedQuarter}>
               <SelectTrigger className="w-[120px] h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {quarters.map((q) =>
-              <SelectItem key={q} value={q}>{q}</SelectItem>
-              )}
+                {quarters.map((q) => (
+                  <SelectItem key={q} value={q}>{q}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
-          }
-          {filterMode === "custom" &&
-          <>
+          )}
+          {filterMode === "custom" && (
+            <>
               <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="w-[140px] h-8 text-xs" />
-            
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="w-[140px] h-8 text-xs"
+              />
               <Input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="w-[140px] h-8 text-xs" />
-            
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="w-[140px] h-8 text-xs"
+              />
             </>
-          }
+          )}
         </div>
       </div>
 
@@ -782,18 +764,30 @@ export default function SupplierDetail() {
             <div className="text-lg font-bold">₪{fmtNum(totalSales)}</div>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => {setDisabledBrands(new Set());setBrandDialogOpen(true);}}>
+        <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={() => { setDisabledBrands(new Set()); setBrandDialogOpen(true); }}>
           <CardContent className="pt-4 pb-4 text-center">
             <Target className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">רווח ישיר</div>
             <div className="text-lg font-bold">₪{fmtNum(totalDirectProfit)}</div>
-            <div className="text-xs text-muted-foreground">{totalSales > 0 ? `${(totalDirectProfit / totalSales * 100).toFixed(1)}%` : "0%"}</div>
+            <div className="text-xs text-muted-foreground">{totalSales > 0 ? `${((totalDirectProfit / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* KPI cards - Row 2: Bonuses + Profits */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <Card>
+          <CardContent className="pt-4 pb-4 text-center">
+            <Award className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+            <div className="text-xs text-muted-foreground">בונוס שנתי</div>
+            <div className="text-sm font-bold">₪{fmtNum(bonusByTypeAndPayment.annual_fixed.money + bonusByTypeAndPayment.annual_fixed.goods)}</div>
+            <div className="flex justify-center gap-2 mt-1 text-[10px] text-muted-foreground">
+              <span>כספי: ₪{fmtNum(bonusByTypeAndPayment.annual_fixed.money)}</span>
+              <span>|</span>
+              <span>סחורה: ₪{fmtNum(bonusByTypeAndPayment.annual_fixed.goods)}</span>
+            </div>
+          </CardContent>
+        </Card>
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
             <Award className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
@@ -814,7 +808,7 @@ export default function SupplierDetail() {
             <div className="flex justify-center gap-2 mt-1 text-[10px] text-muted-foreground">
               <span>כספי: ₪{fmtNum(bonusByTypeAndPayment.marketing.money)}</span>
               <span>|</span>
-              <Handshake>סחורה: ₪{fmtNum(bonusByTypeAndPayment.marketing.goods)}</Handshake>
+              <span>סחורה: ₪{fmtNum(bonusByTypeAndPayment.marketing.goods)}</span>
             </div>
           </CardContent>
         </Card>
@@ -835,7 +829,7 @@ export default function SupplierDetail() {
             <TrendingUp className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">רווח ישיר + בונוס כספי*</div>
             <div className="text-sm font-bold">₪{fmtNum(profitPlusMoneyBonus)}</div>
-            <div className="text-xs text-muted-foreground">{totalSales > 0 ? `${(profitPlusMoneyBonus / totalSales * 100).toFixed(1)}%` : "0%"}</div>
+            <div className="text-xs text-muted-foreground">{totalSales > 0 ? `${((profitPlusMoneyBonus / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
             <div className="text-[10px] text-muted-foreground mt-1">*לא כולל בונוס שיווק</div>
           </CardContent>
         </Card>
@@ -844,7 +838,7 @@ export default function SupplierDetail() {
             <TrendingUp className="w-5 h-5 mx-auto mb-1 text-primary" />
             <div className="text-xs text-muted-foreground">רווח סופי</div>
             <div className="text-sm font-bold text-primary">₪{fmtNum(finalProfit)}</div>
-            <div className="text-xs text-primary">{totalSales > 0 ? `${(finalProfit / totalSales * 100).toFixed(1)}%` : "0%"}</div>
+            <div className="text-xs text-primary">{totalSales > 0 ? `${((finalProfit / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
           </CardContent>
         </Card>
       </div>
@@ -861,14 +855,14 @@ export default function SupplierDetail() {
               <div className="text-sm text-muted-foreground">{filteredBrandProfit.margin.toFixed(1)}% רווח</div>
             </div>
             <div className="space-y-2">
-              {brandData.map((b) =>
-              <div key={b.brand} className="flex items-center justify-between p-3 rounded-lg border" dir="rtl">
+              {brandData.map((b) => (
+                <div key={b.brand} className="flex items-center justify-between p-3 rounded-lg border" dir="rtl">
                   <div className="flex items-center gap-3">
                     <Switch
-                    dir="ltr"
-                    checked={!disabledBrands.has(b.brand)}
-                    onCheckedChange={() => toggleBrand(b.brand)} />
-                  
+                      dir="ltr"
+                      checked={!disabledBrands.has(b.brand)}
+                      onCheckedChange={() => toggleBrand(b.brand)}
+                    />
                     <span className="font-medium text-sm">{b.brand}</span>
                   </div>
                   <div className="text-left">
@@ -876,10 +870,10 @@ export default function SupplierDetail() {
                     <div className="text-xs text-muted-foreground">{b.margin.toFixed(1)}%</div>
                   </div>
                 </div>
+              ))}
+              {brandData.length === 0 && (
+                <p className="text-center text-muted-foreground py-4">אין נתוני מותגים</p>
               )}
-              {brandData.length === 0 &&
-              <p className="text-center text-muted-foreground py-4">אין נתוני מותגים</p>
-              }
             </div>
           </div>
         </DialogContent>
@@ -906,25 +900,25 @@ export default function SupplierDetail() {
                       <Plus className="w-4 h-4 ml-1" />הוסף הסכם
                     </Button>
                   </div>
-                  {tabAgreements.length > 0 ?
-                  tabAgreements.map((agreement: any) => {
-                    const status = getAgreementStatus(agreement);
-                    const bonusValue = calcAgreementBonusValue(agreement);
-                    const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
-                    const highestTier = sortedTiers[sortedTiers.length - 1];
-                    const agrPurchases = (purchases || []).filter((p: any) => {
-                      if (!p.order_date) return false;
-                      if (agreement.period_start && p.order_date < agreement.period_start) return false;
-                      if (agreement.period_end && p.order_date > agreement.period_end) return false;
-                      return true;
-                    });
-                    let volume = agrPurchases.reduce((s: number, p: any) => s + (p.total_amount || 0), 0);
-                    const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
-                    volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
-                    const progress = highestTier ? Math.min(volume / highestTier.target_value * 100, 100) : 0;
+                  {tabAgreements.length > 0 ? (
+                    tabAgreements.map((agreement: any) => {
+                      const status = getAgreementStatus(agreement);
+                      const bonusValue = calcAgreementBonusValue(agreement);
+                      const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
+                      const highestTier = sortedTiers[sortedTiers.length - 1];
+                      const agrPurchases = (purchases || []).filter((p: any) => {
+                        if (!p.order_date) return false;
+                        if (agreement.period_start && p.order_date < agreement.period_start) return false;
+                        if (agreement.period_end && p.order_date > agreement.period_end) return false;
+                        return true;
+                      });
+                      let volume = agrPurchases.reduce((s: number, p: any) => s + (p.total_amount || 0), 0);
+                      const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
+                      volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
+                      const progress = highestTier ? Math.min((volume / highestTier.target_value) * 100, 100) : 0;
 
-                    return (
-                      <Card key={agreement.id}>
+                      return (
+                        <Card key={agreement.id}>
                           <CardContent className="p-4 space-y-3">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
@@ -932,11 +926,11 @@ export default function SupplierDetail() {
                                 <Badge variant={agreement.bonus_payment_type === "money" ? "outline" : "default"}>
                                   {agreement.bonus_payment_type === "money" ? "כסף" : "סחורה"}
                                 </Badge>
-                                {agreement.period_start && agreement.period_end &&
-                              <span className="text-xs text-muted-foreground">
+                                {agreement.period_start && agreement.period_end && (
+                                  <span className="text-xs text-muted-foreground">
                                     {formatDate(agreement.period_start)} - {formatDate(agreement.period_end)}
                                   </span>
-                              }
+                                )}
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-bold text-primary">₪{fmtNum(bonusValue)}</span>
@@ -946,57 +940,57 @@ export default function SupplierDetail() {
                                 </Button>
                               </div>
                             </div>
-                            {sortedTiers.length > 0 &&
-                          <>
+                            {sortedTiers.length > 0 && (
+                              <>
                                 <div className="flex items-center justify-between text-sm">
                                   <span>התקדמות: ₪{fmtNum(volume)} / ₪{fmtNum(highestTier?.target_value)}</span>
                                   <span className="font-bold">{progress.toFixed(0)}%</span>
                                 </div>
                                 <Progress value={progress} className="h-2" />
                                 <div className="flex flex-wrap gap-2 text-xs">
-                                  {sortedTiers.map((tier: any, i: number) =>
-                              <span key={i} className={`px-2 py-0.5 rounded-full ${volume >= tier.target_value ? "bg-primary/20 text-primary font-semibold" : "bg-muted text-muted-foreground"}`}>
+                                  {sortedTiers.map((tier: any, i: number) => (
+                                    <span key={i} className={`px-2 py-0.5 rounded-full ${volume >= tier.target_value ? "bg-primary/20 text-primary font-semibold" : "bg-muted text-muted-foreground"}`}>
                                       ₪{fmtNum(tier.target_value)} → {tier.bonus_percentage}%
                                     </span>
-                              )}
+                                  ))}
                                 </div>
                               </>
-                          }
-                            {agreement.fixed_percentage && !sortedTiers.length &&
-                          <div className="text-sm">בונוס קבוע: {agreement.fixed_percentage}%</div>
-                          }
-                            {agreement.fixed_amount && !sortedTiers.length &&
-                          <div className="text-sm">בונוס קבוע: ₪{fmtNum(agreement.fixed_amount)}</div>
-                          }
+                            )}
+                            {agreement.fixed_percentage && !sortedTiers.length && (
+                              <div className="text-sm">בונוס קבוע: {agreement.fixed_percentage}%</div>
+                            )}
+                            {agreement.fixed_amount && !sortedTiers.length && (
+                              <div className="text-sm">בונוס קבוע: ₪{fmtNum(agreement.fixed_amount)}</div>
+                            )}
                             {(() => {
-                            const excl = (() => {try {return typeof agreement.exclusions === "string" ? JSON.parse(agreement.exclusions) : agreement.exclusions || [];} catch {return [];}})();
-                            return excl.length > 0 ?
-                            <div className="text-xs text-muted-foreground border-t pt-2 mt-2">
-                                  🔍 חריגות: {excl.map((e: any) => `${e.mode === "include" ? "כולל" : "לא כולל"} "${e.keyword}"${agreement.bonus_type === "annual_target" || agreement.bonus_type === "marketing" ? e.counts_toward_target ? " ✓יעד" : " ✗יעד" : ""}`).join(" | ")}
-                                </div> :
-                            null;
-                          })()}
-                            {agreement.notes &&
-                          <div className="text-xs text-muted-foreground border-t pt-2 mt-2">📝 {agreement.notes}</div>
-                          }
+                              const excl = (() => { try { return typeof agreement.exclusions === "string" ? JSON.parse(agreement.exclusions) : (agreement.exclusions || []); } catch { return []; } })();
+                              return excl.length > 0 ? (
+                                <div className="text-xs text-muted-foreground border-t pt-2 mt-2">
+                                  🔍 חריגות: {excl.map((e: any) => `${e.mode === "include" ? "כולל" : "לא כולל"} "${e.keyword}"${(agreement.bonus_type === "annual_target" || agreement.bonus_type === "marketing") ? (e.counts_toward_target ? " ✓יעד" : " ✗יעד") : ""}`).join(" | ")}
+                                </div>
+                              ) : null;
+                            })()}
+                            {agreement.notes && (
+                              <div className="text-xs text-muted-foreground border-t pt-2 mt-2">📝 {agreement.notes}</div>
+                            )}
                           </CardContent>
-                        </Card>);
-
-                  }) :
-
-                  <Card>
+                        </Card>
+                      );
+                    })
+                  ) : (
+                    <Card>
                       <CardContent className="py-6 text-center text-muted-foreground">אין הסכמים מסוג זה</CardContent>
                     </Card>
-                  }
+                  )}
                 </div>
-              </TabsContent>);
-
+              </TabsContent>
+            );
           })}
 
           <TabsContent value="transaction">
             <div className="space-y-3">
               <div className="flex justify-end">
-                <Button size="sm" onClick={() => {resetTxForm();setTxDialogOpen(true);}}>
+                <Button size="sm" onClick={() => { resetTxForm(); setTxDialogOpen(true); }}>
                   <Plus className="w-4 h-4 ml-1" />הוסף בונוס עסקה
                 </Button>
               </div>
@@ -1014,13 +1008,13 @@ export default function SupplierDetail() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredBonuses.length === 0 ?
-                      <TableRow>
+                      {filteredBonuses.length === 0 ? (
+                        <TableRow>
                           <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">אין בונוסי עסקה</TableCell>
-                        </TableRow> :
-
-                      filteredBonuses.map((b: any) =>
-                      <TableRow key={b.id}>
+                        </TableRow>
+                      ) : (
+                        filteredBonuses.map((b: any) => (
+                          <TableRow key={b.id}>
                             <TableCell>{formatDate(b.transaction_date)}</TableCell>
                             <TableCell className="max-w-[200px] truncate">{b.description || "-"}</TableCell>
                             <TableCell>₪{fmtNum(b.total_value)}</TableCell>
@@ -1032,8 +1026,8 @@ export default function SupplierDetail() {
                               </Button>
                             </TableCell>
                           </TableRow>
-                      )
-                      }
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -1044,12 +1038,12 @@ export default function SupplierDetail() {
       </div>
 
       {/* Agreement Dialog */}
-      <Dialog open={agreementDialogOpen} onOpenChange={(open) => {if (!open) resetAgreementForm();else setAgreementDialogOpen(true);}}>
+      <Dialog open={agreementDialogOpen} onOpenChange={(open) => { if (!open) resetAgreementForm(); else setAgreementDialogOpen(true); }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{agreementEditId ? "עריכת הסכם" : "הסכם בונוס חדש"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={(e) => {e.preventDefault();saveAgreementMutation.mutate();}} className="space-y-4">
+          <form onSubmit={(e) => { e.preventDefault(); saveAgreementMutation.mutate(); }} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>סוג בונוס *</Label>
@@ -1058,7 +1052,7 @@ export default function SupplierDetail() {
                   <SelectContent>
                     <SelectItem value="annual_target">יעדים</SelectItem>
                     <SelectItem value="marketing">שיווק</SelectItem>
-                    <SelectItem value="annual_fixed">שנתי קבוע</SelectItem>
+                    <SelectItem value="annual_fixed">שנתי</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1083,8 +1077,8 @@ export default function SupplierDetail() {
                 <Input type="date" value={agreementForm.period_end} onChange={(e) => setAgreementForm({ ...agreementForm, period_end: e.target.value })} />
               </div>
             </div>
-            {(agreementForm.bonus_type === "annual_target" || agreementForm.bonus_type === "marketing") &&
-            <div className="grid grid-cols-2 gap-3">
+            {(agreementForm.bonus_type === "annual_target" || agreementForm.bonus_type === "marketing") && (
+              <div className="grid grid-cols-2 gap-3">
                 <div className="flex items-center gap-2">
                   <input type="checkbox" checked={agreementForm.vat_included} onChange={(e) => setAgreementForm({ ...agreementForm, vat_included: e.target.checked })} className="w-4 h-4" />
                   <Label>כולל מע"מ</Label>
@@ -1100,9 +1094,9 @@ export default function SupplierDetail() {
                   </Select>
                 </div>
               </div>
-            }
-            {(agreementForm.bonus_type === "annual_fixed" || agreementForm.bonus_type === "marketing") &&
-            <div className="grid grid-cols-2 gap-3">
+            )}
+            {(agreementForm.bonus_type === "annual_fixed" || agreementForm.bonus_type === "marketing") && (
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>אחוז קבוע</Label>
                   <Input type="number" step="0.1" value={agreementForm.fixed_percentage} onChange={(e) => setAgreementForm({ ...agreementForm, fixed_percentage: e.target.value })} placeholder="%" />
@@ -1112,15 +1106,15 @@ export default function SupplierDetail() {
                   <Input type="number" value={agreementForm.fixed_amount} onChange={(e) => setAgreementForm({ ...agreementForm, fixed_amount: e.target.value })} placeholder="₪" />
                 </div>
               </div>
-            }
-            {(agreementForm.bonus_type === "annual_target" || agreementForm.bonus_type === "marketing" || agreementForm.bonus_type === "annual_fixed") &&
-            <div className="space-y-3 border rounded-lg p-3">
+            )}
+            {(agreementForm.bonus_type === "annual_target" || agreementForm.bonus_type === "marketing" || agreementForm.bonus_type === "annual_fixed") && (
+              <div className="space-y-3 border rounded-lg p-3">
                 <Label className="text-base font-semibold">חריגות</Label>
                 <p className="text-xs text-muted-foreground">סינון פריטים לפי מילת מפתח בשם הפריט</p>
-                {exclusions.map((exc, i) =>
-              <div key={i} className="flex flex-col gap-2 border-b pb-3">
+                {exclusions.map((exc, i) => (
+                  <div key={i} className="flex flex-col gap-2 border-b pb-3">
                     <div className="flex gap-2 items-center">
-                      <Select value={exc.mode || "exclude"} onValueChange={(v) => {const n = [...exclusions];n[i].mode = v as "include" | "exclude";setExclusions(n);}}>
+                      <Select value={exc.mode || "exclude"} onValueChange={(v) => { const n = [...exclusions]; n[i].mode = v as "include" | "exclude"; setExclusions(n); }}>
                         <SelectTrigger className="w-[110px] text-xs h-8"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="include">כולל</SelectItem>
@@ -1128,52 +1122,52 @@ export default function SupplierDetail() {
                         </SelectContent>
                       </Select>
                       <div className="flex-1">
-                        <Input value={exc.keyword} onChange={(e) => {const n = [...exclusions];n[i].keyword = e.target.value;setExclusions(n);}} placeholder="מילת מפתח" className="text-sm h-8" />
+                        <Input value={exc.keyword} onChange={(e) => { const n = [...exclusions]; n[i].keyword = e.target.value; setExclusions(n); }} placeholder="מילת מפתח" className="text-sm h-8" />
                       </div>
                       <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExclusions(exclusions.filter((_, j) => j !== i))}>
                         <X className="w-3.5 h-3.5 text-destructive" />
                       </Button>
                     </div>
                     <div className="flex gap-4 pr-2">
-                      {(agreementForm.bonus_type === "annual_target" || agreementForm.bonus_type === "marketing") &&
-                  <label className="flex items-center gap-1 text-xs whitespace-nowrap">
-                          <input type="checkbox" checked={exc.counts_toward_target} onChange={(e) => {const n = [...exclusions];n[i].counts_toward_target = e.target.checked;setExclusions(n);}} className="w-3.5 h-3.5" />
+                      {(agreementForm.bonus_type === "annual_target" || agreementForm.bonus_type === "marketing") && (
+                        <label className="flex items-center gap-1 text-xs whitespace-nowrap">
+                          <input type="checkbox" checked={exc.counts_toward_target} onChange={(e) => { const n = [...exclusions]; n[i].counts_toward_target = e.target.checked; setExclusions(n); }} className="w-3.5 h-3.5" />
                           נספר ביעד
                         </label>
-                  }
+                      )}
                     </div>
                   </div>
-              )}
+                ))}
                 <Button type="button" variant="outline" size="sm" onClick={() => setExclusions([...exclusions, { keyword: "", mode: "exclude", counts_toward_target: true }])}>
                   + הוסף חריגה
                 </Button>
               </div>
-            }
-            {(agreementForm.bonus_type === "annual_target" || agreementForm.bonus_type === "marketing" && !agreementForm.fixed_amount) &&
-            <div className="space-y-3">
+            )}
+            {(agreementForm.bonus_type === "annual_target" || (agreementForm.bonus_type === "marketing" && !agreementForm.fixed_amount)) && (
+              <div className="space-y-3">
                 <Label className="text-base font-semibold">מדרגות יעד</Label>
-                {tiers.map((tier, i) =>
-              <div key={i} className="flex gap-2 items-end">
+                {tiers.map((tier, i) => (
+                  <div key={i} className="flex gap-2 items-end">
                     <div className="flex-1">
                       <Label className="text-xs">יעד {agreementForm.target_type === "quantity" ? "(כמות)" : "(₪)"}</Label>
-                      <Input type="number" value={tier.target_value} onChange={(e) => {const n = [...tiers];n[i].target_value = e.target.value;setTiers(n);}} />
+                      <Input type="number" value={tier.target_value} onChange={(e) => { const n = [...tiers]; n[i].target_value = e.target.value; setTiers(n); }} />
                     </div>
                     <div className="flex-1">
                       <Label className="text-xs">אחוז בונוס</Label>
-                      <Input type="number" step="0.1" value={tier.bonus_percentage} onChange={(e) => {const n = [...tiers];n[i].bonus_percentage = e.target.value;setTiers(n);}} />
+                      <Input type="number" step="0.1" value={tier.bonus_percentage} onChange={(e) => { const n = [...tiers]; n[i].bonus_percentage = e.target.value; setTiers(n); }} />
                     </div>
-                    {tiers.length > 1 &&
-                <Button type="button" variant="ghost" size="icon" onClick={() => setTiers(tiers.filter((_, j) => j !== i))}>
+                    {tiers.length > 1 && (
+                      <Button type="button" variant="ghost" size="icon" onClick={() => setTiers(tiers.filter((_, j) => j !== i))}>
                         <Trash2 className="w-4 h-4 text-destructive" />
                       </Button>
-                }
+                    )}
                   </div>
-              )}
+                ))}
                 <Button type="button" variant="outline" size="sm" onClick={() => setTiers([...tiers, { target_value: "", bonus_percentage: "" }])}>
                   + הוסף מדרגה
                 </Button>
               </div>
-            }
+            )}
             <div>
               <Label>הערות</Label>
               <Input value={agreementForm.notes} onChange={(e) => setAgreementForm({ ...agreementForm, notes: e.target.value })} />
@@ -1181,22 +1175,22 @@ export default function SupplierDetail() {
             <Button type="submit" className="w-full" disabled={saveAgreementMutation.isPending}>
               {saveAgreementMutation.isPending ? "שומר..." : agreementEditId ? "עדכן הסכם" : "שמור הסכם"}
             </Button>
-            {agreementEditId &&
-            <Button type="button" variant="destructive" className="w-full" onClick={() => {if (confirm("למחוק את ההסכם?")) deleteAgreementMutation.mutate(agreementEditId);}} disabled={deleteAgreementMutation.isPending}>
+            {agreementEditId && (
+              <Button type="button" variant="destructive" className="w-full" onClick={() => { if (confirm("למחוק את ההסכם?")) deleteAgreementMutation.mutate(agreementEditId); }} disabled={deleteAgreementMutation.isPending}>
                 <Trash2 className="w-4 h-4 ml-2" />{deleteAgreementMutation.isPending ? "מוחק..." : "מחק הסכם"}
               </Button>
-            }
+            )}
           </form>
         </DialogContent>
       </Dialog>
 
       {/* Transaction Bonus Dialog */}
-      <Dialog open={txDialogOpen} onOpenChange={(open) => {if (!open) resetTxForm();else setTxDialogOpen(true);}}>
+      <Dialog open={txDialogOpen} onOpenChange={(open) => { if (!open) resetTxForm(); else setTxDialogOpen(true); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{txEditId ? "עריכת בונוס עסקה" : "בונוס עסקה חדש"}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={(e) => {e.preventDefault();saveTxMutation.mutate();}} className="space-y-4">
+          <form onSubmit={(e) => { e.preventDefault(); saveTxMutation.mutate(); }} className="space-y-4">
             <div>
               <Label>תאריך *</Label>
               <Input type="date" value={txForm.transaction_date} onChange={(e) => setTxForm({ ...txForm, transaction_date: e.target.value })} required />
@@ -1228,18 +1222,18 @@ export default function SupplierDetail() {
             <Button type="submit" className="w-full" disabled={saveTxMutation.isPending || !txForm.transaction_date || !txForm.total_value || !txForm.bonus_value}>
               {saveTxMutation.isPending ? "שומר..." : txEditId ? "עדכן בונוס" : "שמור בונוס"}
             </Button>
-            {txEditId &&
-            <Button type="button" variant="destructive" className="w-full" onClick={() => {if (confirm("למחוק את הבונוס?")) deleteTxMutation.mutate(txEditId);}} disabled={deleteTxMutation.isPending}>
+            {txEditId && (
+              <Button type="button" variant="destructive" className="w-full" onClick={() => { if (confirm("למחוק את הבונוס?")) deleteTxMutation.mutate(txEditId); }} disabled={deleteTxMutation.isPending}>
                 <Trash2 className="w-4 h-4 ml-2" />{deleteTxMutation.isPending ? "מוחק..." : "מחק בונוס"}
               </Button>
-            }
+            )}
           </form>
         </DialogContent>
       </Dialog>
 
       {/* Monthly chart */}
-      {monthlyData.length > 0 &&
-      <Card>
+      {monthlyData.length > 0 && (
+        <Card>
           <CardHeader>
             <CardTitle>ביצועים {filterMode === "all" ? "חודשיים" : "לפי תקופה"}</CardTitle>
           </CardHeader>
@@ -1259,7 +1253,7 @@ export default function SupplierDetail() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      }
+      )}
 
       {/* Tabs */}
       <Tabs defaultValue="purchases" dir="rtl">
@@ -1277,8 +1271,8 @@ export default function SupplierDetail() {
                   placeholder="חיפוש לפי מס׳ הזמנה, תיאור פריט..."
                   value={purchaseSearch}
                   onChange={(e) => setPurchaseSearch(e.target.value)}
-                  className="max-w-sm" />
-                
+                  className="max-w-sm"
+                />
               </div>
               <Table>
                 <TableHeader>
@@ -1292,7 +1286,7 @@ export default function SupplierDetail() {
                 </TableHeader>
                 <TableBody>
                   {(() => {
-                    const poMap = new Map<string, {date: string;items: typeof filteredPurchases;total: number;}>();
+                    const poMap = new Map<string, { date: string; items: typeof filteredPurchases; total: number }>();
                     filteredPurchases.forEach((r: any) => {
                       const po = r.order_number || r.id;
                       const existing = poMap.get(po);
@@ -1304,16 +1298,16 @@ export default function SupplierDetail() {
                       }
                     });
                     let poList = Array.from(poMap.entries()).sort((a, b) =>
-                    (b[1].date || "").localeCompare(a[1].date || "")
+                      (b[1].date || "").localeCompare(a[1].date || ""),
                     );
                     if (purchaseSearch) {
                       const q = purchaseSearch.toLowerCase();
                       poList = poList.filter(([po, data]) =>
-                      po.toLowerCase().includes(q) ||
-                      data.items.some((item: any) =>
-                      (item.item_description || "").toLowerCase().includes(q) ||
-                      (item.item_code || "").toLowerCase().includes(q)
-                      )
+                        po.toLowerCase().includes(q) ||
+                        data.items.some((item: any) =>
+                          (item.item_description || "").toLowerCase().includes(q) ||
+                          (item.item_code || "").toLowerCase().includes(q)
+                        )
                       );
                     }
                     if (poList.length === 0) {
@@ -1322,16 +1316,16 @@ export default function SupplierDetail() {
                           <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
                             אין רכישות
                           </TableCell>
-                        </TableRow>);
-
+                        </TableRow>
+                      );
                     }
-                    return poList.map(([po, data]) =>
-                    <>
+                    return poList.map(([po, data]) => (
+                      <>
                         <TableRow
-                        key={po}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => setExpandedPO(expandedPO === po ? null : po)}>
-                        
+                          key={po}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setExpandedPO(expandedPO === po ? null : po)}
+                        >
                           <TableCell className="w-10 text-center">
                             {expandedPO === po ? <ChevronUp className="w-4 h-4 inline" /> : <ChevronDown className="w-4 h-4 inline" />}
                           </TableCell>
@@ -1340,8 +1334,8 @@ export default function SupplierDetail() {
                           <TableCell>{data.items.length} פריטים</TableCell>
                           <TableCell>₪{fmtNum(data.total)}</TableCell>
                         </TableRow>
-                        {expandedPO === po &&
-                      <TableRow key={`${po}-detail`}>
+                        {expandedPO === po && (
+                          <TableRow key={`${po}-detail`}>
                             <TableCell colSpan={5} className="p-0 bg-muted/30">
                               <Table>
                                 <TableHeader>
@@ -1354,25 +1348,25 @@ export default function SupplierDetail() {
                                 </TableHeader>
                                 <TableBody>
                                   {data.items.map((item: any) => {
-                                const unitPrice = item.quantity && item.quantity > 0 ?
-                                (item.total_amount || 0) / item.quantity :
-                                item.total_amount || 0;
-                                return (
-                                  <TableRow key={item.id}>
+                                    const unitPrice = (item.quantity && item.quantity > 0)
+                                      ? (item.total_amount || 0) / item.quantity
+                                      : item.total_amount || 0;
+                                    return (
+                                      <TableRow key={item.id}>
                                         <TableCell>{item.item_description || item.item_code || "-"}</TableCell>
                                         <TableCell>{item.quantity || "-"}</TableCell>
                                         <TableCell>₪{fmtNum(addVAT(unitPrice))}</TableCell>
                                         <TableCell>₪{fmtNum(addVAT(item.total_amount || 0))}</TableCell>
-                                      </TableRow>);
-
-                              })}
+                                      </TableRow>
+                                    );
+                                  })}
                                 </TableBody>
                               </Table>
                             </TableCell>
                           </TableRow>
-                      }
+                        )}
                       </>
-                    );
+                    ));
                   })()}
                 </TableBody>
               </Table>
@@ -1388,8 +1382,8 @@ export default function SupplierDetail() {
                   placeholder="חיפוש לפי SO, פריט או לקוח..."
                   value={salesSearch}
                   onChange={(e) => setSalesSearch(e.target.value)}
-                  className="max-w-sm h-8 text-xs" />
-                
+                  className="max-w-sm h-8 text-xs"
+                />
               </div>
               <Table>
                 <TableHeader>
@@ -1406,7 +1400,7 @@ export default function SupplierDetail() {
                 </TableHeader>
                 <TableBody>
                   {(() => {
-                    const soMap = new Map<string, {date: string;customer: string;customerPo: string;items: typeof filteredSales;totalSale: number;totalProfit: number;}>();
+                    const soMap = new Map<string, { date: string; customer: string; customerPo: string; items: typeof filteredSales; totalSale: number; totalProfit: number }>();
                     filteredSales.forEach((r: any) => {
                       const so = r.order_number || `_single_${r.id}`;
                       const saleAmt = addVAT((r.sale_price || 0) * (r.quantity || 1));
@@ -1424,23 +1418,23 @@ export default function SupplierDetail() {
                           customerPo: r.customer_po || "",
                           items: [r],
                           totalSale: saleAmt,
-                          totalProfit: profitAmt
+                          totalProfit: profitAmt,
                         });
                       }
                     });
                     let soList = Array.from(soMap.entries()).sort((a, b) =>
-                    (b[1].date || "").localeCompare(a[1].date || "")
+                      (b[1].date || "").localeCompare(a[1].date || ""),
                     );
                     if (salesSearch) {
                       const q = salesSearch.toLowerCase();
                       soList = soList.filter(([so, data]) =>
-                      so.toLowerCase().includes(q) ||
-                      (data.customer || "").toLowerCase().includes(q) ||
-                      (data.customerPo || "").toLowerCase().includes(q) ||
-                      data.items.some((item: any) =>
-                      (item.item_description || "").toLowerCase().includes(q) ||
-                      (item.item_code || "").toLowerCase().includes(q)
-                      )
+                        so.toLowerCase().includes(q) ||
+                        (data.customer || "").toLowerCase().includes(q) ||
+                        (data.customerPo || "").toLowerCase().includes(q) ||
+                        data.items.some((item: any) =>
+                          (item.item_description || "").toLowerCase().includes(q) ||
+                          (item.item_code || "").toLowerCase().includes(q)
+                        )
                       );
                     }
                     if (soList.length === 0) {
@@ -1449,16 +1443,16 @@ export default function SupplierDetail() {
                           <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
                             אין מכירות
                           </TableCell>
-                        </TableRow>);
-
+                        </TableRow>
+                      );
                     }
-                    return soList.map(([so, data]) =>
-                    <>
+                    return soList.map(([so, data]) => (
+                      <>
                         <TableRow
-                        key={so}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => setExpandedSO(expandedSO === so ? null : so)}>
-                        
+                          key={so}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setExpandedSO(expandedSO === so ? null : so)}
+                        >
                           <TableCell className="w-10 text-center">
                             {expandedSO === so ? <ChevronUp className="w-4 h-4 inline" /> : <ChevronDown className="w-4 h-4 inline" />}
                           </TableCell>
@@ -1470,8 +1464,8 @@ export default function SupplierDetail() {
                           <TableCell>₪{fmtNum(data.totalSale)}</TableCell>
                           <TableCell>₪{fmtNum(data.totalProfit)}</TableCell>
                         </TableRow>
-                        {expandedSO === so &&
-                      <TableRow key={`${so}-detail`}>
+                        {expandedSO === so && (
+                          <TableRow key={`${so}-detail`}>
                             <TableCell colSpan={8} className="p-0 bg-muted/30">
                               <Table>
                                 <TableHeader>
@@ -1485,8 +1479,8 @@ export default function SupplierDetail() {
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                  {data.items.map((item: any) =>
-                              <TableRow key={item.id}>
+                                  {data.items.map((item: any) => (
+                                    <TableRow key={item.id}>
                                       <TableCell>{item.item_description || item.item_code || "-"}</TableCell>
                                       <TableCell>{item.brand || "-"}</TableCell>
                                       <TableCell>{item.quantity || "-"}</TableCell>
@@ -1494,14 +1488,14 @@ export default function SupplierDetail() {
                                       <TableCell>₪{fmtNum(addVAT(item.cost_price || 0))}</TableCell>
                                       <TableCell>₪{fmtNum(addVAT(((item.sale_price || 0) - (item.cost_price || 0)) * (item.quantity || 1)))}</TableCell>
                                     </TableRow>
-                              )}
+                                  ))}
                                 </TableBody>
                               </Table>
                             </TableCell>
                           </TableRow>
-                      }
+                        )}
                       </>
-                    );
+                    ));
                   })()}
                 </TableBody>
               </Table>
@@ -1517,7 +1511,7 @@ export default function SupplierDetail() {
           <DialogHeader>
             <DialogTitle>עריכת ספק</DialogTitle>
           </DialogHeader>
-          <form onSubmit={(e) => {e.preventDefault();updateMutation.mutate();}} className="space-y-4">
+          <form onSubmit={(e) => { e.preventDefault(); updateMutation.mutate(); }} className="space-y-4">
             <div>
               <Label>שם ספק *</Label>
               <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required />
@@ -1563,6 +1557,6 @@ export default function SupplierDetail() {
           </form>
         </DialogContent>
       </Dialog>
-    </div>);
-
+    </div>
+  );
 }
