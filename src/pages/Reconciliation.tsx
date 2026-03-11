@@ -13,6 +13,7 @@ import { parseDate, type ParsedFile } from "@/lib/parseExcelFile";
 import { formatDate } from "@/lib/formatDate";
 
 const fmtNum = (n: number | null) => n != null ? Math.round(n).toLocaleString("he-IL") : "—";
+const fmtDiff = (n: number | null) => n != null ? (n > 0 ? "+" : "") + Math.round(n).toLocaleString("he-IL") : "—";
 const roundAgora = (n: number) => Math.round(n * 100) / 100;
 
 type MatchStatus = "matched" | "mismatch" | "approved" | "missing";
@@ -672,7 +673,7 @@ export default function ReconciliationPage() {
                   <TableCell>{fmtNum(row.documentValue)}</TableCell>
                   <TableCell>{fmtNum(row.referenceValue)}</TableCell>
                   <TableCell className={row.diff !== 0 ? "text-destructive font-medium" : "text-[hsl(var(--success))]"}>
-                    {fmtNum(row.diff)}
+                    {fmtDiff(row.diff)}
                   </TableCell>
                   <TableCell>{statusBadge(row.status)}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{row.details || ""}</TableCell>
