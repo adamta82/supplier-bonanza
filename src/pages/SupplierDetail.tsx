@@ -775,7 +775,19 @@ export default function SupplierDetail() {
       </div>
 
       {/* KPI cards - Row 2: Bonuses + Profits */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <Card>
+          <CardContent className="pt-4 pb-4 text-center">
+            <Award className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+            <div className="text-xs text-muted-foreground">בונוס שנתי</div>
+            <div className="text-sm font-bold">₪{fmtNum(bonusByTypeAndPayment.annual_fixed.money + bonusByTypeAndPayment.annual_fixed.goods)}</div>
+            <div className="flex justify-center gap-2 mt-1 text-[10px] text-muted-foreground">
+              <span>כספי: ₪{fmtNum(bonusByTypeAndPayment.annual_fixed.money)}</span>
+              <span>|</span>
+              <span>סחורה: ₪{fmtNum(bonusByTypeAndPayment.annual_fixed.goods)}</span>
+            </div>
+          </CardContent>
+        </Card>
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
             <Award className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
