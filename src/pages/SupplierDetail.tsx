@@ -1036,7 +1036,7 @@ export default function SupplierDetail() {
                                       <div key={i} className="flex justify-end">
                                         <div className="w-1/2 flex items-center gap-2">
                                           <div
-                                            className={`relative flex-1 h-3 rounded border-2 overflow-hidden ${achieved ? "border-green-500" : "border-muted-foreground/30"}`}
+                                            className={`relative flex-1 h-6 rounded border-2 overflow-hidden ${achieved ? "border-green-500" : "border-muted-foreground/30"}`}
                                           >
                                             <div
                                               className={`absolute top-0 bottom-0 right-0 transition-all duration-500 ${achieved ? "bg-green-500" : "bg-primary/40"}`}
