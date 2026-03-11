@@ -721,7 +721,7 @@ export default function ReconciliationPage() {
         </TabsList>
 
         <TabsContent value="upload" className="space-y-4">
-          <FileUploadPreview title="חשבוניות ספק" description="העמודות: תאריך, הזמנה (PO), סטטוס, מס' ספק, שם ספק, מספר חשבונית, מס. פנימי, סה'כ לתשלום, מק'ט, תאור מוצר, כמות, מחיר ליחידה, סה'כ כולל מע'מ." buttonLabel="העלה חשבוניות ספק" onUpload={handleUploadSupplierInvoices} isUploading={isUploading} />
+          <FileUploadPreview title="חשבוניות ספק" description="העמודות: תאריך, הזמנה (PO), סטטוס, מס' ספק, שם ספק, מספר חשבונית, מס. פנימי, מק'ט, תאור מוצר, כמות, מחיר ליחידה, סה'כ כולל מע'מ." buttonLabel="העלה חשבוניות ספק" onUpload={handleUploadSupplierInvoices} isUploading={isUploading} />
           <FileUploadPreview title="תעודות משלוח" description="העמודות: תעודה (SH), הזמנה (SO), כמות פריטים, מחיר סופי, סטטוס." buttonLabel="העלה תעודות משלוח" onUpload={handleUploadDeliveryNotes} isUploading={isUploading} />
           <FileUploadPreview title="חשבוניות ספק מרכזות (כולל GR)" description="העמודות: תאריך, הזמנה (PO), סטטוס, שם ספק, מס' ספק, מספר חשבונית, מס. פנימי, תעודה (GR), מק'ט, תאור מוצר, מחיר ליחידה, כמות בחשבונית, סה'כ כולל מע'מ." buttonLabel="העלה חשבוניות מרכזות" onUpload={handleUploadConsolidated} isUploading={isUploading} />
         </TabsContent>
