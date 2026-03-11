@@ -18,7 +18,7 @@ import { fmtNum } from "@/lib/utils";
 const bonusTypeLabels: Record<string, string> = {
   annual_target: "יעדים",
   marketing: "שיווק",
-  annual_fixed: "שנתי קבוע",
+  annual_fixed: "שנתי",
 };
 
 const periodLabels: Record<string, string> = {

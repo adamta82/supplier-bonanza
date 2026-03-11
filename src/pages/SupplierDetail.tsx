@@ -25,7 +25,7 @@ const bonusTypeLabels: Record<string, string> = {
   annual_target: "יעדים",
   marketing: "שיווק",
   transaction: "עסקה",
-  annual_fixed: "שנתי קבוע",
+  annual_fixed: "שנתי",
   network: "רשתי",
 };
 
@@ -554,6 +554,7 @@ export default function SupplierDetail() {
   // Bonus breakdown by type and payment method
   const bonusByTypeAndPayment = useMemo(() => {
     const result = {
+      annual_fixed: { money: 0, goods: 0 },
       target: { money: 0, goods: 0 },
       marketing: { money: 0, goods: 0 },
       transaction: { money: 0, goods: 0 },
@@ -565,7 +566,9 @@ export default function SupplierDetail() {
       const val = calcAgreementBonusValue(a);
       if (isNaN(val) || val === 0) return;
       const isMoney = a.bonus_payment_type === "money";
-      if (a.bonus_type === "annual_target") {
+      if (a.bonus_type === "annual_fixed") {
+        result.annual_fixed[isMoney ? "money" : "goods"] += val;
+      } else if (a.bonus_type === "annual_target") {
         result.target[isMoney ? "money" : "goods"] += val;
       } else if (a.bonus_type === "marketing") {
         result.marketing[isMoney ? "money" : "goods"] += val;
@@ -581,37 +584,16 @@ export default function SupplierDetail() {
     return result;
   }, [agreements, purchases, bonuses]);
 
-  // Annual fixed bonuses (money only, for profit calc)
-  const annualFixedMoneyBonus = useMemo(() => {
-    if (!agreements) return 0;
-    return agreements
-      .filter((a: any) => a.bonus_type === "annual_fixed" && a.bonus_payment_type === "money")
-      .reduce((sum: number, a: any) => {
-        const v = calcAgreementBonusValue(a);
-        return sum + (isNaN(v) ? 0 : v);
-      }, 0);
-  }, [agreements, purchases, bonuses]);
-
   // רווח ישיר + בונוס כספי (לא כולל שיווק)
-  const profitPlusMoneyBonus = totalDirectProfit + bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.transaction.money + annualFixedMoneyBonus;
+  const profitPlusMoneyBonus = totalDirectProfit + bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.annual_fixed.money;
 
   // רווח סופי = הכל
-  const allBonusesTotal = bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.target.goods
+  const allBonusesTotal = bonusByTypeAndPayment.annual_fixed.money + bonusByTypeAndPayment.annual_fixed.goods
+    + bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.target.goods
     + bonusByTypeAndPayment.marketing.money + bonusByTypeAndPayment.marketing.goods
-    + bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.transaction.goods
-    + annualFixedMoneyBonus;
-  // Also add annual_fixed goods
-  const annualFixedGoodsBonus = useMemo(() => {
-    if (!agreements) return 0;
-    return agreements
-      .filter((a: any) => a.bonus_type === "annual_fixed" && a.bonus_payment_type !== "money")
-      .reduce((sum: number, a: any) => {
-        const v = calcAgreementBonusValue(a);
-        return sum + (isNaN(v) ? 0 : v);
-      }, 0);
-  }, [agreements, purchases, bonuses]);
+    + bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.transaction.goods;
 
-  const finalProfit = totalDirectProfit + allBonusesTotal + annualFixedGoodsBonus;
+  const finalProfit = totalDirectProfit + allBonusesTotal;
 
   const monthlyData = useMemo(() => {
     const map: Record<string, { purchases: number; sales: number; profit: number; final: number }> = {};
@@ -793,7 +775,19 @@ export default function SupplierDetail() {
       </div>
 
       {/* KPI cards - Row 2: Bonuses + Profits */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <Card>
+          <CardContent className="pt-4 pb-4 text-center">
+            <Award className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+            <div className="text-xs text-muted-foreground">בונוס שנתי</div>
+            <div className="text-sm font-bold">₪{fmtNum(bonusByTypeAndPayment.annual_fixed.money + bonusByTypeAndPayment.annual_fixed.goods)}</div>
+            <div className="flex justify-center gap-2 mt-1 text-[10px] text-muted-foreground">
+              <span>כספי: ₪{fmtNum(bonusByTypeAndPayment.annual_fixed.money)}</span>
+              <span>|</span>
+              <span>סחורה: ₪{fmtNum(bonusByTypeAndPayment.annual_fixed.goods)}</span>
+            </div>
+          </CardContent>
+        </Card>
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
             <Award className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
@@ -1058,7 +1052,7 @@ export default function SupplierDetail() {
                   <SelectContent>
                     <SelectItem value="annual_target">יעדים</SelectItem>
                     <SelectItem value="marketing">שיווק</SelectItem>
-                    <SelectItem value="annual_fixed">שנתי קבוע</SelectItem>
+                    <SelectItem value="annual_fixed">שנתי</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
