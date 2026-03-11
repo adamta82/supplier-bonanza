@@ -1033,19 +1033,21 @@ export default function SupplierDetail() {
                                     const tierRange = tier.target_value - prevTarget;
                                     const fillAmount = prevAchieved ? Math.min(Math.max(displayVolume - prevTarget, 0) / tierRange * 100, 100) : 0;
                                     return (
-                                      <div key={i} className="flex items-center gap-2">
-                                        <div
-                                          className={`relative flex-1 h-3 rounded border-2 overflow-hidden ${achieved ? "border-green-500" : "border-muted-foreground/30"}`}
-                                        >
+                                      <div key={i} className="flex justify-end">
+                                        <div className="w-1/2 flex items-center gap-2">
                                           <div
-                                            className={`absolute top-0 bottom-0 right-0 transition-all duration-500 ${achieved ? "bg-green-500" : "bg-primary/40"}`}
-                                            style={{ width: `${fillAmount}%` }}
-                                          />
-                                          <div className="absolute inset-0 flex items-center justify-between px-2 text-[10px] font-bold z-10">
-                                            <span>{tier.bonus_percentage}%</span>
-                                            <span className={`${achieved ? "text-green-800" : "text-muted-foreground"}`}>
-                                              ₪{fmtNum(tier.target_value)} <span className="font-normal opacity-70">({vatLabel})</span>
-                                            </span>
+                                            className={`relative flex-1 h-3 rounded border-2 overflow-hidden ${achieved ? "border-green-500" : "border-muted-foreground/30"}`}
+                                          >
+                                            <div
+                                              className={`absolute top-0 bottom-0 right-0 transition-all duration-500 ${achieved ? "bg-green-500" : "bg-primary/40"}`}
+                                              style={{ width: `${fillAmount}%` }}
+                                            />
+                                            <div className="absolute inset-0 flex items-center justify-between px-2 text-[10px] font-bold z-10">
+                                              <span>{tier.bonus_percentage}%</span>
+                                              <span className={`${achieved ? "text-green-800" : "text-muted-foreground"}`}>
+                                                ₪{fmtNum(tier.target_value)} <span className="font-normal opacity-70">({vatLabel})</span>
+                                              </span>
+                                            </div>
                                           </div>
                                         </div>
                                       </div>
