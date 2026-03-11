@@ -35,6 +35,7 @@ const App = () => (
             <Route path="/reports" element={<Reports />} />
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/errors" element={<Errors />} />
+            <Route path="/reconciliation" element={<Reconciliation />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>
