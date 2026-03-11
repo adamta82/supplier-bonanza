@@ -51,7 +51,7 @@ export default function ReconciliationPage() {
   const { data: supplierInvoices } = useQuery({
     queryKey: ["supplier-invoices"],
     queryFn: async () => {
-      const { data } = await supabase.from("supplier_invoice_items").select("*");
+      const { data } = await (supabase as any).from("supplier_invoice_items").select("*");
       return data || [];
     },
   });
@@ -59,7 +59,7 @@ export default function ReconciliationPage() {
   const { data: deliveryNotes } = useQuery({
     queryKey: ["delivery-notes"],
     queryFn: async () => {
-      const { data } = await supabase.from("delivery_note_items").select("*");
+      const { data } = await (supabase as any).from("delivery_note_items").select("*");
       return data || [];
     },
   });
@@ -67,7 +67,7 @@ export default function ReconciliationPage() {
   const { data: consolidatedInvoices } = useQuery({
     queryKey: ["consolidated-invoices"],
     queryFn: async () => {
-      const { data } = await supabase.from("consolidated_invoice_items").select("*");
+      const { data } = await (supabase as any).from("consolidated_invoice_items").select("*");
       return data || [];
     },
   });
@@ -75,7 +75,7 @@ export default function ReconciliationPage() {
   const { data: approvals } = useQuery({
     queryKey: ["reconciliation-approvals"],
     queryFn: async () => {
-      const { data } = await supabase.from("reconciliation_approvals").select("*");
+      const { data } = await (supabase as any).from("reconciliation_approvals").select("*");
       return data || [];
     },
   });
