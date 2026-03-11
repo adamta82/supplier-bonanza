@@ -30,7 +30,7 @@ export default function Alerts() {
   const { data: purchases } = useQuery({
     queryKey: ["purchases-all"],
     queryFn: async () => {
-      const { data } = await supabase.from("purchase_records").select("supplier_id, supplier_name, total_amount");
+      const { data } = await supabase.from("purchase_records").select("supplier_id, supplier_name, total_amount, item_description");
       return data || [];
     },
   });
