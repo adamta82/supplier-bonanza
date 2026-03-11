@@ -1018,28 +1018,30 @@ export default function SupplierDetail() {
                                   ₪{fmtNum(displayVolume)} / ₪{fmtNum(nextTier ? nextTier.target_value : sortedTiers[sortedTiers.length - 1]?.target_value)}
                                   <span className="text-xs text-muted-foreground mr-1">({vatLabel})</span>
                                 </div>
-                                {/* Battery-style tier indicators */}
-                                <div className="flex gap-2 flex-wrap">
+                                {/* Battery-style tier indicators - horizontal */}
+                                <div className="space-y-1.5">
                                   {sortedTiers.map((tier: any, i: number) => {
-                                    const tierProgress = Math.min((displayVolume / tier.target_value) * 100, 100);
                                     const achieved = displayVolume >= tier.target_value;
+                                    const prevAchieved = i === 0 || displayVolume >= sortedTiers[i - 1].target_value;
+                                    const prevTarget = i === 0 ? 0 : sortedTiers[i - 1].target_value;
+                                    const tierRange = tier.target_value - prevTarget;
+                                    const fillAmount = prevAchieved ? Math.min(Math.max(displayVolume - prevTarget, 0) / tierRange * 100, 100) : 0;
                                     return (
-                                      <div key={i} className="flex flex-col items-center gap-1">
+                                      <div key={i} className="flex items-center gap-2">
                                         <div
-                                          className={`relative w-14 h-8 rounded-md border-2 overflow-hidden ${achieved ? "border-green-500" : "border-muted-foreground/30"}`}
+                                          className={`relative flex-1 h-6 rounded border-2 overflow-hidden ${achieved ? "border-green-500" : "border-muted-foreground/30"}`}
                                         >
                                           <div
-                                            className={`absolute bottom-0 left-0 right-0 transition-all duration-500 ${achieved ? "bg-green-500" : "bg-primary/40"}`}
-                                            style={{ height: `${tierProgress}%` }}
+                                            className={`absolute top-0 bottom-0 right-0 transition-all duration-500 ${achieved ? "bg-green-500" : "bg-primary/40"}`}
+                                            style={{ width: `${fillAmount}%` }}
                                           />
-                                          <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold z-10">
-                                            {tier.bonus_percentage}%
+                                          <div className="absolute inset-0 flex items-center justify-between px-2 text-[10px] font-bold z-10">
+                                            <span>{tier.bonus_percentage}%</span>
+                                            <span className={`${achieved ? "text-green-800" : "text-muted-foreground"}`}>
+                                              ₪{fmtNum(tier.target_value)} <span className="font-normal opacity-70">({vatLabel})</span>
+                                            </span>
                                           </div>
                                         </div>
-                                        <span className={`text-[10px] ${achieved ? "text-green-600 font-semibold" : "text-muted-foreground"}`}>
-                                          ₪{fmtNum(tier.target_value)}
-                                        </span>
-                                        <span className="text-[8px] text-muted-foreground opacity-60">{vatLabel}</span>
                                       </div>
                                     );
                                   })}
