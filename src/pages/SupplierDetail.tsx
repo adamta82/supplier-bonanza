@@ -1052,7 +1052,7 @@ export default function SupplierDetail() {
                   <SelectContent>
                     <SelectItem value="annual_target">יעדים</SelectItem>
                     <SelectItem value="marketing">שיווק</SelectItem>
-                    <SelectItem value="annual_fixed">שנתי קבוע</SelectItem>
+                    <SelectItem value="annual_fixed">שנתי</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
