@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, FileText, Upload, BarChart3, AlertTriangle, TrendingUp, CircleAlert } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Upload, BarChart3, AlertTriangle, TrendingUp, CircleAlert, FileCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
