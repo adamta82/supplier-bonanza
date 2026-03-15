@@ -85,6 +85,8 @@ export default function SupplierDetail() {
     bonus_value: "",
     bonus_payment_type: "goods",
   });
+  const [noteInputs, setNoteInputs] = useState<Record<string, { text: string; author: string }>>({});
+  const [openNoteAgreementId, setOpenNoteAgreementId] = useState<string | null>(null);
   const dateRange = useMemo(() => {
     const now = new Date();
     if (filterMode === "month") {
