@@ -100,7 +100,8 @@ export default function UploadPage() {
         const supplierNumber = (row["מס' ספק"] || row["מס ספק"] || "")?.toString().trim();
         const supplierName = (row["שם ספק"] || row["supplier_name"] || "")?.toString().trim();
         const orderNumber = (row["הזמנה"] || row["order_number"] || "")?.toString().trim();
-        const priceILS = parseFloat(row["מחיר סופי בשקלים"] || row["מחיר סופי"] || row["total_amount"] || "0") || 0;
+        const priceILS = parseFloat(row["מחיר כולל מע'מ"] || row["מחיר כולל מעמ"] || row["מחיר סופי בשקלים"] || row["מחיר סופי"] || row["total_amount"] || "0") || 0;
+        const unitPriceRaw = parseFloat(row["סה'כ מחיר"] || row["סהכ מחיר"] || row["מחיר סופי"] || row["unit_price"] || "0") || null;
         // עמודה ל — הזמנת לקוח (האס-או המקושר לפי-או זה)
         const customerSO = (row["הזמנת לקוח"] || row["הז. לקוח"] || row["הז לקוח"] || "")?.toString().trim() || null;
 
