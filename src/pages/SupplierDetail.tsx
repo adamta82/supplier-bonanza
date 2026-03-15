@@ -419,6 +419,34 @@ export default function SupplierDetail() {
     onError: () => toast.error("שגיאה בשמירת ההערה"),
   });
 
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editNoteText, setEditNoteText] = useState("");
+
+  const updateNoteMutation = useMutation({
+    mutationFn: async ({ noteId, text }: { noteId: string; text: string }) => {
+      const { error } = await supabase.from("agreement_notes").update({ note_text: text }).eq("id", noteId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["agreement-notes", id] });
+      setEditingNoteId(null);
+      toast.success("הערה עודכנה");
+    },
+    onError: () => toast.error("שגיאה בעדכון"),
+  });
+
+  const deleteNoteMutation = useMutation({
+    mutationFn: async (noteId: string) => {
+      const { error } = await supabase.from("agreement_notes").delete().eq("id", noteId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["agreement-notes", id] });
+      toast.success("הערה נמחקה");
+    },
+    onError: () => toast.error("שגיאה במחיקה"),
+  });
+
   const filterByDate = <T extends Record<string, any>>(items: T[], dateField: string) => {
     if (!dateRange) return items;
     return items.filter((item) => {
