@@ -85,6 +85,8 @@ export default function SupplierDetail() {
     bonus_value: "",
     bonus_payment_type: "goods",
   });
+  const [noteInputs, setNoteInputs] = useState<Record<string, { text: string; author: string }>>({});
+  const [openNoteAgreementId, setOpenNoteAgreementId] = useState<string | null>(null);
   const dateRange = useMemo(() => {
     const now = new Date();
     if (filterMode === "month") {
@@ -382,6 +384,39 @@ export default function SupplierDetail() {
       return data || [];
     },
     enabled: !!id,
+  });
+
+  const { data: agreementNotes } = useQuery({
+    queryKey: ["agreement-notes", id],
+    queryFn: async () => {
+      const agIds = (agreements || []).map((a: any) => a.id);
+      if (agIds.length === 0) return [];
+      const { data } = await supabase
+        .from("agreement_notes")
+        .select("*")
+        .in("agreement_id", agIds)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!id && !!(agreements && agreements.length > 0),
+  });
+
+  const addNoteMutation = useMutation({
+    mutationFn: async ({ agreementId, text, author }: { agreementId: string; text: string; author: string }) => {
+      const { error } = await supabase.from("agreement_notes").insert({
+        agreement_id: agreementId,
+        note_text: text,
+        author_name: author,
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["agreement-notes", id] });
+      setNoteInputs((prev) => ({ ...prev, [vars.agreementId]: { text: "", author: "" } }));
+      setOpenNoteAgreementId(null);
+      toast.success("הערה נוספה");
+    },
+    onError: () => toast.error("שגיאה בשמירת ההערה"),
   });
 
   const filterByDate = <T extends Record<string, any>>(items: T[], dateField: string) => {
@@ -1071,6 +1106,61 @@ export default function SupplierDetail() {
                             {agreement.notes && (
                               <div className="text-xs text-muted-foreground border-t pt-2 mt-2">📝 {agreement.notes}</div>
                             )}
+                            {/* Agreement Notes Section */}
+                            <div className="border-t pt-3 mt-3 space-y-2">
+                              {(() => {
+                                const notes = (agreementNotes || []).filter((n: any) => n.agreement_id === agreement.id);
+                                return (
+                                  <>
+                                    {notes.length > 0 && (
+                                      <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                                        {notes.map((n: any) => (
+                                          <div key={n.id} className="text-xs bg-muted/50 rounded p-2 flex justify-between items-start gap-2">
+                                            <span className="flex-1">{n.note_text}</span>
+                                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                                              {n.author_name} • {new Date(n.created_at).toLocaleDateString("he-IL")} {new Date(n.created_at).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {openNoteAgreementId === agreement.id ? (
+                                      <div className="flex gap-2 items-end">
+                                        <div className="flex-1 space-y-1">
+                                          <Input
+                                            placeholder="הערה..."
+                                            value={noteInputs[agreement.id]?.text || ""}
+                                            onChange={(e) => setNoteInputs((prev) => ({ ...prev, [agreement.id]: { ...prev[agreement.id], text: e.target.value, author: prev[agreement.id]?.author || "" } }))}
+                                            className="h-7 text-xs"
+                                          />
+                                        </div>
+                                        <Input
+                                          placeholder="שם"
+                                          value={noteInputs[agreement.id]?.author || ""}
+                                          onChange={(e) => setNoteInputs((prev) => ({ ...prev, [agreement.id]: { ...prev[agreement.id], author: e.target.value, text: prev[agreement.id]?.text || "" } }))}
+                                          className="h-7 text-xs w-24"
+                                        />
+                                        <Button
+                                          size="sm"
+                                          className="h-7 text-xs px-2"
+                                          disabled={!noteInputs[agreement.id]?.text || !noteInputs[agreement.id]?.author || addNoteMutation.isPending}
+                                          onClick={() => addNoteMutation.mutate({ agreementId: agreement.id, text: noteInputs[agreement.id].text, author: noteInputs[agreement.id].author })}
+                                        >
+                                          שמור
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpenNoteAgreementId(null)}>
+                                          <X className="w-3.5 h-3.5" />
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <Button variant="ghost" size="sm" className="h-6 text-xs text-muted-foreground" onClick={() => setOpenNoteAgreementId(agreement.id)}>
+                                        + הוסף הערה
+                                      </Button>
+                                    )}
+                                  </>
+                                );
+                              })()}
+                            </div>
                           </CardContent>
                         </Card>
                       );

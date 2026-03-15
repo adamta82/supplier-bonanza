@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      agreement_notes: {
+        Row: {
+          agreement_id: string
+          author_name: string
+          created_at: string
+          id: string
+          note_text: string
+        }
+        Insert: {
+          agreement_id: string
+          author_name: string
+          created_at?: string
+          id?: string
+          note_text: string
+        }
+        Update: {
+          agreement_id?: string
+          author_name?: string
+          created_at?: string
+          id?: string
+          note_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agreement_notes_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "bonus_agreements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bonus_agreements: {
         Row: {
           bonus_payment_type: string
