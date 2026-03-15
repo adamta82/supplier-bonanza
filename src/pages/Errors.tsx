@@ -25,7 +25,7 @@ export default function Errors() {
     },
   });
 
-  const { data: orphanSales } = useQuery({
+  const { data: orphanSalesRaw } = useQuery({
     queryKey: ["orphan-sales"],
     queryFn: async () => {
       const { data } = await supabase
@@ -39,19 +39,35 @@ export default function Errors() {
     },
   });
 
+  // שליפת כל מספרי האס-או שקיימים ברכישות
+  const { data: purchaseOrderNumbers } = useQuery({
+    queryKey: ["purchase-order-numbers"],
+    queryFn: async () => {
+      const { data } = await supabase.from("purchase_records").select("order_number");
+      const numbers = new Set((data || []).map((r) => r.order_number).filter(Boolean));
+      return numbers;
+    },
+  });
+
+  // סינון הזמנות לקוח שגויות — מסירים כאלו שהאס-או שלהן מופיע ברכישות
+  const orphanSales = (orphanSalesRaw || []).filter((sale) => {
+    if (!sale.order_number) return true;
+    return !purchaseOrderNumbers?.has(sale.order_number);
+  });
+
   const exportToExcel = () => {
     const purchaseRows = (orphanPurchases || []).map((r) => ({
-      "תאריך": r.order_date ? formatDate(r.order_date) : "",
+      תאריך: r.order_date ? formatDate(r.order_date) : "",
       "מס׳ הזמנה": r.order_number || "",
       "מס׳ ספק (מקור)": r.supplier_number || "",
       "מק״ט": r.item_code || "",
       "תיאור פריט": r.item_description || "",
-      "סכום": r.total_amount || 0,
+      סכום: r.total_amount || 0,
     }));
     const salesRows = (orphanSales || []).map((r) => ({
-      "תאריך": r.sale_date ? formatDate(r.sale_date) : "",
+      תאריך: r.sale_date ? formatDate(r.sale_date) : "",
       "מס׳ הזמנה": r.order_number || "",
-      "לקוח": r.customer_name || "",
+      לקוח: r.customer_name || "",
       "מק״ט": r.item_code || "",
       "תיאור פריט": r.item_description || "",
     }));
@@ -59,7 +75,7 @@ export default function Errors() {
     if (purchaseRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(purchaseRows), "רכשים ללא ספק");
     if (salesRows.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(salesRows), "מכירות ללא ספק");
     if (!purchaseRows.length && !salesRows.length) {
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{ "הודעה": "אין שגויים" }]), "ריק");
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{ הודעה: "אין שגויים" }]), "ריק");
     }
     XLSX.writeFile(wb, "שגויים.xlsx");
   };
@@ -99,7 +115,11 @@ export default function Errors() {
                 </TableHeader>
                 <TableBody>
                   {!orphanPurchases?.length ? (
-                   <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">אין רכשים שגויים 🎉</TableCell></TableRow>
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        אין רכשים שגויים 🎉
+                      </TableCell>
+                    </TableRow>
                   ) : (
                     orphanPurchases.map((r) => (
                       <TableRow key={r.id}>
@@ -133,7 +153,11 @@ export default function Errors() {
                 </TableHeader>
                 <TableBody>
                   {!orphanSales?.length ? (
-                   <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">אין מכירות שגויות 🎉</TableCell></TableRow>
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        אין מכירות שגויות 🎉
+                      </TableCell>
+                    </TableRow>
                   ) : (
                     orphanSales.map((r) => (
                       <TableRow key={r.id}>
