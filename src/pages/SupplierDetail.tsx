@@ -386,6 +386,39 @@ export default function SupplierDetail() {
     enabled: !!id,
   });
 
+  const { data: agreementNotes } = useQuery({
+    queryKey: ["agreement-notes", id],
+    queryFn: async () => {
+      const agIds = (agreements || []).map((a: any) => a.id);
+      if (agIds.length === 0) return [];
+      const { data } = await supabase
+        .from("agreement_notes")
+        .select("*")
+        .in("agreement_id", agIds)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+    enabled: !!id && !!(agreements && agreements.length > 0),
+  });
+
+  const addNoteMutation = useMutation({
+    mutationFn: async ({ agreementId, text, author }: { agreementId: string; text: string; author: string }) => {
+      const { error } = await supabase.from("agreement_notes").insert({
+        agreement_id: agreementId,
+        note_text: text,
+        author_name: author,
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["agreement-notes", id] });
+      setNoteInputs((prev) => ({ ...prev, [vars.agreementId]: { text: "", author: "" } }));
+      setOpenNoteAgreementId(null);
+      toast.success("הערה נוספה");
+    },
+    onError: () => toast.error("שגיאה בשמירת ההערה"),
+  });
+
   const filterByDate = <T extends Record<string, any>>(items: T[], dateField: string) => {
     if (!dateRange) return items;
     return items.filter((item) => {
