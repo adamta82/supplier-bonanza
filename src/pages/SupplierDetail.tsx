@@ -639,18 +639,19 @@ export default function SupplierDetail() {
   const getAgreementStatus = (agreement: any) => {
     // Manual override
     if (agreement.bonus_status === "received") {
-      return { label: "התקבל", variant: "default" as const };
+      return { label: "התקבל", variant: "default" as const, color: "bg-green-600 text-white" };
     }
     const today = new Date().toISOString().slice(0, 10);
-    const hasReceivedBonus = (bonuses || []).some((b: any) => b.agreement_id === agreement.id);
-    const periodEnded = agreement.period_end && agreement.period_end < today;
+    const periodStart = agreement.period_start;
+    const periodEnd = agreement.period_end;
 
-    if (hasReceivedBonus) {
-      return { label: "התקבל", variant: "default" as const };
-    } else if (periodEnded) {
-      return { label: "צריך לקבל", variant: "destructive" as const };
+    if (periodStart && periodStart > today) {
+      return { label: "לא התחיל", variant: "outline" as const, color: "bg-muted text-muted-foreground" };
     }
-    return { label: "פעיל", variant: "secondary" as const };
+    if (periodEnd && periodEnd < today) {
+      return { label: "צריך לקבל", variant: "destructive" as const, color: "bg-destructive text-destructive-foreground" };
+    }
+    return { label: "פעיל", variant: "secondary" as const, color: "bg-secondary text-secondary-foreground" };
   };
 
   const updateAgreementStatusMutation = useMutation({
