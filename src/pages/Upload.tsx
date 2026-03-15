@@ -115,7 +115,7 @@ export default function UploadPage() {
           item_description:
             (row["תאור מוצר"] || row["תאור פריט"] || row["item_description"] || "")?.toString().trim() || null,
           quantity: parseFloat(row["כמות"] || row["quantity"] || "1") || 1,
-          unit_price: parseFloat(row["מחיר סופי"] || row["unit_price"] || "0") || null,
+          unit_price: unitPriceRaw,
           total_amount: priceILS,
           category: row["קטגוריה"] || row["category"] || null,
           upload_batch: batch,
