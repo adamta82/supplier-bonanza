@@ -639,18 +639,19 @@ export default function SupplierDetail() {
   const getAgreementStatus = (agreement: any) => {
     // Manual override
     if (agreement.bonus_status === "received") {
-      return { label: "התקבל", variant: "default" as const };
+      return { label: "התקבל", variant: "default" as const, color: "bg-green-600 text-white" };
     }
     const today = new Date().toISOString().slice(0, 10);
-    const hasReceivedBonus = (bonuses || []).some((b: any) => b.agreement_id === agreement.id);
-    const periodEnded = agreement.period_end && agreement.period_end < today;
+    const periodStart = agreement.period_start;
+    const periodEnd = agreement.period_end;
 
-    if (hasReceivedBonus) {
-      return { label: "התקבל", variant: "default" as const };
-    } else if (periodEnded) {
-      return { label: "צריך לקבל", variant: "destructive" as const };
+    if (periodStart && periodStart > today) {
+      return { label: "לא התחיל", variant: "outline" as const, color: "bg-muted text-muted-foreground" };
     }
-    return { label: "פעיל", variant: "secondary" as const };
+    if (periodEnd && periodEnd < today) {
+      return { label: "צריך לקבל", variant: "destructive" as const, color: "bg-destructive text-destructive-foreground" };
+    }
+    return { label: "פעיל", variant: "secondary" as const, color: "bg-secondary text-secondary-foreground" };
   };
 
   const updateAgreementStatusMutation = useMutation({
@@ -912,7 +913,7 @@ export default function SupplierDetail() {
           </TabsList>
 
           {["annual_fixed", "annual_target", "marketing"].map((tabType) => {
-            const tabAgreements = (agreements || []).filter((a: any) => a.bonus_type === tabType);
+            const tabAgreements = (agreements || []).filter((a: any) => a.bonus_type === tabType).sort((a: any, b: any) => (a.period_start || "").localeCompare(b.period_start || ""));
             return (
               <TabsContent key={tabType} value={tabType}>
                 <div className="space-y-3">
@@ -997,21 +998,18 @@ export default function SupplierDetail() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-bold text-primary">₪{fmtNum(sortedTiers.length > 0 ? theoreticalBonus : bonusValue)}</span>
-                                {status.label === "צריך לקבל" ? (
-                                  <button
-                                    className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-destructive text-destructive-foreground hover:bg-green-600 hover:text-white transition-colors cursor-pointer"
-                                    title="לחץ לסמן כהתקבל"
-                                    onClick={() => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, newStatus: "received" })}
-                                  >
-                                    {status.label}
-                                  </button>
-                                ) : status.label === "התקבל" ? (
-                                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-600 text-white">
-                                    <CheckCircle className="w-3 h-3" />{status.label}
-                                  </span>
-                                ) : (
-                                  <Badge variant={status.variant}>{status.label}</Badge>
-                                )}
+                                <Select
+                                  value={agreement.bonus_status === "received" ? "received" : "auto"}
+                                  onValueChange={(v) => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, newStatus: v })}
+                                >
+                                  <SelectTrigger className={`h-7 w-auto min-w-[100px] text-xs font-semibold border-0 ${status.color}`}>
+                                    <SelectValue>{status.label}</SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="auto">אוטומטי ({status.label !== "התקבל" ? status.label : "פעיל"})</SelectItem>
+                                    <SelectItem value="received">התקבל</SelectItem>
+                                  </SelectContent>
+                                </Select>
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditAgreement(agreement)}>
                                   <Pencil className="w-3.5 h-3.5" />
                                 </Button>
