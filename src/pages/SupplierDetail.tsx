@@ -1106,6 +1106,61 @@ export default function SupplierDetail() {
                             {agreement.notes && (
                               <div className="text-xs text-muted-foreground border-t pt-2 mt-2">📝 {agreement.notes}</div>
                             )}
+                            {/* Agreement Notes Section */}
+                            <div className="border-t pt-3 mt-3 space-y-2">
+                              {(() => {
+                                const notes = (agreementNotes || []).filter((n: any) => n.agreement_id === agreement.id);
+                                return (
+                                  <>
+                                    {notes.length > 0 && (
+                                      <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                                        {notes.map((n: any) => (
+                                          <div key={n.id} className="text-xs bg-muted/50 rounded p-2 flex justify-between items-start gap-2">
+                                            <span className="flex-1">{n.note_text}</span>
+                                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                                              {n.author_name} • {new Date(n.created_at).toLocaleDateString("he-IL")} {new Date(n.created_at).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    {openNoteAgreementId === agreement.id ? (
+                                      <div className="flex gap-2 items-end">
+                                        <div className="flex-1 space-y-1">
+                                          <Input
+                                            placeholder="הערה..."
+                                            value={noteInputs[agreement.id]?.text || ""}
+                                            onChange={(e) => setNoteInputs((prev) => ({ ...prev, [agreement.id]: { ...prev[agreement.id], text: e.target.value, author: prev[agreement.id]?.author || "" } }))}
+                                            className="h-7 text-xs"
+                                          />
+                                        </div>
+                                        <Input
+                                          placeholder="שם"
+                                          value={noteInputs[agreement.id]?.author || ""}
+                                          onChange={(e) => setNoteInputs((prev) => ({ ...prev, [agreement.id]: { ...prev[agreement.id], author: e.target.value, text: prev[agreement.id]?.text || "" } }))}
+                                          className="h-7 text-xs w-24"
+                                        />
+                                        <Button
+                                          size="sm"
+                                          className="h-7 text-xs px-2"
+                                          disabled={!noteInputs[agreement.id]?.text || !noteInputs[agreement.id]?.author || addNoteMutation.isPending}
+                                          onClick={() => addNoteMutation.mutate({ agreementId: agreement.id, text: noteInputs[agreement.id].text, author: noteInputs[agreement.id].author })}
+                                        >
+                                          שמור
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpenNoteAgreementId(null)}>
+                                          <X className="w-3.5 h-3.5" />
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <Button variant="ghost" size="sm" className="h-6 text-xs text-muted-foreground" onClick={() => setOpenNoteAgreementId(agreement.id)}>
+                                        + הוסף הערה
+                                      </Button>
+                                    )}
+                                  </>
+                                );
+                              })()}
+                            </div>
                           </CardContent>
                         </Card>
                       );
