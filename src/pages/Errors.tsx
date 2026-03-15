@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
@@ -39,20 +38,20 @@ export default function Errors() {
     },
   });
 
-  // שליפת כל מספרי האס-או שקיימים ברכישות
-  const { data: purchaseOrderNumbers } = useQuery({
-    queryKey: ["purchase-order-numbers"],
+  // שליפת כל האס-אויים השמורים בעמודת customer_po של הרכישות
+  const { data: purchaseCustomerPOs } = useQuery({
+    queryKey: ["purchase-customer-pos"],
     queryFn: async () => {
-      const { data } = await supabase.from("purchase_records").select("order_number");
-      const numbers = new Set((data || []).map((r) => r.order_number).filter(Boolean));
-      return numbers;
+      const { data } = await supabase.from("purchase_records").select("customer_po").not("customer_po", "is", null);
+      const soSet = new Set((data || []).map((r) => r.customer_po).filter(Boolean));
+      return soSet;
     },
   });
 
-  // סינון הזמנות לקוח שגויות — מסירים כאלו שהאס-או שלהן מופיע ברכישות
+  // סינון: הזמנת לקוח ללא ספק שגם האס-או שלה לא מופיע בעמודת customer_po של הרכישות
   const orphanSales = (orphanSalesRaw || []).filter((sale) => {
     if (!sale.order_number) return true;
-    return !purchaseOrderNumbers?.has(sale.order_number);
+    return !purchaseCustomerPOs?.has(sale.order_number);
   });
 
   const exportToExcel = () => {
@@ -64,7 +63,7 @@ export default function Errors() {
       "תיאור פריט": r.item_description || "",
       סכום: r.total_amount || 0,
     }));
-    const salesRows = (orphanSales || []).map((r) => ({
+    const salesRows = orphanSales.map((r) => ({
       תאריך: r.sale_date ? formatDate(r.sale_date) : "",
       "מס׳ הזמנה": r.order_number || "",
       לקוח: r.customer_name || "",
