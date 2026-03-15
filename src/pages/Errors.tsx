@@ -42,9 +42,21 @@ export default function Errors() {
   const { data: purchaseCustomerPOs } = useQuery({
     queryKey: ["purchase-customer-pos"],
     queryFn: async () => {
-      const { data } = await supabase.from("purchase_records").select("customer_po").not("customer_po", "is", null);
-      const soSet = new Set((data || []).map((r) => r.customer_po).filter(Boolean));
-      return soSet;
+      const allPOs: string[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data } = await supabase
+          .from("purchase_records")
+          .select("customer_po")
+          .not("customer_po", "is", null)
+          .range(from, from + pageSize - 1);
+        if (!data || data.length === 0) break;
+        allPOs.push(...data.map((r) => r.customer_po).filter(Boolean) as string[]);
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+      return new Set(allPOs);
     },
   });
 
