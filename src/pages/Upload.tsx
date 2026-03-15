@@ -101,6 +101,8 @@ export default function UploadPage() {
         const supplierName = (row["שם ספק"] || row["supplier_name"] || "")?.toString().trim();
         const orderNumber = (row["הזמנה"] || row["order_number"] || "")?.toString().trim();
         const priceILS = parseFloat(row["מחיר סופי בשקלים"] || row["מחיר סופי"] || row["total_amount"] || "0") || 0;
+        // עמודה ל — הזמנת לקוח (האס-או המקושר לפי-או זה)
+        const customerSO = (row["הזמנת לקוח"] || row["הז. לקוח"] || row["הז לקוח"] || "")?.toString().trim() || null;
 
         return {
           supplier_id: supplierIdMap.get(supplierNumber) || null,
@@ -116,6 +118,8 @@ export default function UploadPage() {
           total_amount: priceILS,
           category: row["קטגוריה"] || row["category"] || null,
           upload_batch: batch,
+          // שמירת האס-או המקושר לפי-או זה (עמודה ל בגליון)
+          customer_po: customerSO,
         };
       });
 
@@ -141,10 +145,10 @@ export default function UploadPage() {
     mutationFn: async () => {
       const batch = new Date().toISOString();
 
-      // שלב 1: בנה מיפוי אס-או -> ספק מתוך רכישות קיימות בבסיס הנתונים
+      // שלב 1: בנה מיפוי אס-או -> ספק מתוך עמודת customer_po ברכישות
       const { data: existingPurchases } = await supabase
         .from("purchase_records")
-        .select("order_number, supplier_id, supplier_name, supplier_number");
+        .select("order_number, customer_po, supplier_id, supplier_name, supplier_number");
 
       const soToSupplierFromPO = new Map<
         string,
@@ -156,9 +160,10 @@ export default function UploadPage() {
       >();
 
       (existingPurchases || []).forEach((pr) => {
-        if (!pr.order_number) return;
-        if (!soToSupplierFromPO.has(pr.order_number)) {
-          soToSupplierFromPO.set(pr.order_number, {
+        // customer_po של הרכישה = מספר האס-או של המכירה (עמודה ל בגליון הרכישות)
+        if (!pr.customer_po) return;
+        if (!soToSupplierFromPO.has(pr.customer_po)) {
+          soToSupplierFromPO.set(pr.customer_po, {
             id: pr.supplier_id,
             name: pr.supplier_name || "",
             number: pr.supplier_number || "",
@@ -194,7 +199,7 @@ export default function UploadPage() {
       const records = parsedData.map((row) => {
         const so = (row["הזמנה"] || "")?.toString().trim();
 
-        // קודם מחפשים בפי-או, אחר כך בקובץ המכירות
+        // קודם מחפשים לפי אס-או ב-customer_po של הרכישות, אחר כך בקובץ המכירות
         const supplierInfo = soToSupplierFromPO.get(so) || soToSupplierFromFile.get(so);
 
         const salePrice = parseFloat(row["מחיר ליחידה"] || row["מחיר מכירה"] || row["sale_price"] || "0") || 0;
@@ -274,8 +279,8 @@ export default function UploadPage() {
                 העלאת דוח רכישות (Excel)
               </CardTitle>
               <CardDescription>
-                העלה קובץ Excel עם הזמנות רכש. עמודות: מס' ספק, שם ספק, הזמנה (PO), תאריך, מק'ט, תאור מוצר, כמות, מחיר
-                סופי בשקלים. ספקים חדשים ייווצרו אוטומטית.
+                העלה קובץ Excel עם הזמנות רכש. עמודות: מס' ספק, שם ספק, הזמנה (פי-או), תאריך, מק'ט, תאור מוצר, כמות,
+                מחיר סופי בשקלים, הזמנת לקוח (אס-או). ספקים חדשים ייווצרו אוטומטית.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -329,8 +334,8 @@ export default function UploadPage() {
                 העלאת דוח מכירות (Excel)
               </CardTitle>
               <CardDescription>
-                העלה קובץ Excel עם הזמנות לקוח. עמודות: מס. לקוח, שם לקוח, הזמנה (SO), תאריך, מס' הזמנה זבילו, מק'ט,
-                תאור מוצר, מחיר ליחידה, עלות, כמות, ספק מועדף, שם ספק. ספק מועדף מופץ אוטומטית לכל שורות אותו SO.
+                העלה קובץ Excel עם הזמנות לקוח. עמודות: מס. לקוח, שם לקוח, הזמנה (אס-או), תאריך, מס' הזמנה זבילו, מק'ט,
+                תאור מוצר, מחיר ליחידה, עלות, כמות, ספק מועדף, שם ספק. ספק מועדף מופץ אוטומטית לכל שורות אותו אס-או.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
