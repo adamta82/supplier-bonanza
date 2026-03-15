@@ -998,21 +998,18 @@ export default function SupplierDetail() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-bold text-primary">₪{fmtNum(sortedTiers.length > 0 ? theoreticalBonus : bonusValue)}</span>
-                                {status.label === "צריך לקבל" ? (
-                                  <button
-                                    className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-destructive text-destructive-foreground hover:bg-green-600 hover:text-white transition-colors cursor-pointer"
-                                    title="לחץ לסמן כהתקבל"
-                                    onClick={() => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, newStatus: "received" })}
-                                  >
-                                    {status.label}
-                                  </button>
-                                ) : status.label === "התקבל" ? (
-                                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-600 text-white">
-                                    <CheckCircle className="w-3 h-3" />{status.label}
-                                  </span>
-                                ) : (
-                                  <Badge variant={status.variant}>{status.label}</Badge>
-                                )}
+                                <Select
+                                  value={agreement.bonus_status === "received" ? "received" : "auto"}
+                                  onValueChange={(v) => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, newStatus: v })}
+                                >
+                                  <SelectTrigger className={`h-7 w-auto min-w-[100px] text-xs font-semibold border-0 ${status.color}`}>
+                                    <SelectValue>{status.label}</SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="auto">אוטומטי ({status.label !== "התקבל" ? status.label : "פעיל"})</SelectItem>
+                                    <SelectItem value="received">התקבל</SelectItem>
+                                  </SelectContent>
+                                </Select>
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditAgreement(agreement)}>
                                   <Pencil className="w-3.5 h-3.5" />
                                 </Button>
