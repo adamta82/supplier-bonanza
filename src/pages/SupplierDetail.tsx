@@ -419,6 +419,34 @@ export default function SupplierDetail() {
     onError: () => toast.error("שגיאה בשמירת ההערה"),
   });
 
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editNoteText, setEditNoteText] = useState("");
+
+  const updateNoteMutation = useMutation({
+    mutationFn: async ({ noteId, text }: { noteId: string; text: string }) => {
+      const { error } = await supabase.from("agreement_notes").update({ note_text: text }).eq("id", noteId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["agreement-notes", id] });
+      setEditingNoteId(null);
+      toast.success("הערה עודכנה");
+    },
+    onError: () => toast.error("שגיאה בעדכון"),
+  });
+
+  const deleteNoteMutation = useMutation({
+    mutationFn: async (noteId: string) => {
+      const { error } = await supabase.from("agreement_notes").delete().eq("id", noteId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["agreement-notes", id] });
+      toast.success("הערה נמחקה");
+    },
+    onError: () => toast.error("שגיאה במחיקה"),
+  });
+
   const filterByDate = <T extends Record<string, any>>(items: T[], dateField: string) => {
     if (!dateRange) return items;
     return items.filter((item) => {
@@ -1115,11 +1143,25 @@ export default function SupplierDetail() {
                                     {notes.length > 0 && (
                                       <div className="space-y-1.5 max-h-32 overflow-y-auto">
                                         {notes.map((n: any) => (
-                                          <div key={n.id} className="text-xs bg-muted/50 rounded p-2 flex justify-between items-start gap-2">
-                                            <span className="flex-1">{n.note_text}</span>
-                                            <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                                              {n.author_name} • {new Date(n.created_at).toLocaleDateString("he-IL")} {new Date(n.created_at).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
-                                            </span>
+                                          <div key={n.id} className="text-xs bg-muted/50 rounded p-2 space-y-1">
+                                            {editingNoteId === n.id ? (
+                                              <div className="flex gap-1 items-center">
+                                                <Input value={editNoteText} onChange={(e) => setEditNoteText(e.target.value)} className="h-6 text-xs flex-1" />
+                                                <Button size="sm" className="h-6 text-[10px] px-1.5" disabled={!editNoteText || updateNoteMutation.isPending} onClick={() => updateNoteMutation.mutate({ noteId: n.id, text: editNoteText })}>שמור</Button>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditingNoteId(null)}><X className="w-3 h-3" /></Button>
+                                              </div>
+                                            ) : (
+                                              <div className="flex justify-between items-start gap-2">
+                                                <span className="flex-1">{n.note_text}</span>
+                                                <div className="flex items-center gap-0.5 shrink-0">
+                                                  <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-1">
+                                                    {n.author_name} • {new Date(n.created_at).toLocaleDateString("he-IL")} {new Date(n.created_at).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+                                                  </span>
+                                                  <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => { setEditingNoteId(n.id); setEditNoteText(n.note_text); }}><Pencil className="w-2.5 h-2.5" /></Button>
+                                                  <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive" onClick={() => { if (confirm("למחוק הערה?")) deleteNoteMutation.mutate(n.id); }}><Trash2 className="w-2.5 h-2.5" /></Button>
+                                                </div>
+                                              </div>
+                                            )}
                                           </div>
                                         ))}
                                       </div>
