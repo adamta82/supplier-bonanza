@@ -45,18 +45,14 @@ export default function UploadPage() {
     reader.readAsBinaryString(file);
   }, []);
 
-  // Parse dd/mm/yyyy date to yyyy-mm-dd
   const parseDate = (val: any): string | null => {
     if (!val) return null;
     const s = val.toString().trim();
-    // dd/mm/yyyy
     const parts = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (parts) {
       return `${parts[3]}-${parts[2].padStart(2, "0")}-${parts[1].padStart(2, "0")}`;
     }
-    // Already yyyy-mm-dd or ISO
     if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-    // Excel serial number
     if (!isNaN(Number(s)) && Number(s) > 40000) {
       const d = new Date((Number(s) - 25569) * 86400 * 1000);
       return d.toISOString().slice(0, 10);
@@ -68,15 +64,13 @@ export default function UploadPage() {
     mutationFn: async () => {
       const batch = new Date().toISOString();
 
-      // Collect unique suppliers from the data
-      const supplierMap = new Map<string, string>(); // supplier_number -> name
+      const supplierMap = new Map<string, string>();
       parsedData.forEach((row) => {
         const num = (row["מס' ספק"] || row["מס ספק"] || "")?.toString().trim();
         const name = (row["שם ספק"] || row["supplier_name"] || "")?.toString().trim();
         if (num && name) supplierMap.set(num, name);
       });
 
-      // Ensure all suppliers exist
       const existingNumbers = new Set(suppliers?.map((s) => s.supplier_number) || []);
       const newSuppliers: { name: string; supplier_number: string }[] = [];
       supplierMap.forEach((name, num) => {
@@ -90,19 +84,18 @@ export default function UploadPage() {
         if (error) throw error;
       }
 
-      // Re-fetch suppliers to get IDs
       const { data: allSuppliers } = await supabase.from("suppliers").select("id, name, supplier_number");
       const supplierIdMap = new Map<string, string>();
       allSuppliers?.forEach((s) => {
         if (s.supplier_number) supplierIdMap.set(s.supplier_number, s.id);
       });
 
-      // Delete ALL existing purchase records before inserting new ones
-      // This preserves supplier data (agreements, obligo, bonus status, etc.)
-      const { error: deleteError } = await supabase.from("purchase_records").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      const { error: deleteError } = await supabase
+        .from("purchase_records")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
       if (deleteError) throw deleteError;
 
-      // Map rows to purchase records
       const records = parsedData.map((row) => {
         const supplierNumber = (row["מס' ספק"] || row["מס ספק"] || "")?.toString().trim();
         const supplierName = (row["שם ספק"] || row["supplier_name"] || "")?.toString().trim();
@@ -115,8 +108,9 @@ export default function UploadPage() {
           supplier_number: supplierNumber || null,
           order_number: orderNumber || null,
           order_date: parseDate(row["תאריך"] || row["order_date"]),
-          item_code: (row["מק'ט"] || row["מק\"ט"] || row["item_code"] || "")?.toString().trim() || null,
-          item_description: (row["תאור מוצר"] || row["תאור פריט"] || row["item_description"] || "")?.toString().trim() || null,
+          item_code: (row["מק'ט"] || row['מק"ט'] || row["item_code"] || "")?.toString().trim() || null,
+          item_description:
+            (row["תאור מוצר"] || row["תאור פריט"] || row["item_description"] || "")?.toString().trim() || null,
           quantity: parseFloat(row["כמות"] || row["quantity"] || "1") || 1,
           unit_price: parseFloat(row["מחיר סופי"] || row["unit_price"] || "0") || null,
           total_amount: priceILS,
@@ -125,7 +119,6 @@ export default function UploadPage() {
         };
       });
 
-      // Insert in chunks
       const chunkSize = 100;
       for (let i = 0; i < records.length; i += chunkSize) {
         const chunk = records.slice(i, i + chunkSize);
@@ -148,43 +141,80 @@ export default function UploadPage() {
     mutationFn: async () => {
       const batch = new Date().toISOString();
 
-      // Build a map of SO number -> supplier info by propagating from rows that have a supplier
-      const soSupplierMap = new Map<string, { number: string; name: string }>();
-      parsedData.forEach((row) => {
-        const so = (row["הזמנה"] || row["order_number"] || "")?.toString().trim();
-        const suppNum = (row["ספק מועדף"] || row["מס' ספק"] || row["מס ספק"] || "")?.toString().trim();
-        const suppName = (row["שם ספק"] || row["supplier_name"] || "")?.toString().trim();
-        if (so && suppNum && !soSupplierMap.has(so)) {
-          soSupplierMap.set(so, { number: suppNum, name: suppName });
+      // שלב 1: בנה מיפוי אס-או -> ספק מתוך רכישות קיימות בבסיס הנתונים
+      const { data: existingPurchases } = await supabase
+        .from("purchase_records")
+        .select("order_number, supplier_id, supplier_name, supplier_number");
+
+      const soToSupplierFromPO = new Map<
+        string,
+        {
+          id: string | null;
+          name: string;
+          number: string;
+        }
+      >();
+
+      (existingPurchases || []).forEach((pr) => {
+        if (!pr.order_number) return;
+        if (!soToSupplierFromPO.has(pr.order_number)) {
+          soToSupplierFromPO.set(pr.order_number, {
+            id: pr.supplier_id,
+            name: pr.supplier_name || "",
+            number: pr.supplier_number || "",
+          });
         }
       });
 
-      const records = parsedData.map((row) => {
-        const so = (row["הזמנה"] || row["order_number"] || "")?.toString().trim();
-        let supplierNumber = (row["ספק מועדף"] || row["מס' ספק"] || row["מס ספק"] || "")?.toString().trim();
-        let supplierName = (row["שם ספק"] || row["supplier_name"] || row["ספק"] || "")?.toString().trim();
-
-        // Propagate supplier from SO group if current row has none
-        if (!supplierNumber && so && soSupplierMap.has(so)) {
-          const mapped = soSupplierMap.get(so)!;
-          supplierNumber = mapped.number;
-          if (!supplierName) supplierName = mapped.name;
+      // שלב 2: בנה מיפוי אס-או -> ספק מתוך קובץ המכירות (גיבוי אם אין פי-או תואם)
+      const soToSupplierFromFile = new Map<
+        string,
+        {
+          id: string | null;
+          name: string;
+          number: string;
         }
+      >();
+
+      parsedData.forEach((row) => {
+        const so = (row["הזמנה"] || "")?.toString().trim();
+        const suppNum = (row["ספק מועדף"] || row["מס' ספק"] || row["מס ספק"] || "")?.toString().trim();
+        const suppName = (row["שם ספק"] || row["ספק"] || "")?.toString().trim();
+        if (so && suppNum && !soToSupplierFromFile.has(so)) {
+          const existingSupplier = suppliers?.find((s) => s.supplier_number === suppNum || s.name === suppName);
+          soToSupplierFromFile.set(so, {
+            id: existingSupplier?.id || null,
+            name: suppName,
+            number: suppNum,
+          });
+        }
+      });
+
+      // שלב 3: מפה כל שורת מכירה לספק הנכון
+      const records = parsedData.map((row) => {
+        const so = (row["הזמנה"] || "")?.toString().trim();
+
+        // קודם מחפשים בפי-או, אחר כך בקובץ המכירות
+        const supplierInfo = soToSupplierFromPO.get(so) || soToSupplierFromFile.get(so);
 
         const salePrice = parseFloat(row["מחיר ליחידה"] || row["מחיר מכירה"] || row["sale_price"] || "0") || 0;
         const costPrice = parseFloat(row["עלות"] || row["מחיר עלות"] || row["cost_price"] || "0") || 0;
         const qty = parseFloat(row["כמות"] || row["quantity"] || "1") || 1;
-
-        const existingSupplier = suppliers?.find(
-          (s) => (supplierNumber && s.supplier_number === supplierNumber) || (supplierName && s.name === supplierName)
-        );
-
-        const customerPo = (row["הז. רכש (לקוח)"] || row["הז רכש"] || row["מס' הזמנה זבילו"] || row["מס הזמנה זבילו"] || row["customer_po"] || "")?.toString().trim();
+        const customerPo = (
+          row["הז. רכש (לקוח)"] ||
+          row["הז רכש"] ||
+          row["מס' הזמנה זבילו"] ||
+          row["מס הזמנה זבילו"] ||
+          row["customer_po"] ||
+          ""
+        )
+          ?.toString()
+          .trim();
 
         return {
-          supplier_id: existingSupplier?.id || null,
-          supplier_name: supplierName || null,
-          item_code: (row["מק'ט"] || row["מק\"ט"] || row["item_code"] || "")?.toString() || null,
+          supplier_id: supplierInfo?.id || null,
+          supplier_name: supplierInfo?.name || null,
+          item_code: (row["מק'ט"] || row['מק"ט'] || row["item_code"] || "")?.toString() || null,
           item_description: row["תאור מוצר"] || row["שם פריט"] || row["תאור פריט"] || row["item_description"] || null,
           quantity: qty,
           sale_price: salePrice,
@@ -200,8 +230,10 @@ export default function UploadPage() {
         };
       });
 
-      // Delete existing sales before inserting
-      const { error: deleteError } = await supabase.from("sales_records").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      const { error: deleteError } = await supabase
+        .from("sales_records")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
       if (deleteError) throw deleteError;
 
       const chunkSize = 100;
@@ -242,13 +274,18 @@ export default function UploadPage() {
                 העלאת דוח רכישות (Excel)
               </CardTitle>
               <CardDescription>
-                העלה קובץ Excel עם הזמנות רכש. עמודות: מס' ספק, שם ספק, הזמנה (PO), תאריך, מק'ט, תאור מוצר, כמות, מחיר סופי בשקלים.
-                ספקים חדשים ייווצרו אוטומטית.
+                העלה קובץ Excel עם הזמנות רכש. עמודות: מס' ספק, שם ספק, הזמנה (PO), תאריך, מק'ט, תאור מוצר, כמות, מחיר
+                סופי בשקלים. ספקים חדשים ייווצרו אוטומטית.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} className="block w-full text-sm border rounded-lg p-3 bg-muted cursor-pointer" />
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={handleFile}
+                  className="block w-full text-sm border rounded-lg p-3 bg-muted cursor-pointer"
+                />
                 {fileName && <p className="text-sm text-muted-foreground mt-1">קובץ: {fileName}</p>}
               </div>
               {parsedData.length > 0 && (
@@ -258,13 +295,17 @@ export default function UploadPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          {headers.map((h) => <TableHead key={h}>{h}</TableHead>)}
+                          {headers.map((h) => (
+                            <TableHead key={h}>{h}</TableHead>
+                          ))}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {parsedData.slice(0, 10).map((row, i) => (
                           <TableRow key={i}>
-                            {headers.map((h) => <TableCell key={h}>{row[h]?.toString() || ""}</TableCell>)}
+                            {headers.map((h) => (
+                              <TableCell key={h}>{row[h]?.toString() || ""}</TableCell>
+                            ))}
                           </TableRow>
                         ))}
                       </TableBody>
@@ -288,13 +329,18 @@ export default function UploadPage() {
                 העלאת דוח מכירות (Excel)
               </CardTitle>
               <CardDescription>
-                העלה קובץ Excel עם הזמנות לקוח. עמודות: מס. לקוח, שם לקוח, הזמנה (SO), תאריך, מס' הזמנה זבילו, מק'ט, תאור מוצר, מחיר ליחידה, עלות, כמות, ספק מועדף, שם ספק.
-                ספק מועדף מופץ אוטומטית לכל שורות אותו SO.
+                העלה קובץ Excel עם הזמנות לקוח. עמודות: מס. לקוח, שם לקוח, הזמנה (SO), תאריך, מס' הזמנה זבילו, מק'ט,
+                תאור מוצר, מחיר ליחידה, עלות, כמות, ספק מועדף, שם ספק. ספק מועדף מופץ אוטומטית לכל שורות אותו SO.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} className="block w-full text-sm border rounded-lg p-3 bg-muted cursor-pointer" />
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={handleFile}
+                  className="block w-full text-sm border rounded-lg p-3 bg-muted cursor-pointer"
+                />
                 {fileName && <p className="text-sm text-muted-foreground mt-1">קובץ: {fileName}</p>}
               </div>
               {parsedData.length > 0 && (
@@ -304,13 +350,17 @@ export default function UploadPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          {headers.map((h) => <TableHead key={h}>{h}</TableHead>)}
+                          {headers.map((h) => (
+                            <TableHead key={h}>{h}</TableHead>
+                          ))}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {parsedData.slice(0, 10).map((row, i) => (
                           <TableRow key={i}>
-                            {headers.map((h) => <TableCell key={h}>{row[h]?.toString() || ""}</TableCell>)}
+                            {headers.map((h) => (
+                              <TableCell key={h}>{row[h]?.toString() || ""}</TableCell>
+                            ))}
                           </TableRow>
                         ))}
                       </TableBody>
