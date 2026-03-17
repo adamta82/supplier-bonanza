@@ -1094,8 +1094,8 @@ export default function SupplierDetail() {
                               <>
                                 <div className="text-sm">
                                   {nextTier ? "התקדמות למדרגה הבאה: " : "הושגה מדרגה עליונה: "}
-                                  ₪{fmtNum(displayVolume)} / ₪{fmtNum(nextTier ? nextTier.target_value : sortedTiers[sortedTiers.length - 1]?.target_value)}
-                                  <span className="text-xs text-muted-foreground mr-1">({vatLabel})</span>
+                                  {unitPrefix}{fmtVal(displayVolume)}{unitSuffix} / {unitPrefix}{fmtVal(nextTier ? nextTier.target_value : sortedTiers[sortedTiers.length - 1]?.target_value)}{unitSuffix}
+                                  {!isQtyTarget && <span className="text-xs text-muted-foreground mr-1">({vatLabel})</span>}
                                 </div>
                                 {/* Battery-style tier indicators - horizontal */}
                                 <div className="space-y-1">
