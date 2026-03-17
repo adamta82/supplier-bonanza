@@ -195,15 +195,15 @@ export default function Alerts() {
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">מחזור נוכחי:</span>
-                    <p className="font-bold">₪{fmtNum(alert.currentVolume)}</p>
+                    <p className="font-bold">{alert.isQuantityTarget ? `${alert.currentVolume.toLocaleString("he-IL")} יח'` : `₪${fmtNum(alert.currentVolume)}`}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">יעד מדרגה הבאה:</span>
-                    <p className="font-bold">₪{fmtNum(alert.nextTarget)}</p>
+                    <p className="font-bold">{alert.isQuantityTarget ? `${alert.nextTarget.toLocaleString("he-IL")} יח'` : `₪${fmtNum(alert.nextTarget)}`}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">חסר להזמנה:</span>
-                    <p className="font-bold text-primary">₪{fmtNum(alert.remaining)}</p>
+                    <p className="font-bold text-primary">{alert.isQuantityTarget ? `${alert.remaining.toLocaleString("he-IL")} יח'` : `₪${fmtNum(alert.remaining)}`}</p>
                   </div>
                 </div>
               </CardContent>
