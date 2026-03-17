@@ -1024,14 +1024,17 @@ export default function SupplierDetail() {
                       let cardBonusVolume = 0;
                       let cardTargetWithVAT = 0;
                       let cardTargetExVAT = 0;
+                      let cardTargetQty = 0;
                       agrPurchases.forEach((p: any) => {
                         const raw = p.total_amount || 0;
                         const wVAT = addVAT(raw);
+                        const qty = p.quantity || 0;
                         const res = cardMatchExcl(p.item_description || "");
-                        if (!res.excluded) { cardBonusVolume += wVAT; cardTargetWithVAT += wVAT; cardTargetExVAT += raw; }
-                        else if (res.countsTowardTarget) { cardTargetWithVAT += wVAT; cardTargetExVAT += raw; }
+                        if (!res.excluded) { cardBonusVolume += wVAT; cardTargetWithVAT += wVAT; cardTargetExVAT += raw; cardTargetQty += qty; }
+                        else if (res.countsTowardTarget) { cardTargetWithVAT += wVAT; cardTargetExVAT += raw; cardTargetQty += qty; }
                       });
-                      const cardVolume = agreement.vat_included ? cardTargetWithVAT : cardTargetExVAT;
+                      const isQtyTarget = agreement.target_type === "quantity";
+                      const cardVolume = isQtyTarget ? cardTargetQty : (agreement.vat_included ? cardTargetWithVAT : cardTargetExVAT);
                       const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
                       const volumeWithTx = cardVolume + agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
 
