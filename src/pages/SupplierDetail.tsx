@@ -551,23 +551,29 @@ export default function SupplierDetail() {
     let bonusVolume = 0;
     let targetVolumeWithVAT = 0;
     let targetVolumeExVAT = 0;
+    let targetQuantity = 0;
     agrPurchases.forEach((p: any) => {
       const rawAmount = p.total_amount || 0;
       const withVAT = addVAT(rawAmount);
+      const qty = p.quantity || 0;
       const result = matchesExclusion(p.item_description || "");
       if (!result.excluded) {
         bonusVolume += withVAT;
         targetVolumeWithVAT += withVAT;
         targetVolumeExVAT += rawAmount;
+        targetQuantity += qty;
       } else if (result.countsTowardTarget) {
         targetVolumeWithVAT += withVAT;
         targetVolumeExVAT += rawAmount;
+        targetQuantity += qty;
       }
     });
 
+    const isQuantityTarget = agreement.target_type === "quantity";
+
     // vat_included means the target values were written WITH VAT
     // so compare accordingly
-    let volume = agreement.vat_included ? targetVolumeWithVAT : targetVolumeExVAT;
+    let volume = isQuantityTarget ? targetQuantity : (agreement.vat_included ? targetVolumeWithVAT : targetVolumeExVAT);
 
     const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
     volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
