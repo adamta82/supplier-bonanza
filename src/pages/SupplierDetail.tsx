@@ -1051,7 +1051,10 @@ export default function SupplierDetail() {
                       const theoreticalBonus = currentTierIdx >= 0
                         ? cardBonusVolume * (sortedTiers[currentTierIdx].bonus_percentage / 100)
                         : 0;
-                      const vatLabel = agreement.vat_included ? "כולל מע\"מ" : "לפני מע\"מ";
+                      const vatLabel = isQtyTarget ? "כמות" : (agreement.vat_included ? "כולל מע\"מ" : "לפני מע\"מ");
+                      const unitPrefix = isQtyTarget ? "" : "₪";
+                      const unitSuffix = isQtyTarget ? " יח'" : "";
+                      const fmtVal = (v: number) => isQtyTarget ? v.toLocaleString("he-IL") : fmtNum(v);
 
                       return (
                         <Card key={agreement.id}>
