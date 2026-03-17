@@ -68,19 +68,31 @@ export default function Alerts() {
         return false;
       };
 
+      const isQuantityTarget = agreement.target_type === "quantity";
+
       // Calculate current volume for this supplier (excluding excluded items)
       const supplierPurchases = purchases?.filter(
         (p) => p.supplier_id === agreement.supplier_id || p.supplier_name === supplierName
       ) || [];
-      let currentVolume = addVAT(supplierPurchases
-        .filter(p => !isExcluded(p.item_description || ""))
-        .reduce((sum, p) => sum + (p.total_amount || 0), 0));
 
-      // Add transaction bonuses that count toward target
-      const supplierTransactions = transactionBonuses?.filter(
-        (t) => t.supplier_id === agreement.supplier_id && t.counts_toward_target
-      ) || [];
-      currentVolume += supplierTransactions.reduce((sum, t) => sum + (t.total_value || 0), 0);
+      let currentVolume: number;
+      if (isQuantityTarget) {
+        currentVolume = supplierPurchases
+          .filter(p => !isExcluded(p.item_description || ""))
+          .reduce((sum, p) => sum + (p.quantity || 0), 0);
+      } else {
+        currentVolume = addVAT(supplierPurchases
+          .filter(p => !isExcluded(p.item_description || ""))
+          .reduce((sum, p) => sum + (p.total_amount || 0), 0));
+      }
+
+      // Add transaction bonuses that count toward target (only for monetary targets)
+      if (!isQuantityTarget) {
+        const supplierTransactions = transactionBonuses?.filter(
+          (t) => t.supplier_id === agreement.supplier_id && t.counts_toward_target
+        ) || [];
+        currentVolume += supplierTransactions.reduce((sum, t) => sum + (t.total_value || 0), 0);
+      }
 
       // Find current tier and next tier
       const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
