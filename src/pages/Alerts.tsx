@@ -134,6 +134,7 @@ export default function Alerts() {
         periodEnd: agreement.period_end,
         urgency,
         currentPercentage: currentTierIndex >= 0 ? sortedTiers[currentTierIndex].bonus_percentage : 0,
+        isQuantityTarget,
       };
     })
     .filter(Boolean)
