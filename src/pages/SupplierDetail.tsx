@@ -1118,7 +1118,7 @@ export default function SupplierDetail() {
                                             <div className="absolute inset-0 flex items-center justify-between px-2 text-[10px] font-bold z-10">
                                               <span>{tier.bonus_percentage}%</span>
                                               <span className={`${achieved ? "text-green-800" : "text-muted-foreground"}`}>
-                                                ₪{fmtNum(tier.target_value)} <span className="font-normal opacity-70">({vatLabel})</span>
+                                                {unitPrefix}{fmtVal(tier.target_value)}{unitSuffix} {!isQtyTarget && <span className="font-normal opacity-70">({vatLabel})</span>}
                                               </span>
                                             </div>
                                           </div>
