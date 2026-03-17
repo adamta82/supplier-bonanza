@@ -30,7 +30,7 @@ export default function Alerts() {
   const { data: purchases } = useQuery({
     queryKey: ["purchases-all"],
     queryFn: async () => {
-      const { data } = await supabase.from("purchase_records").select("supplier_id, supplier_name, total_amount, item_description");
+      const { data } = await supabase.from("purchase_records").select("supplier_id, supplier_name, total_amount, item_description, quantity");
       return data || [];
     },
   });
@@ -68,19 +68,31 @@ export default function Alerts() {
         return false;
       };
 
+      const isQuantityTarget = agreement.target_type === "quantity";
+
       // Calculate current volume for this supplier (excluding excluded items)
       const supplierPurchases = purchases?.filter(
         (p) => p.supplier_id === agreement.supplier_id || p.supplier_name === supplierName
       ) || [];
-      let currentVolume = addVAT(supplierPurchases
-        .filter(p => !isExcluded(p.item_description || ""))
-        .reduce((sum, p) => sum + (p.total_amount || 0), 0));
 
-      // Add transaction bonuses that count toward target
-      const supplierTransactions = transactionBonuses?.filter(
-        (t) => t.supplier_id === agreement.supplier_id && t.counts_toward_target
-      ) || [];
-      currentVolume += supplierTransactions.reduce((sum, t) => sum + (t.total_value || 0), 0);
+      let currentVolume: number;
+      if (isQuantityTarget) {
+        currentVolume = supplierPurchases
+          .filter(p => !isExcluded(p.item_description || ""))
+          .reduce((sum, p) => sum + (p.quantity || 0), 0);
+      } else {
+        currentVolume = addVAT(supplierPurchases
+          .filter(p => !isExcluded(p.item_description || ""))
+          .reduce((sum, p) => sum + (p.total_amount || 0), 0));
+      }
+
+      // Add transaction bonuses that count toward target (only for monetary targets)
+      if (!isQuantityTarget) {
+        const supplierTransactions = transactionBonuses?.filter(
+          (t) => t.supplier_id === agreement.supplier_id && t.counts_toward_target
+        ) || [];
+        currentVolume += supplierTransactions.reduce((sum, t) => sum + (t.total_value || 0), 0);
+      }
 
       // Find current tier and next tier
       const sortedTiers = (agreement.bonus_tiers || []).sort((a: any, b: any) => a.target_value - b.target_value);
@@ -122,6 +134,7 @@ export default function Alerts() {
         periodEnd: agreement.period_end,
         urgency,
         currentPercentage: currentTierIndex >= 0 ? sortedTiers[currentTierIndex].bonus_percentage : 0,
+        isQuantityTarget,
       };
     })
     .filter(Boolean)
@@ -182,15 +195,15 @@ export default function Alerts() {
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">מחזור נוכחי:</span>
-                    <p className="font-bold">₪{fmtNum(alert.currentVolume)}</p>
+                    <p className="font-bold">{alert.isQuantityTarget ? `${alert.currentVolume.toLocaleString("he-IL")} יח'` : `₪${fmtNum(alert.currentVolume)}`}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">יעד מדרגה הבאה:</span>
-                    <p className="font-bold">₪{fmtNum(alert.nextTarget)}</p>
+                    <p className="font-bold">{alert.isQuantityTarget ? `${alert.nextTarget.toLocaleString("he-IL")} יח'` : `₪${fmtNum(alert.nextTarget)}`}</p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">חסר להזמנה:</span>
-                    <p className="font-bold text-primary">₪{fmtNum(alert.remaining)}</p>
+                    <p className="font-bold text-primary">{alert.isQuantityTarget ? `${alert.remaining.toLocaleString("he-IL")} יח'` : `₪${fmtNum(alert.remaining)}`}</p>
                   </div>
                 </div>
               </CardContent>

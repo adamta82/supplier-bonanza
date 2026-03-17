@@ -551,23 +551,29 @@ export default function SupplierDetail() {
     let bonusVolume = 0;
     let targetVolumeWithVAT = 0;
     let targetVolumeExVAT = 0;
+    let targetQuantity = 0;
     agrPurchases.forEach((p: any) => {
       const rawAmount = p.total_amount || 0;
       const withVAT = addVAT(rawAmount);
+      const qty = p.quantity || 0;
       const result = matchesExclusion(p.item_description || "");
       if (!result.excluded) {
         bonusVolume += withVAT;
         targetVolumeWithVAT += withVAT;
         targetVolumeExVAT += rawAmount;
+        targetQuantity += qty;
       } else if (result.countsTowardTarget) {
         targetVolumeWithVAT += withVAT;
         targetVolumeExVAT += rawAmount;
+        targetQuantity += qty;
       }
     });
 
+    const isQuantityTarget = agreement.target_type === "quantity";
+
     // vat_included means the target values were written WITH VAT
     // so compare accordingly
-    let volume = agreement.vat_included ? targetVolumeWithVAT : targetVolumeExVAT;
+    let volume = isQuantityTarget ? targetQuantity : (agreement.vat_included ? targetVolumeWithVAT : targetVolumeExVAT);
 
     const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
     volume += agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
@@ -1018,14 +1024,17 @@ export default function SupplierDetail() {
                       let cardBonusVolume = 0;
                       let cardTargetWithVAT = 0;
                       let cardTargetExVAT = 0;
+                      let cardTargetQty = 0;
                       agrPurchases.forEach((p: any) => {
                         const raw = p.total_amount || 0;
                         const wVAT = addVAT(raw);
+                        const qty = p.quantity || 0;
                         const res = cardMatchExcl(p.item_description || "");
-                        if (!res.excluded) { cardBonusVolume += wVAT; cardTargetWithVAT += wVAT; cardTargetExVAT += raw; }
-                        else if (res.countsTowardTarget) { cardTargetWithVAT += wVAT; cardTargetExVAT += raw; }
+                        if (!res.excluded) { cardBonusVolume += wVAT; cardTargetWithVAT += wVAT; cardTargetExVAT += raw; cardTargetQty += qty; }
+                        else if (res.countsTowardTarget) { cardTargetWithVAT += wVAT; cardTargetExVAT += raw; cardTargetQty += qty; }
                       });
-                      const cardVolume = agreement.vat_included ? cardTargetWithVAT : cardTargetExVAT;
+                      const isQtyTarget = agreement.target_type === "quantity";
+                      const cardVolume = isQtyTarget ? cardTargetQty : (agreement.vat_included ? cardTargetWithVAT : cardTargetExVAT);
                       const agrTxBonuses = (bonuses || []).filter((b: any) => b.counts_toward_target && b.agreement_id === agreement.id);
                       const volumeWithTx = cardVolume + agrTxBonuses.reduce((s: number, b: any) => s + (b.total_value || 0), 0);
 
@@ -1042,7 +1051,10 @@ export default function SupplierDetail() {
                       const theoreticalBonus = currentTierIdx >= 0
                         ? cardBonusVolume * (sortedTiers[currentTierIdx].bonus_percentage / 100)
                         : 0;
-                      const vatLabel = agreement.vat_included ? "כולל מע\"מ" : "לפני מע\"מ";
+                      const vatLabel = isQtyTarget ? "כמות" : (agreement.vat_included ? "כולל מע\"מ" : "לפני מע\"מ");
+                      const unitPrefix = isQtyTarget ? "" : "₪";
+                      const unitSuffix = isQtyTarget ? " יח'" : "";
+                      const fmtVal = (v: number) => isQtyTarget ? v.toLocaleString("he-IL") : fmtNum(v);
 
                       return (
                         <Card key={agreement.id}>
@@ -1082,8 +1094,8 @@ export default function SupplierDetail() {
                               <>
                                 <div className="text-sm">
                                   {nextTier ? "התקדמות למדרגה הבאה: " : "הושגה מדרגה עליונה: "}
-                                  ₪{fmtNum(displayVolume)} / ₪{fmtNum(nextTier ? nextTier.target_value : sortedTiers[sortedTiers.length - 1]?.target_value)}
-                                  <span className="text-xs text-muted-foreground mr-1">({vatLabel})</span>
+                                  {unitPrefix}{fmtVal(displayVolume)}{unitSuffix} / {unitPrefix}{fmtVal(nextTier ? nextTier.target_value : sortedTiers[sortedTiers.length - 1]?.target_value)}{unitSuffix}
+                                  {!isQtyTarget && <span className="text-xs text-muted-foreground mr-1">({vatLabel})</span>}
                                 </div>
                                 {/* Battery-style tier indicators - horizontal */}
                                 <div className="space-y-1">
@@ -1106,7 +1118,7 @@ export default function SupplierDetail() {
                                             <div className="absolute inset-0 flex items-center justify-between px-2 text-[10px] font-bold z-10">
                                               <span>{tier.bonus_percentage}%</span>
                                               <span className={`${achieved ? "text-green-800" : "text-muted-foreground"}`}>
-                                                ₪{fmtNum(tier.target_value)} <span className="font-normal opacity-70">({vatLabel})</span>
+                                                {unitPrefix}{fmtVal(tier.target_value)}{unitSuffix} {!isQtyTarget && <span className="font-normal opacity-70">({vatLabel})</span>}
                                               </span>
                                             </div>
                                           </div>
