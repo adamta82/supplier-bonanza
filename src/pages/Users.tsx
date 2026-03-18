@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Key, Trash2 } from "lucide-react";
+import { Plus, Key, Trash2, ShieldCheck } from "lucide-react";
 
 type UserItem = {
   id: string;
@@ -16,6 +16,7 @@ type UserItem = {
   username: string;
   display_name: string;
   created_at: string;
+  is_caller: boolean;
 };
 
 async function callManageUsers(action: string, params: Record<string, any> = {}) {
@@ -129,7 +130,14 @@ export default function Users() {
               <TableBody>
                 {(users as UserItem[]).map((u) => (
                   <TableRow key={u.id}>
-                    <TableCell className="font-medium">{u.username}</TableCell>
+                    <TableCell className="font-medium">
+                      {u.username}
+                      {u.is_caller && (
+                        <span className="inline-flex items-center gap-1 mr-2 text-xs text-primary">
+                          <ShieldCheck className="w-3 h-3" /> (את/ה)
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>{u.display_name}</TableCell>
                     <TableCell>{new Date(u.created_at).toLocaleDateString("he-IL")}</TableCell>
                     <TableCell>
@@ -141,17 +149,19 @@ export default function Users() {
                         >
                           <Key className="w-4 h-4 ml-1" />שנה סיסמא
                         </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => {
-                            if (confirm(`למחוק את המשתמש ${u.username}?`)) {
-                              deleteMutation.mutate(u.id);
-                            }
-                          }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {!u.is_caller && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              if (confirm(`למחוק את המשתמש ${u.username}?`)) {
+                                deleteMutation.mutate(u.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -162,7 +172,6 @@ export default function Users() {
         </CardContent>
       </Card>
 
-      {/* Change password dialog */}
       <Dialog open={pwOpen} onOpenChange={setPwOpen}>
         <DialogContent dir="rtl">
           <DialogHeader>
