@@ -11,39 +11,59 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    // Verify caller is authenticated
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    // Verify caller with anon client (or service role key)
-    const token = authHeader.replace("Bearer ", "");
-    let caller: any = null;
-    if (token === serviceRoleKey) {
-      caller = { id: "service-role" };
+    const body = await req.json();
+    const { action, ...params } = body;
+
+    // Bootstrap: allow creating first user without auth
+    if (action === "create") {
+      const { data: { users: existingUsers } } = await adminClient.auth.admin.listUsers();
+      const hasUsers = (existingUsers || []).length > 0;
+
+      if (hasUsers) {
+        // Require auth for subsequent creates
+        const authHeader = req.headers.get("Authorization");
+        if (!authHeader) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const token = authHeader.replace("Bearer ", "");
+        const verifyClient = createClient(supabaseUrl, anonKey);
+        const { data: { user }, error: authError } = await verifyClient.auth.getUser(token);
+        if (authError || !user) {
+          return new Response(JSON.stringify({ error: "Unauthorized" }), {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
     } else {
-      const anonClient = createClient(supabaseUrl, anonKey);
-      const { data: { user }, error: authError } = await anonClient.auth.getUser(token);
-      if (authError || !user) {
+      // All other actions require auth
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      caller = user;
+      const token = authHeader.replace("Bearer ", "");
+      const verifyClient = createClient(supabaseUrl, anonKey);
+      const { data: { user: caller }, error: authError } = await verifyClient.auth.getUser(token);
+      if (authError || !caller) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Store caller for delete check
+      (globalThis as any).__caller = caller;
     }
-
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const { action, ...params } = await req.json();
 
     if (action === "list") {
       const { data: { users }, error } = await adminClient.auth.admin.listUsers();
