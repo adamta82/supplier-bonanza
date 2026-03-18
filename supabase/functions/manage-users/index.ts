@@ -20,56 +20,27 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action, ...params } = body;
 
-    // Bootstrap: allow creating first user without auth
-    if (action === "create") {
-      const { data: { users: existingUsers } } = await adminClient.auth.admin.listUsers();
-      const hasUsers = (existingUsers || []).length > 0;
-
-      if (hasUsers) {
-        // Require auth for subsequent creates
-        const authHeader = req.headers.get("Authorization");
-        if (!authHeader) {
-          return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        const token = authHeader.replace("Bearer ", "");
-        const verifyClient = createClient(supabaseUrl, anonKey);
-        const { data: { user }, error: authError } = await verifyClient.auth.getUser(token);
-        if (authError || !user) {
-          return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-      }
-    } else {
-      // All other actions require auth
-      const authHeader = req.headers.get("Authorization");
-      if (!authHeader) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const token = authHeader.replace("Bearer ", "");
-      const verifyClient = createClient(supabaseUrl, anonKey);
-      const { data: { user: caller }, error: authError } = await verifyClient.auth.getUser(token);
-      if (authError || !caller) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      // Store caller for delete check
-      (globalThis as any).__caller = caller;
+    // All actions require authentication
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const token = authHeader.replace("Bearer ", "");
+    const verifyClient = createClient(supabaseUrl, anonKey);
+    const { data: { user: caller }, error: authError } = await verifyClient.auth.getUser(token);
+    if (authError || !caller) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     if (action === "list") {
       const { data: { users }, error } = await adminClient.auth.admin.listUsers();
       if (error) throw error;
-      // Get profiles for usernames
       const { data: profiles } = await adminClient.from("profiles").select("*");
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
       const result = (users || []).map((u: any) => ({
@@ -78,6 +49,7 @@ Deno.serve(async (req) => {
         username: profileMap.get(u.id)?.username || u.email?.split("@")[0],
         display_name: profileMap.get(u.id)?.display_name || "",
         created_at: u.created_at,
+        is_caller: u.id === caller.id,
       }));
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -128,8 +100,7 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const caller = (globalThis as any).__caller;
-      if (caller && user_id === caller.id) {
+      if (user_id === caller.id) {
         return new Response(JSON.stringify({ error: "Cannot delete yourself" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
