@@ -127,8 +127,8 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      // Don't allow deleting yourself
-      if (user_id === caller.id) {
+      const caller = (globalThis as any).__caller;
+      if (caller && user_id === caller.id) {
         return new Response(JSON.stringify({ error: "Cannot delete yourself" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
