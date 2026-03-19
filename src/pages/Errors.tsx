@@ -181,6 +181,20 @@ export default function Errors() {
         </TabsContent>
 
         <TabsContent value="sales">
+          <div className="flex justify-end mb-3">
+            <Button
+              variant="outline"
+              onClick={handleResolveSuppliers}
+              disabled={resolving || !orphanSales?.length}
+            >
+              {resolving ? (
+                <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+              ) : (
+                <Search className="h-4 w-4 ml-2" />
+              )}
+              {resolving ? "מחפש ספקים..." : "חפש ספקים לפי מק״ט"}
+            </Button>
+          </div>
           <Card>
             <CardContent className="p-0">
               <Table>
