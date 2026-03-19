@@ -362,56 +362,88 @@ export default function UploadPage() {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">העלאת נתונים</h1>
 
-      {/* Priority Sync Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <RefreshCw className="w-5 h-5" />
-            סנכרון הזמנות רכש מ-Priority
-          </CardTitle>
-          <CardDescription>
-            שליפת כל הזמנות הרכש הפתוחות מ-Priority ועדכון המערכת. סטטוסים "מבוטלת" ו"טיוטא" מסוננים אוטומטית.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {syncProgress && (
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                דף {syncProgress.page} • {syncProgress.synced} רשומות סונכרנו עד כה...
-              </p>
-              <Progress className="h-2" />
+      {/* Priority Sync Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Purchase Orders Sync */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RefreshCw className="w-5 h-5" />
+              סנכרון הזמנות רכש
+            </CardTitle>
+            <CardDescription>
+              שליפת הזמנות רכש מ-Priority. סטטוסים "מבוטלת" ו"טיוטא" מסוננים.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {syncProgress && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  דף {syncProgress.page} • {syncProgress.synced} רשומות...
+                </p>
+                <Progress className="h-2" />
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-[160px] justify-start text-left font-normal", !syncFromDate && "text-muted-foreground")}>
+                    <CalendarIcon className="ml-2 h-4 w-4" />
+                    {syncFromDate ? format(syncFromDate, "dd/MM/yyyy") : "בחר תאריך"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={syncFromDate} onSelect={(d) => d && setSyncFromDate(d)} initialFocus className={cn("p-3 pointer-events-auto")} />
+                </PopoverContent>
+              </Popover>
+              <Button onClick={() => syncPriority.mutate()} disabled={syncPriority.isPending} variant="outline" className="gap-2">
+                <RefreshCw className={`w-4 h-4 ${syncPriority.isPending ? "animate-spin" : ""}`} />
+                {syncPriority.isPending ? "מסנכרן..." : "סנכרן רכש"}
+              </Button>
             </div>
-          )}
-          <div className="flex items-center gap-3">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !syncFromDate && "text-muted-foreground")}>
-                  <CalendarIcon className="ml-2 h-4 w-4" />
-                  {syncFromDate ? format(syncFromDate, "dd/MM/yyyy") : "בחר תאריך"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={syncFromDate}
-                  onSelect={(d) => d && setSyncFromDate(d)}
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
-                />
-              </PopoverContent>
-            </Popover>
-            <Button
-              onClick={() => syncPriority.mutate()}
-              disabled={syncPriority.isPending}
-              variant="outline"
-              className="gap-2"
-            >
-              <RefreshCw className={`w-4 h-4 ${syncPriority.isPending ? "animate-spin" : ""}`} />
-              {syncPriority.isPending ? "מסנכרן..." : "סנכרן עכשיו"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* Sales Orders Sync */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RefreshCw className="w-5 h-5" />
+              סנכרון הזמנות לקוח
+            </CardTitle>
+            <CardDescription>
+              שליפת הזמנות לקוח מ-Priority. שיוך ספק אוטומטי לפי הזמנות רכש מקושרות.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {salesSyncProgress && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  דף {salesSyncProgress.page} • {salesSyncProgress.synced} רשומות...
+                </p>
+                <Progress className="h-2" />
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-[160px] justify-start text-left font-normal", !salesSyncFromDate && "text-muted-foreground")}>
+                    <CalendarIcon className="ml-2 h-4 w-4" />
+                    {salesSyncFromDate ? format(salesSyncFromDate, "dd/MM/yyyy") : "בחר תאריך"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={salesSyncFromDate} onSelect={(d) => d && setSalesSyncFromDate(d)} initialFocus className={cn("p-3 pointer-events-auto")} />
+                </PopoverContent>
+              </Popover>
+              <Button onClick={() => syncSalesOrders.mutate()} disabled={syncSalesOrders.isPending} variant="outline" className="gap-2">
+                <RefreshCw className={`w-4 h-4 ${syncSalesOrders.isPending ? "animate-spin" : ""}`} />
+                {syncSalesOrders.isPending ? "מסנכרן..." : "סנכרן מכירות"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
