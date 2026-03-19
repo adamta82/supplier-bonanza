@@ -223,8 +223,8 @@ Deno.serve(async (req) => {
           }
 
           // PURCHASEPRICE and QPROFIT are before VAT, add 18%
-          const costPrice = item.PURCHASEPRICE != null ? Math.round(item.PURCHASEPRICE * 1.18 * 100) / 100 : null;
-          const profitDirect = item.QPROFIT != null ? Math.round(item.QPROFIT * 1.18 * 100) / 100 : null;
+          const costPrice = item.PURCHASEPRICE != null ? Math.round(item.PURCHASEPRICE * 100) / 100 : null;
+          const profitDirect = item.QPROFIT != null ? Math.round(item.QPROFIT * 100) / 100 : null;
 
           records.push({
             order_number: soNumber,
