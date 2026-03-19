@@ -2,3 +2,6 @@ project_id = "irrtlxkottomfdfnpsoh"
 
 [functions.manage-users]
 verify_jwt = false
+
+[functions.sync-purchase-orders]
+verify_jwt = false
