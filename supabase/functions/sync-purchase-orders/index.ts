@@ -125,6 +125,7 @@ Deno.serve(async (req) => {
     let totalInserted = 0;
     let hasMore = true;
     const batchId = `priority_sync_${new Date().toISOString().split("T")[0]}`;
+    const seenKeys = new Set<string>(); // Deduplication within this invocation
 
     while (hasMore && pagesProcessed < maxPages) {
       const encodedDate = encodeURIComponent(dateFilter);
@@ -170,6 +171,13 @@ Deno.serve(async (req) => {
         if (EXCLUDED_STATUSES.includes(order.STATDES)) continue;
         const items = order.PORDERITEMS_SUBFORM || [];
         for (const item of items) {
+          // Composite dedup key: order + item + line-level identifiers
+          const dedupeKey = `${order.ORDNAME}|${item.PARTNAME}|${item.TQUANT}|${item.PRICE}|${item.KLINE}`;
+          if (seenKeys.has(dedupeKey)) {
+            continue; // Skip duplicate
+          }
+          seenKeys.add(dedupeKey);
+
           const suppNum = order.SUPNAME || null;
           records.push({
             order_number: order.ORDNAME || null,
