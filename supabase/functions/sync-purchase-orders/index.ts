@@ -232,7 +232,7 @@ Deno.serve(async (req) => {
         success: true,
         records_synced: totalInserted,
         has_more: hasMore,
-        next_skip: hasMore ? skip : null,
+        nextSkip: hasMore ? skip : null,
         sync_date: new Date().toISOString(),
       }),
       {
