@@ -471,8 +471,8 @@ export default function SupplierDetail() {
   const totalPurchasesWithVat = filteredPurchases.reduce((s, r) => s + (r.total_with_vat || addVAT(r.total_amount || 0)), 0);
   const totalPurchasesExVat = filteredPurchases.reduce((s, r) => s + (r.total_amount || 0), 0);
   const totalPurchases = totalPurchasesWithVat;
-  const totalSales = addVAT(filteredSales.reduce((s, r) => s + (r.sale_price || 0) * (r.quantity || 0), 0));
-  const totalDirectProfit = addVAT(filteredSales.reduce((s, r) => s + ((r.sale_price || 0) - (r.cost_price || 0)) * (r.quantity || 1), 0));
+  const totalSales = filteredSales.reduce((s, r) => s + (r.sale_price || 0) * (r.quantity || 0), 0);
+  const totalDirectProfit = filteredSales.reduce((s, r) => s + addVAT(r.profit_direct || 0), 0);
   const totalTransactionBonus = filteredBonuses.reduce((s, r) => s + (r.bonus_value || 0), 0);
 
   // Brand breakdown
@@ -481,11 +481,11 @@ export default function SupplierDetail() {
     filteredSales.forEach((r: any) => {
       const brand = r.brand || "ללא מותג";
       if (!map[brand]) map[brand] = { sales: 0, cost: 0, profit: 0 };
-      const saleTotal = addVAT((r.sale_price || 0) * (r.quantity || 1));
+      const saleTotal = (r.sale_price || 0) * (r.quantity || 1);
       const costTotal = addVAT((r.cost_price || 0) * (r.quantity || 1));
       map[brand].sales += saleTotal;
       map[brand].cost += costTotal;
-      map[brand].profit += saleTotal - costTotal;
+      map[brand].profit += addVAT(r.profit_direct || 0);
     });
     return Object.entries(map).map(([brand, data]) => ({
       brand,
@@ -687,8 +687,8 @@ export default function SupplierDetail() {
     filteredSales.forEach((r) => {
       const m = r.sale_date?.slice(0, 7) || "unknown";
       if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, final: 0 };
-      map[m].sales += addVAT((r.sale_price || 0) * (r.quantity || 0));
-      map[m].profit += addVAT(((r.sale_price || 0) - (r.cost_price || 0)) * (r.quantity || 1));
+      map[m].sales += (r.sale_price || 0) * (r.quantity || 0);
+      map[m].profit += addVAT(r.profit_direct || 0);
     });
     filteredBonuses.forEach((r) => {
       const m = r.transaction_date?.slice(0, 7) || "unknown";
@@ -1651,8 +1651,8 @@ export default function SupplierDetail() {
                     const soMap = new Map<string, { date: string; customer: string; customerPo: string; items: typeof filteredSales; totalSale: number; totalProfit: number }>();
                     filteredSales.forEach((r: any) => {
                       const so = r.order_number || `_single_${r.id}`;
-                      const saleAmt = addVAT((r.sale_price || 0) * (r.quantity || 1));
-                      const profitAmt = addVAT(((r.sale_price || 0) - (r.cost_price || 0)) * (r.quantity || 1));
+                      const saleAmt = (r.sale_price || 0) * (r.quantity || 1);
+                      const profitAmt = addVAT(r.profit_direct || 0);
                       const existing = soMap.get(so);
                       if (existing) {
                         existing.items.push(r);
@@ -1732,9 +1732,9 @@ export default function SupplierDetail() {
                                       <TableCell>{item.item_description || item.item_code || "-"}</TableCell>
                                       <TableCell>{item.brand || "-"}</TableCell>
                                       <TableCell>{item.quantity || "-"}</TableCell>
-                                      <TableCell>₪{fmtNum(addVAT(item.sale_price || 0))}</TableCell>
+                                      <TableCell>₪{fmtNum(item.sale_price || 0)}</TableCell>
                                       <TableCell>₪{fmtNum(addVAT(item.cost_price || 0))}</TableCell>
-                                      <TableCell>₪{fmtNum(addVAT(((item.sale_price || 0) - (item.cost_price || 0)) * (item.quantity || 1)))}</TableCell>
+                                      <TableCell>₪{fmtNum(addVAT(item.profit_direct || 0))}</TableCell>
                                     </TableRow>
                                   ))}
                                 </TableBody>
