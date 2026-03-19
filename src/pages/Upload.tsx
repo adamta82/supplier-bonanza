@@ -283,7 +283,7 @@ export default function UploadPage() {
         const { data, error } = await supabase.functions.invoke("sync-purchase-orders", {
           body: {
             startSkip: skip,
-            max_pages: 20,
+            max_pages: 3,
             clear_existing: skip === 0,
             from_date: format(syncFromDate, "yyyy-MM-dd"),
           },
