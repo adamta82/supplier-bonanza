@@ -170,11 +170,13 @@ Deno.serve(async (req) => {
         if (EXCLUDED_STATUSES.includes(order.STATDES)) continue;
         const items = order.PORDERITEMS_SUBFORM || [];
         for (const item of items) {
+          const suppNum = order.SUPNAME || null;
           records.push({
             order_number: order.ORDNAME || null,
             order_date: order.CURDATE ? order.CURDATE.split("T")[0] : null,
-            supplier_number: order.SUPNAME || null,
+            supplier_number: suppNum,
             supplier_name: order.CDES || null,
+            supplier_id: suppNum ? (supplierIdMap.get(suppNum) || null) : null,
             customer_po: order.CORDNAME || null,
             order_status: order.STATDES || null,
             item_code: item.PARTNAME || null,
