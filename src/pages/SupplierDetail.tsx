@@ -1648,22 +1648,22 @@ export default function SupplierDetail() {
                 </TableHeader>
                 <TableBody>
                   {(() => {
-                    const soMap = new Map<string, { date: string; customer: string; customerPo: string; items: typeof filteredSales; totalSale: number; totalProfit: number }>();
+                    const soMap = new Map<string, { date: string; customer: string; zabiloId: string; items: typeof filteredSales; totalSale: number; totalProfit: number }>();
                     filteredSales.forEach((r: any) => {
                       const so = r.order_number || `_single_${r.id}`;
                       const saleAmt = (r.sale_price || 0) * (r.quantity || 1);
-                      const profitAmt = addVAT(r.profit_direct || 0);
+                      const profitAmt = addVAT((r.profit_direct || 0) * (r.quantity || 1));
                       const existing = soMap.get(so);
                       if (existing) {
                         existing.items.push(r);
                         existing.totalSale += saleAmt;
                         existing.totalProfit += profitAmt;
-                        if (!existing.customerPo && r.customer_po) existing.customerPo = r.customer_po;
+                        if (!existing.zabiloId && r.zabilo_id) existing.zabiloId = r.zabilo_id;
                       } else {
                         soMap.set(so, {
                           date: r.sale_date,
                           customer: r.customer_name || "-",
-                          customerPo: r.customer_po || "",
+                          zabiloId: r.zabilo_id || "",
                           items: [r],
                           totalSale: saleAmt,
                           totalProfit: profitAmt,
