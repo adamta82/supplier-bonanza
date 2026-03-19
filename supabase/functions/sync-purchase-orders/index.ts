@@ -148,6 +148,8 @@ Deno.serve(async (req) => {
       // Flatten: one record per order line item
       const records: any[] = [];
       for (const order of orders) {
+        // Skip excluded statuses
+        if (EXCLUDED_STATUSES.includes(order.STATDES)) continue;
         const items = order.PORDERITEMS_SUBFORM || [];
         for (const item of items) {
           records.push({
