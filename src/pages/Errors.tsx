@@ -11,6 +11,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
+export default function Errors() {
   const queryClient = useQueryClient();
   const [resolving, setResolving] = useState(false);
 
