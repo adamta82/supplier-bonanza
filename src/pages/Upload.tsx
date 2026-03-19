@@ -267,7 +267,7 @@ export default function UploadPage() {
   });
 
   const [syncProgress, setSyncProgress] = useState<{ synced: number; page: number } | null>(null);
-  const [syncFromDate, setSyncFromDate] = useState<Date>(new Date("2025-01-01"));
+  const [syncFromDate, setSyncFromDate] = useState<Date>(new Date("2026-01-01"));
 
   const syncPriority = useMutation({
     mutationFn: async () => {
