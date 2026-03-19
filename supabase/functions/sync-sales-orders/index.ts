@@ -9,7 +9,20 @@ const corsHeaders = {
 const PRIORITY_BASE_URL =
   "https://bsb.netrun.co.il/odata/Priority/tabula.ini/zabilo";
 const PAGE_SIZE = 500;
-const EXCLUDED_STATUSES: string[] = []; // יוגדר בהמשך על ידי המשתמש
+const EXCLUDED_STATUSES = [
+  "איזור מרוחק",
+  "בוטלה במערכת",
+  "בוטלה וטופלה",
+  "בוטלה להחלפה",
+  "לא ניתן COD",
+  "ממתין למקדמה",
+  "שגיאת תשלום",
+  "טיוטא",
+  "הזמנה בוטלה",
+  "שולם חלקי",
+  "לא לחיוב כעת",
+  "המתנת מסמכים",
+];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
