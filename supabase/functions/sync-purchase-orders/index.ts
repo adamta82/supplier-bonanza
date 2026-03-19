@@ -57,7 +57,15 @@ Deno.serve(async (req) => {
 
     try {
       const body = await req.json();
-      if (body.from_date) dateFilter = body.from_date;
+      if (body.from_date) {
+        // Ensure DateTimeOffset format required by Priority: yyyy-mm-ddThh:mm:ss+hh:mm
+        const d = body.from_date.toString().trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+          dateFilter = `${d}T00:00:00+02:00`;
+        } else {
+          dateFilter = d;
+        }
+      }
       if (body.start_skip !== undefined) startSkip = body.start_skip;
       if (body.max_pages !== undefined) maxPages = body.max_pages;
       if (body.clear_existing !== undefined) clearExisting = body.clear_existing;
