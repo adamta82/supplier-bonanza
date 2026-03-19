@@ -66,7 +66,8 @@ Deno.serve(async (req) => {
           dateFilter = d;
         }
       }
-      if (body.start_skip !== undefined) startSkip = body.start_skip;
+      if (body.startSkip !== undefined) startSkip = body.startSkip;
+      else if (body.start_skip !== undefined) startSkip = body.start_skip;
       if (body.max_pages !== undefined) maxPages = body.max_pages;
       if (body.clear_existing !== undefined) clearExisting = body.clear_existing;
     } catch {
