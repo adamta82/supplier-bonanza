@@ -9,6 +9,7 @@ const corsHeaders = {
 const PRIORITY_BASE_URL =
   "https://bsb.netrun.co.il/odata/Priority/tabula.ini/zabilo";
 const PAGE_SIZE = 500; // Priority supports up to 1000
+const EXCLUDED_STATUSES = ["מבוטלת", "טיוטא"];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -147,6 +148,8 @@ Deno.serve(async (req) => {
       // Flatten: one record per order line item
       const records: any[] = [];
       for (const order of orders) {
+        // Skip excluded statuses
+        if (EXCLUDED_STATUSES.includes(order.STATDES)) continue;
         const items = order.PORDERITEMS_SUBFORM || [];
         for (const item of items) {
           records.push({
