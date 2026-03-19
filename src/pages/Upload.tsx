@@ -285,6 +285,7 @@ export default function UploadPage() {
             startSkip: skip,
             max_pages: 1,
             clear_existing: skip === 0,
+            from_date: format(syncFromDate, "yyyy-MM-dd"),
           },
         });
 
