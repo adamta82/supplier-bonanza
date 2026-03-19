@@ -125,6 +125,7 @@ Deno.serve(async (req) => {
     let totalInserted = 0;
     let hasMore = true;
     const batchId = `priority_sync_${new Date().toISOString().split("T")[0]}`;
+    const seenKeys = new Set<string>(); // Deduplication within this invocation
 
     while (hasMore && pagesProcessed < maxPages) {
       const encodedDate = encodeURIComponent(dateFilter);
