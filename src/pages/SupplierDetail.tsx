@@ -1651,8 +1651,8 @@ export default function SupplierDetail() {
                     const soMap = new Map<string, { date: string; customer: string; customerPo: string; items: typeof filteredSales; totalSale: number; totalProfit: number }>();
                     filteredSales.forEach((r: any) => {
                       const so = r.order_number || `_single_${r.id}`;
-                      const saleAmt = addVAT((r.sale_price || 0) * (r.quantity || 1));
-                      const profitAmt = addVAT(((r.sale_price || 0) - (r.cost_price || 0)) * (r.quantity || 1));
+                      const saleAmt = (r.sale_price || 0) * (r.quantity || 1);
+                      const profitAmt = addVAT(r.profit_direct || 0);
                       const existing = soMap.get(so);
                       if (existing) {
                         existing.items.push(r);
