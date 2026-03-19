@@ -472,7 +472,7 @@ export default function SupplierDetail() {
   const totalPurchasesExVat = filteredPurchases.reduce((s, r) => s + (r.total_amount || 0), 0);
   const totalPurchases = totalPurchasesWithVat;
   const totalSales = filteredSales.reduce((s, r) => s + (r.sale_price || 0) * (r.quantity || 0), 0);
-  const totalDirectProfit = filteredSales.reduce((s, r) => s + addVAT(r.profit_direct || 0), 0);
+  const totalDirectProfit = filteredSales.reduce((s, r) => s + addVAT((r.profit_direct || 0) * (r.quantity || 1)), 0);
   const totalTransactionBonus = filteredBonuses.reduce((s, r) => s + (r.bonus_value || 0), 0);
 
   // Brand breakdown
