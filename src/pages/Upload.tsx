@@ -1,4 +1,9 @@
 import { useState, useCallback } from "react";
+import { format } from "date-fns";
+import { CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -262,6 +267,7 @@ export default function UploadPage() {
   });
 
   const [syncProgress, setSyncProgress] = useState<{ synced: number; page: number } | null>(null);
+  const [syncFromDate, setSyncFromDate] = useState<Date>(new Date("2025-01-01"));
 
   const syncPriority = useMutation({
     mutationFn: async () => {
@@ -279,6 +285,7 @@ export default function UploadPage() {
             startSkip: skip,
             max_pages: 1,
             clear_existing: skip === 0,
+            from_date: format(syncFromDate, "yyyy-MM-dd"),
           },
         });
 
@@ -330,15 +337,34 @@ export default function UploadPage() {
               <Progress className="h-2" />
             </div>
           )}
-          <Button
-            onClick={() => syncPriority.mutate()}
-            disabled={syncPriority.isPending}
-            variant="outline"
-            className="gap-2"
-          >
-            <RefreshCw className={`w-4 h-4 ${syncPriority.isPending ? "animate-spin" : ""}`} />
-            {syncPriority.isPending ? "מסנכרן..." : "סנכרן עכשיו"}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !syncFromDate && "text-muted-foreground")}>
+                  <CalendarIcon className="ml-2 h-4 w-4" />
+                  {syncFromDate ? format(syncFromDate, "dd/MM/yyyy") : "בחר תאריך"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={syncFromDate}
+                  onSelect={(d) => d && setSyncFromDate(d)}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+            <Button
+              onClick={() => syncPriority.mutate()}
+              disabled={syncPriority.isPending}
+              variant="outline"
+              className="gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${syncPriority.isPending ? "animate-spin" : ""}`} />
+              {syncPriority.isPending ? "מסנכרן..." : "סנכרן עכשיו"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
