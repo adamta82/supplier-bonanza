@@ -9,6 +9,7 @@ const corsHeaders = {
 const PRIORITY_BASE_URL =
   "https://bsb.netrun.co.il/odata/Priority/tabula.ini/zabilo";
 const PAGE_SIZE = 500; // Priority supports up to 1000
+const EXCLUDED_STATUSES = ["מבוטלת", "טיוטא"];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
