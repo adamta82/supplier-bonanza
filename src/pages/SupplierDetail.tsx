@@ -1678,7 +1678,7 @@ export default function SupplierDetail() {
                       soList = soList.filter(([so, data]) =>
                         so.toLowerCase().includes(q) ||
                         (data.customer || "").toLowerCase().includes(q) ||
-                        (data.customerPo || "").toLowerCase().includes(q) ||
+                        (data.zabiloId || "").toLowerCase().includes(q) ||
                         data.items.some((item: any) =>
                           (item.item_description || "").toLowerCase().includes(q) ||
                           (item.item_code || "").toLowerCase().includes(q)
