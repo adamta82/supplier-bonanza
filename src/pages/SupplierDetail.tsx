@@ -1534,9 +1534,9 @@ export default function SupplierDetail() {
                       const existing = poMap.get(po);
                       if (existing) {
                         existing.items.push(r);
-                        existing.total += (r.total_with_vat || addVAT(r.total_amount || 0));
+                        existing.total += (r.total_with_vat || r.total_amount || 0);
                       } else {
-                        poMap.set(po, { date: r.order_date, items: [r], total: (r.total_with_vat || addVAT(r.total_amount || 0)) });
+                        poMap.set(po, { date: r.order_date, items: [r], total: (r.total_with_vat || r.total_amount || 0) });
                       }
                     });
                     let poList = Array.from(poMap.entries()).sort((a, b) =>
@@ -1594,8 +1594,8 @@ export default function SupplierDetail() {
                                       <TableRow key={item.id}>
                                         <TableCell>{item.item_description || item.item_code || "-"}</TableCell>
                                         <TableCell>{item.quantity || "-"}</TableCell>
-                                        <TableCell>₪{fmtNum(item.total_with_vat || addVAT(item.total_amount || 0))}</TableCell>
-                                        <TableCell>₪{fmtNum(item.total_with_vat || addVAT(item.total_amount || 0))}</TableCell>
+                                        <TableCell>₪{fmtNum(item.total_with_vat || item.total_amount || 0)}</TableCell>
+                                        <TableCell>₪{fmtNum(item.total_with_vat || item.total_amount || 0)}</TableCell>
                                       </TableRow>
                                     );
                                   })}
