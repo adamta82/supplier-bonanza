@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Upload as UploadIcon, FileSpreadsheet } from "lucide-react";
+import { Upload as UploadIcon, FileSpreadsheet, RefreshCw } from "lucide-react";
 import * as XLSX from "xlsx";
 
 type ParsedRow = Record<string, any>;
@@ -260,11 +261,86 @@ export default function UploadPage() {
     onError: (e) => toast.error("שגיאה בהעלאה: " + e.message),
   });
 
+  const [syncProgress, setSyncProgress] = useState<{ synced: number; page: number } | null>(null);
+
+  const syncPriority = useMutation({
+    mutationFn: async () => {
+      let skip = 0;
+      let totalSynced = 0;
+      let page = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        page++;
+        setSyncProgress({ synced: totalSynced, page });
+
+        const { data, error } = await supabase.functions.invoke("sync-purchase-orders", {
+          body: {
+            startSkip: skip,
+            max_pages: 1,
+            clear_existing: skip === 0,
+          },
+        });
+
+        if (error) throw new Error(error.message || "שגיאה בסנכרון");
+        if (!data?.success) throw new Error(data?.error || "שגיאה בסנכרון");
+
+        totalSynced += data.records_synced || 0;
+        hasMore = data.has_more;
+        skip = data.nextSkip || skip + 500;
+      }
+
+      return totalSynced;
+    },
+    onSuccess: (total) => {
+      queryClient.invalidateQueries({ queryKey: ["purchases-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      toast.success(`סנכרון הושלם: ${total} רשומות סונכרנו מ-Priority`);
+      setSyncProgress(null);
+    },
+    onError: (e) => {
+      toast.error("שגיאה בסנכרון: " + e.message);
+      setSyncProgress(null);
+    },
+  });
+
   const isUploading = uploadPurchases.isPending || uploadSales.isPending;
 
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">העלאת נתונים</h1>
+
+      {/* Priority Sync Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <RefreshCw className="w-5 h-5" />
+            סנכרון הזמנות רכש מ-Priority
+          </CardTitle>
+          <CardDescription>
+            שליפת כל הזמנות הרכש הפתוחות מ-Priority ועדכון המערכת. סטטוסים "מבוטלת" ו"טיוטא" מסוננים אוטומטית.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {syncProgress && (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                דף {syncProgress.page} • {syncProgress.synced} רשומות סונכרנו עד כה...
+              </p>
+              <Progress className="h-2" />
+            </div>
+          )}
+          <Button
+            onClick={() => syncPriority.mutate()}
+            disabled={syncPriority.isPending}
+            variant="outline"
+            className="gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${syncPriority.isPending ? "animate-spin" : ""}`} />
+            {syncPriority.isPending ? "מסנכרן..." : "סנכרן עכשיו"}
+          </Button>
+        </CardContent>
+      </Card>
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
