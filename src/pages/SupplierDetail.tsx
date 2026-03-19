@@ -854,6 +854,7 @@ export default function SupplierDetail() {
             <ShoppingCart className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">רכישות (כולל מע״מ)</div>
             <div className="text-lg font-bold">₪{fmtNum(totalPurchases)}</div>
+            <div className="text-xs text-muted-foreground">לפני מע״מ: ₪{fmtNum(totalPurchasesExVat)}</div>
           </CardContent>
         </Card>
         <Card>
