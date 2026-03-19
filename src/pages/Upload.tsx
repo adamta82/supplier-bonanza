@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { Upload as UploadIcon, FileSpreadsheet } from "lucide-react";
+import { Upload as UploadIcon, FileSpreadsheet, RefreshCw } from "lucide-react";
 import * as XLSX from "xlsx";
 
 type ParsedRow = Record<string, any>;
