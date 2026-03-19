@@ -1590,14 +1590,11 @@ export default function SupplierDetail() {
                                 </TableHeader>
                                 <TableBody>
                                   {data.items.map((item: any) => {
-                                    const unitPrice = (item.quantity && item.quantity > 0)
-                                      ? (item.total_amount || 0) / item.quantity
-                                      : item.total_amount || 0;
                                     return (
                                       <TableRow key={item.id}>
                                         <TableCell>{item.item_description || item.item_code || "-"}</TableCell>
                                         <TableCell>{item.quantity || "-"}</TableCell>
-                                        <TableCell>₪{fmtNum(addVAT(unitPrice))}</TableCell>
+                                        <TableCell>₪{fmtNum(item.total_with_vat || addVAT(item.total_amount || 0))}</TableCell>
                                         <TableCell>₪{fmtNum(addVAT(item.total_amount || 0))}</TableCell>
                                       </TableRow>
                                     );
