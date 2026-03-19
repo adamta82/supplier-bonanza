@@ -468,7 +468,9 @@ export default function SupplierDetail() {
   // All data is ex-VAT, always add VAT for display
   const addVAT = (amount: number) => amount * (1 + VAT_RATE);
 
-  const totalPurchases = addVAT(filteredPurchases.reduce((s, r) => s + (r.total_amount || 0), 0));
+  const totalPurchasesWithVat = filteredPurchases.reduce((s, r) => s + (r.total_with_vat || addVAT(r.total_amount || 0)), 0);
+  const totalPurchasesExVat = filteredPurchases.reduce((s, r) => s + (r.total_amount || 0), 0);
+  const totalPurchases = totalPurchasesWithVat;
   const totalSales = addVAT(filteredSales.reduce((s, r) => s + (r.sale_price || 0) * (r.quantity || 0), 0));
   const totalDirectProfit = addVAT(filteredSales.reduce((s, r) => s + ((r.sale_price || 0) - (r.cost_price || 0)) * (r.quantity || 1), 0));
   const totalTransactionBonus = filteredBonuses.reduce((s, r) => s + (r.bonus_value || 0), 0);
@@ -852,6 +854,7 @@ export default function SupplierDetail() {
             <ShoppingCart className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">רכישות (כולל מע״מ)</div>
             <div className="text-lg font-bold">₪{fmtNum(totalPurchases)}</div>
+            <div className="text-xs text-muted-foreground">לפני מע״מ: ₪{fmtNum(totalPurchasesExVat)}</div>
           </CardContent>
         </Card>
         <Card>
