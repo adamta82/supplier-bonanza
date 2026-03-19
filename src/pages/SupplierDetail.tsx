@@ -472,7 +472,7 @@ export default function SupplierDetail() {
   const totalPurchasesExVat = filteredPurchases.reduce((s, r) => s + (r.total_amount || 0), 0);
   const totalPurchases = totalPurchasesWithVat;
   const totalSales = filteredSales.reduce((s, r) => s + (r.sale_price || 0) * (r.quantity || 0), 0);
-  const totalDirectProfit = filteredSales.reduce((s, r) => s + addVAT(r.profit_direct || 0), 0);
+  const totalDirectProfit = filteredSales.reduce((s, r) => s + addVAT((r.profit_direct || 0) * (r.quantity || 1)), 0);
   const totalTransactionBonus = filteredBonuses.reduce((s, r) => s + (r.bonus_value || 0), 0);
 
   // Brand breakdown
@@ -485,7 +485,7 @@ export default function SupplierDetail() {
       const costTotal = addVAT((r.cost_price || 0) * (r.quantity || 1));
       map[brand].sales += saleTotal;
       map[brand].cost += costTotal;
-      map[brand].profit += addVAT(r.profit_direct || 0);
+      map[brand].profit += addVAT((r.profit_direct || 0) * (r.quantity || 1));
     });
     return Object.entries(map).map(([brand, data]) => ({
       brand,
@@ -688,7 +688,7 @@ export default function SupplierDetail() {
       const m = r.sale_date?.slice(0, 7) || "unknown";
       if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, final: 0 };
       map[m].sales += (r.sale_price || 0) * (r.quantity || 0);
-      map[m].profit += addVAT(r.profit_direct || 0);
+      map[m].profit += addVAT((r.profit_direct || 0) * (r.quantity || 1));
     });
     filteredBonuses.forEach((r) => {
       const m = r.transaction_date?.slice(0, 7) || "unknown";
@@ -1648,22 +1648,22 @@ export default function SupplierDetail() {
                 </TableHeader>
                 <TableBody>
                   {(() => {
-                    const soMap = new Map<string, { date: string; customer: string; customerPo: string; items: typeof filteredSales; totalSale: number; totalProfit: number }>();
+                    const soMap = new Map<string, { date: string; customer: string; zabiloId: string; items: typeof filteredSales; totalSale: number; totalProfit: number }>();
                     filteredSales.forEach((r: any) => {
                       const so = r.order_number || `_single_${r.id}`;
                       const saleAmt = (r.sale_price || 0) * (r.quantity || 1);
-                      const profitAmt = addVAT(r.profit_direct || 0);
+                      const profitAmt = addVAT((r.profit_direct || 0) * (r.quantity || 1));
                       const existing = soMap.get(so);
                       if (existing) {
                         existing.items.push(r);
                         existing.totalSale += saleAmt;
                         existing.totalProfit += profitAmt;
-                        if (!existing.customerPo && r.customer_po) existing.customerPo = r.customer_po;
+                        if (!existing.zabiloId && r.zabilo_id) existing.zabiloId = r.zabilo_id;
                       } else {
                         soMap.set(so, {
                           date: r.sale_date,
                           customer: r.customer_name || "-",
-                          customerPo: r.customer_po || "",
+                          zabiloId: r.zabilo_id || "",
                           items: [r],
                           totalSale: saleAmt,
                           totalProfit: profitAmt,
@@ -1678,7 +1678,7 @@ export default function SupplierDetail() {
                       soList = soList.filter(([so, data]) =>
                         so.toLowerCase().includes(q) ||
                         (data.customer || "").toLowerCase().includes(q) ||
-                        (data.customerPo || "").toLowerCase().includes(q) ||
+                        (data.zabiloId || "").toLowerCase().includes(q) ||
                         data.items.some((item: any) =>
                           (item.item_description || "").toLowerCase().includes(q) ||
                           (item.item_code || "").toLowerCase().includes(q)
@@ -1706,7 +1706,7 @@ export default function SupplierDetail() {
                           </TableCell>
                           <TableCell>{formatDate(data.date)}</TableCell>
                           <TableCell className="font-mono text-xs">{so.startsWith("_single_") ? "-" : so}</TableCell>
-                          <TableCell className="font-mono text-xs">{data.customerPo || "-"}</TableCell>
+                          <TableCell className="font-mono text-xs">{data.zabiloId || "-"}</TableCell>
                           <TableCell>{data.customer}</TableCell>
                           <TableCell>{data.items.length}</TableCell>
                           <TableCell>₪{fmtNum(data.totalSale)}</TableCell>
