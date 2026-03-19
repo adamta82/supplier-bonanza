@@ -292,53 +292,65 @@ export type Database = {
       }
       purchase_records: {
         Row: {
+          barcode: string | null
           category: string | null
           created_at: string
           customer_po: string | null
+          due_date: string | null
           id: string
           item_code: string | null
           item_description: string | null
           order_date: string | null
           order_number: string | null
+          order_status: string | null
           quantity: number | null
           supplier_id: string | null
           supplier_name: string | null
           supplier_number: string | null
           total_amount: number | null
+          total_with_vat: number | null
           unit_price: number | null
           upload_batch: string | null
         }
         Insert: {
+          barcode?: string | null
           category?: string | null
           created_at?: string
           customer_po?: string | null
+          due_date?: string | null
           id?: string
           item_code?: string | null
           item_description?: string | null
           order_date?: string | null
           order_number?: string | null
+          order_status?: string | null
           quantity?: number | null
           supplier_id?: string | null
           supplier_name?: string | null
           supplier_number?: string | null
           total_amount?: number | null
+          total_with_vat?: number | null
           unit_price?: number | null
           upload_batch?: string | null
         }
         Update: {
+          barcode?: string | null
           category?: string | null
           created_at?: string
           customer_po?: string | null
+          due_date?: string | null
           id?: string
           item_code?: string | null
           item_description?: string | null
           order_date?: string | null
           order_number?: string | null
+          order_status?: string | null
           quantity?: number | null
           supplier_id?: string | null
           supplier_name?: string | null
           supplier_number?: string | null
           total_amount?: number | null
+          total_with_vat?: number | null
           unit_price?: number | null
           upload_batch?: string | null
         }
