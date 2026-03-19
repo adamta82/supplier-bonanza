@@ -102,12 +102,12 @@ Deno.serve(async (req) => {
       if (s.supplier_number) supplierIdMap.set(s.supplier_number, s.id);
     });
 
-    // Clear existing priority sync data only on first chunk
+    // Clear ALL existing purchase records on first chunk (same behavior as Excel upload)
     if (clearExisting && startSkip === 0) {
       const { error: deleteError } = await supabaseAdmin
         .from("purchase_records")
         .delete()
-        .like("upload_batch", "priority_sync_%");
+        .neq("id", "00000000-0000-0000-0000-000000000000");
 
       if (deleteError) {
         console.error("Delete error:", deleteError);
