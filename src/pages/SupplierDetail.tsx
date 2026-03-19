@@ -468,7 +468,9 @@ export default function SupplierDetail() {
   // All data is ex-VAT, always add VAT for display
   const addVAT = (amount: number) => amount * (1 + VAT_RATE);
 
-  const totalPurchases = addVAT(filteredPurchases.reduce((s, r) => s + (r.total_amount || 0), 0));
+  const totalPurchasesWithVat = filteredPurchases.reduce((s, r) => s + (r.total_with_vat || addVAT(r.total_amount || 0)), 0);
+  const totalPurchasesExVat = filteredPurchases.reduce((s, r) => s + (r.total_amount || 0), 0);
+  const totalPurchases = totalPurchasesWithVat;
   const totalSales = addVAT(filteredSales.reduce((s, r) => s + (r.sale_price || 0) * (r.quantity || 0), 0));
   const totalDirectProfit = addVAT(filteredSales.reduce((s, r) => s + ((r.sale_price || 0) - (r.cost_price || 0)) * (r.quantity || 1), 0));
   const totalTransactionBonus = filteredBonuses.reduce((s, r) => s + (r.bonus_value || 0), 0);
