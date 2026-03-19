@@ -306,8 +306,53 @@ export default function UploadPage() {
       setSyncProgress(null);
     },
     onError: (e) => {
-      toast.error("שגיאה בסנכרון: " + e.message);
+      toast.error("שגיאה בסנכרון רכש: " + e.message);
       setSyncProgress(null);
+    },
+  });
+
+  const [salesSyncProgress, setSalesSyncProgress] = useState<{ synced: number; page: number } | null>(null);
+  const [salesSyncFromDate, setSalesSyncFromDate] = useState<Date>(new Date("2026-01-01"));
+
+  const syncSalesOrders = useMutation({
+    mutationFn: async () => {
+      let skip = 0;
+      let totalSynced = 0;
+      let page = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        page++;
+        setSalesSyncProgress({ synced: totalSynced, page });
+
+        const { data, error } = await supabase.functions.invoke("sync-sales-orders", {
+          body: {
+            startSkip: skip,
+            max_pages: 20,
+            clear_existing: skip === 0,
+            from_date: format(salesSyncFromDate, "yyyy-MM-dd"),
+          },
+        });
+
+        if (error) throw new Error(error.message || "שגיאה בסנכרון");
+        if (!data?.success) throw new Error(data?.error || "שגיאה בסנכרון");
+
+        totalSynced += data.records_synced || 0;
+        hasMore = data.has_more;
+        skip = data.nextSkip || skip + 500;
+      }
+
+      return totalSynced;
+    },
+    onSuccess: (total) => {
+      queryClient.invalidateQueries({ queryKey: ["sales-all"] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      toast.success(`סנכרון הושלם: ${total} הזמנות לקוח סונכרנו מ-Priority`);
+      setSalesSyncProgress(null);
+    },
+    onError: (e) => {
+      toast.error("שגיאה בסנכרון מכירות: " + e.message);
+      setSalesSyncProgress(null);
     },
   });
 
