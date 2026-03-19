@@ -481,11 +481,11 @@ export default function SupplierDetail() {
     filteredSales.forEach((r: any) => {
       const brand = r.brand || "ללא מותג";
       if (!map[brand]) map[brand] = { sales: 0, cost: 0, profit: 0 };
-      const saleTotal = addVAT((r.sale_price || 0) * (r.quantity || 1));
+      const saleTotal = (r.sale_price || 0) * (r.quantity || 1);
       const costTotal = addVAT((r.cost_price || 0) * (r.quantity || 1));
       map[brand].sales += saleTotal;
       map[brand].cost += costTotal;
-      map[brand].profit += saleTotal - costTotal;
+      map[brand].profit += addVAT(r.profit_direct || 0);
     });
     return Object.entries(map).map(([brand, data]) => ({
       brand,
