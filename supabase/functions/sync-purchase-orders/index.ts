@@ -81,7 +81,8 @@ Deno.serve(async (req) => {
     let hasMore = true;
 
     while (hasMore) {
-      const url = `${PRIORITY_BASE_URL}/PORDERS?$filter=CURDATE ge ${encodeURIComponent(dateFilter)}&$expand=PORDERITEMS_SUBFORM&$top=${PAGE_SIZE}&$skip=${skip}&$select=ORDNAME,CURDATE,SUPNAME,CDES,CORDNAME,STATDES,PORDERITEMS_SUBFORM`;
+      const encodedDate = encodeURIComponent(dateFilter);
+      const url = `${PRIORITY_BASE_URL}/PORDERS?$filter=CURDATE ge ${encodedDate}&$expand=PORDERITEMS_SUBFORM&$top=${PAGE_SIZE}&$skip=${skip}`;
 
       console.log(`Fetching Priority PORDERS: skip=${skip}`);
 
