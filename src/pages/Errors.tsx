@@ -11,7 +11,35 @@ import { useState } from "react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
-export default function Errors() {
+  const queryClient = useQueryClient();
+  const [resolving, setResolving] = useState(false);
+
+  const handleResolveSuppliers = async () => {
+    if (!orphanSales?.length) return;
+    const itemCodes = [...new Set(orphanSales.map((r) => r.item_code).filter(Boolean))] as string[];
+    if (!itemCodes.length) {
+      toast.error("אין מק״טים לבדיקה");
+      return;
+    }
+
+    setResolving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("resolve-suppliers", {
+        body: { item_codes: itemCodes },
+      });
+
+      if (error) throw error;
+
+      toast.success(`שויכו ${data.resolved} מק״טים לספקים. לא נמצאו: ${data.not_found}`);
+      queryClient.invalidateQueries({ queryKey: ["orphan-sales"] });
+    } catch (err: any) {
+      toast.error("שגיאה בשיוך ספקים: " + (err.message || String(err)));
+    } finally {
+      setResolving(false);
+    }
+  };
+
+
   const { data: orphanPurchases } = useQuery({
     queryKey: ["orphan-purchases"],
     queryFn: async () => {
