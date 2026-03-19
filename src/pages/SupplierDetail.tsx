@@ -348,12 +348,18 @@ export default function SupplierDetail() {
   });
 
   const { data: purchases } = useQuery({
-    queryKey: ["supplier-purchases", id],
+    queryKey: ["supplier-purchases", id, supplier?.supplier_number],
     queryFn: async () => {
+      const filters: string[] = [];
+      if (id) filters.push(`supplier_id.eq.${id}`);
+      if (supplier?.supplier_number) filters.push(`supplier_number.eq.${supplier.supplier_number}`);
+      
+      if (filters.length === 0) return [];
+      
       const { data } = await supabase
         .from("purchase_records")
         .select("*")
-        .eq("supplier_id", id!)
+        .or(filters.join(","))
         .order("order_date", { ascending: false });
       return data || [];
     },
