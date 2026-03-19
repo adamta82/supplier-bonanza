@@ -688,7 +688,7 @@ export default function SupplierDetail() {
       const m = r.sale_date?.slice(0, 7) || "unknown";
       if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, final: 0 };
       map[m].sales += (r.sale_price || 0) * (r.quantity || 0);
-      map[m].profit += addVAT(r.profit_direct || 0);
+      map[m].profit += addVAT((r.profit_direct || 0) * (r.quantity || 1));
     });
     filteredBonuses.forEach((r) => {
       const m = r.transaction_date?.slice(0, 7) || "unknown";
