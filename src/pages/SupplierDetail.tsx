@@ -1706,7 +1706,7 @@ export default function SupplierDetail() {
                           </TableCell>
                           <TableCell>{formatDate(data.date)}</TableCell>
                           <TableCell className="font-mono text-xs">{so.startsWith("_single_") ? "-" : so}</TableCell>
-                          <TableCell className="font-mono text-xs">{data.customerPo || "-"}</TableCell>
+                          <TableCell className="font-mono text-xs">{data.zabiloId || "-"}</TableCell>
                           <TableCell>{data.customer}</TableCell>
                           <TableCell>{data.items.length}</TableCell>
                           <TableCell>₪{fmtNum(data.totalSale)}</TableCell>
