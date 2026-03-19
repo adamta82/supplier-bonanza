@@ -350,8 +350,6 @@ export default function SupplierDetail() {
   const { data: purchases } = useQuery({
     queryKey: ["supplier-purchases", id, supplier?.supplier_number],
     queryFn: async () => {
-      // Query by supplier_id OR supplier_number to catch all records (including synced ones without supplier_id)
-      let allData: any[] = [];
       const filters: string[] = [];
       if (id) filters.push(`supplier_id.eq.${id}`);
       if (supplier?.supplier_number) filters.push(`supplier_number.eq.${supplier.supplier_number}`);
