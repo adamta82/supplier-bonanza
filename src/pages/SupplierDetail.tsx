@@ -1732,9 +1732,9 @@ export default function SupplierDetail() {
                                       <TableCell>{item.item_description || item.item_code || "-"}</TableCell>
                                       <TableCell>{item.brand || "-"}</TableCell>
                                       <TableCell>{item.quantity || "-"}</TableCell>
-                                      <TableCell>₪{fmtNum(addVAT(item.sale_price || 0))}</TableCell>
+                                      <TableCell>₪{fmtNum(item.sale_price || 0)}</TableCell>
                                       <TableCell>₪{fmtNum(addVAT(item.cost_price || 0))}</TableCell>
-                                      <TableCell>₪{fmtNum(addVAT(((item.sale_price || 0) - (item.cost_price || 0)) * (item.quantity || 1)))}</TableCell>
+                                      <TableCell>₪{fmtNum(addVAT(item.profit_direct || 0))}</TableCell>
                                     </TableRow>
                                   ))}
                                 </TableBody>
