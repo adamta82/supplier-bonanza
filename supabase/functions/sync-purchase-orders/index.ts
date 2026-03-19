@@ -8,14 +8,13 @@ const corsHeaders = {
 
 const PRIORITY_BASE_URL =
   "https://bsb.netrun.co.il/odata/Priority/tabula.ini/zabilo";
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 500; // Priority supports up to 1000
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Only allow GET-equivalent (POST to trigger, but we only do GET to Priority)
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
@@ -49,15 +48,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Parse request body for optional date filter
+    // Parse request body
     let dateFilter = "2025-01-01T00:00:00+02:00";
+    let startSkip = 0;
+    let maxPages = 10; // Process up to 10 pages per invocation (5000 orders)
+    let clearExisting = true; // Only clear on first chunk
+
     try {
       const body = await req.json();
-      if (body.from_date) {
-        dateFilter = body.from_date;
-      }
+      if (body.from_date) dateFilter = body.from_date;
+      if (body.start_skip !== undefined) startSkip = body.start_skip;
+      if (body.max_pages !== undefined) maxPages = body.max_pages;
+      if (body.clear_existing !== undefined) clearExisting = body.clear_existing;
     } catch {
-      // Use default date
+      // Use defaults
     }
 
     // Priority API credentials
@@ -74,13 +78,36 @@ Deno.serve(async (req) => {
     }
 
     const basicAuth = btoa(`${priorityUsername}:${priorityPassword}`);
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
-    // Fetch all purchase orders with pagination (GET only!)
-    let allRecords: any[] = [];
-    let skip = 0;
+    // Clear existing priority sync data only on first chunk
+    if (clearExisting && startSkip === 0) {
+      const { error: deleteError } = await supabaseAdmin
+        .from("purchase_records")
+        .delete()
+        .like("upload_batch", "priority_sync_%");
+
+      if (deleteError) {
+        console.error("Delete error:", deleteError);
+        return new Response(
+          JSON.stringify({ error: "Failed to clear old sync data", detail: deleteError.message }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      console.log("Cleared existing priority sync data");
+    }
+
+    // Fetch purchase orders with pagination (GET only!)
+    let skip = startSkip;
+    let pagesProcessed = 0;
+    let totalInserted = 0;
     let hasMore = true;
+    const batchId = `priority_sync_${new Date().toISOString().split("T")[0]}`;
 
-    while (hasMore) {
+    while (hasMore && pagesProcessed < maxPages) {
       const encodedDate = encodeURIComponent(dateFilter);
       const url = `${PRIORITY_BASE_URL}/PORDERS?$filter=CURDATE ge ${encodedDate}&$expand=PORDERITEMS_SUBFORM&$top=${PAGE_SIZE}&$skip=${skip}`;
 
@@ -102,11 +129,10 @@ Deno.serve(async (req) => {
             error: "Priority API request failed",
             status: response.status,
             detail: errorText,
+            inserted_so_far: totalInserted,
+            last_skip: skip,
           }),
-          {
-            status: 502,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
@@ -119,14 +145,13 @@ Deno.serve(async (req) => {
       }
 
       // Flatten: one record per order line item
+      const records: any[] = [];
       for (const order of orders) {
         const items = order.PORDERITEMS_SUBFORM || [];
         for (const item of items) {
-          allRecords.push({
+          records.push({
             order_number: order.ORDNAME || null,
-            order_date: order.CURDATE
-              ? order.CURDATE.split("T")[0]
-              : null,
+            order_date: order.CURDATE ? order.CURDATE.split("T")[0] : null,
             supplier_number: order.SUPNAME || null,
             supplier_name: order.CDES || null,
             customer_po: order.CORDNAME || null,
@@ -137,96 +162,54 @@ Deno.serve(async (req) => {
             unit_price: item.PRICE ?? null,
             total_amount: item.QPRICE ?? null,
             total_with_vat: item.VATPRICE ?? null,
-            due_date: item.DUEDATE
-              ? item.DUEDATE.split("T")[0]
-              : null,
+            due_date: item.DUEDATE ? item.DUEDATE.split("T")[0] : null,
             barcode: item.BARCODE || null,
-            upload_batch: `priority_sync_${new Date().toISOString().split("T")[0]}`,
+            upload_batch: batchId,
           });
         }
       }
 
+      // Insert this page's records immediately
+      if (records.length > 0) {
+        // Insert in sub-batches of 500
+        for (let i = 0; i < records.length; i += 500) {
+          const batch = records.slice(i, i + 500);
+          const { error: insertError } = await supabaseAdmin
+            .from("purchase_records")
+            .insert(batch);
+
+          if (insertError) {
+            console.error(`Insert error at skip=${skip}:`, insertError);
+            return new Response(
+              JSON.stringify({
+                error: "Failed to insert records",
+                detail: insertError.message,
+                inserted_so_far: totalInserted,
+                last_skip: skip,
+              }),
+              { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          totalInserted += batch.length;
+        }
+      }
+
       skip += PAGE_SIZE;
+      pagesProcessed++;
+
       if (orders.length < PAGE_SIZE) {
         hasMore = false;
       }
     }
 
-    console.log(`Total records fetched from Priority: ${allRecords.length}`);
-
-    if (allRecords.length === 0) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: "No purchase orders found for the given date range",
-          records_synced: 0,
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Use service role to write data
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    // Delete existing records from priority sync batches, then insert fresh
-    const { error: deleteError } = await supabaseAdmin
-      .from("purchase_records")
-      .delete()
-      .like("upload_batch", "priority_sync_%");
-
-    if (deleteError) {
-      console.error("Delete error:", deleteError);
-      return new Response(
-        JSON.stringify({
-          error: "Failed to clear old sync data",
-          detail: deleteError.message,
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Insert in batches of 500
-    const BATCH_SIZE = 500;
-    let insertedCount = 0;
-
-    for (let i = 0; i < allRecords.length; i += BATCH_SIZE) {
-      const batch = allRecords.slice(i, i + BATCH_SIZE);
-      const { error: insertError } = await supabaseAdmin
-        .from("purchase_records")
-        .insert(batch);
-
-      if (insertError) {
-        console.error(`Insert error at batch ${i}:`, insertError);
-        return new Response(
-          JSON.stringify({
-            error: "Failed to insert records",
-            detail: insertError.message,
-            inserted_so_far: insertedCount,
-          }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-      insertedCount += batch.length;
-    }
-
-    console.log(`Successfully synced ${insertedCount} purchase records`);
+    console.log(`Synced ${totalInserted} records. hasMore=${hasMore}, nextSkip=${skip}`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        records_synced: insertedCount,
+        records_synced: totalInserted,
+        has_more: hasMore,
+        next_skip: hasMore ? skip : null,
         sync_date: new Date().toISOString(),
       }),
       {
@@ -238,10 +221,7 @@ Deno.serve(async (req) => {
     console.error("Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error", detail: String(err) }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
