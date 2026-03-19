@@ -171,6 +171,13 @@ Deno.serve(async (req) => {
         if (EXCLUDED_STATUSES.includes(order.STATDES)) continue;
         const items = order.PORDERITEMS_SUBFORM || [];
         for (const item of items) {
+          // Composite dedup key: order + item + line-level identifiers
+          const dedupeKey = `${order.ORDNAME}|${item.PARTNAME}|${item.TQUANT}|${item.PRICE}|${item.KLINE}`;
+          if (seenKeys.has(dedupeKey)) {
+            continue; // Skip duplicate
+          }
+          seenKeys.add(dedupeKey);
+
           const suppNum = order.SUPNAME || null;
           records.push({
             order_number: order.ORDNAME || null,
