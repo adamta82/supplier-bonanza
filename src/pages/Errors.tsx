@@ -1,15 +1,46 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, Search, Loader2 } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
 import { fmtNum } from "@/lib/utils";
+import { useState } from "react";
+import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
 export default function Errors() {
+  const queryClient = useQueryClient();
+  const [resolving, setResolving] = useState(false);
+
+  const handleResolveSuppliers = async () => {
+    if (!orphanSales?.length) return;
+    const itemCodes = [...new Set(orphanSales.map((r) => r.item_code).filter(Boolean))] as string[];
+    if (!itemCodes.length) {
+      toast.error("אין מק״טים לבדיקה");
+      return;
+    }
+
+    setResolving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("resolve-suppliers", {
+        body: { item_codes: itemCodes },
+      });
+
+      if (error) throw error;
+
+      toast.success(`שויכו ${data.resolved} מק״טים לספקים. לא נמצאו: ${data.not_found}`);
+      queryClient.invalidateQueries({ queryKey: ["orphan-sales"] });
+    } catch (err: any) {
+      toast.error("שגיאה בשיוך ספקים: " + (err.message || String(err)));
+    } finally {
+      setResolving(false);
+    }
+  };
+
+
   const { data: orphanPurchases } = useQuery({
     queryKey: ["orphan-purchases"],
     queryFn: async () => {
@@ -150,6 +181,20 @@ export default function Errors() {
         </TabsContent>
 
         <TabsContent value="sales">
+          <div className="flex justify-end mb-3">
+            <Button
+              variant="outline"
+              onClick={handleResolveSuppliers}
+              disabled={resolving || !orphanSales?.length}
+            >
+              {resolving ? (
+                <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+              ) : (
+                <Search className="h-4 w-4 ml-2" />
+              )}
+              {resolving ? "מחפש ספקים..." : "חפש ספקים לפי מק״ט"}
+            </Button>
+          </div>
           <Card>
             <CardContent className="p-0">
               <Table>
