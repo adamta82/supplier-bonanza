@@ -485,7 +485,7 @@ export default function SupplierDetail() {
       const costTotal = addVAT((r.cost_price || 0) * (r.quantity || 1));
       map[brand].sales += saleTotal;
       map[brand].cost += costTotal;
-      map[brand].profit += addVAT(r.profit_direct || 0);
+      map[brand].profit += addVAT((r.profit_direct || 0) * (r.quantity || 1));
     });
     return Object.entries(map).map(([brand, data]) => ({
       brand,
