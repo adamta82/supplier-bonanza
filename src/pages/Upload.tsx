@@ -337,15 +337,34 @@ export default function UploadPage() {
               <Progress className="h-2" />
             </div>
           )}
-          <Button
-            onClick={() => syncPriority.mutate()}
-            disabled={syncPriority.isPending}
-            variant="outline"
-            className="gap-2"
-          >
-            <RefreshCw className={`w-4 h-4 ${syncPriority.isPending ? "animate-spin" : ""}`} />
-            {syncPriority.isPending ? "מסנכרן..." : "סנכרן עכשיו"}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className={cn("w-[180px] justify-start text-left font-normal", !syncFromDate && "text-muted-foreground")}>
+                  <CalendarIcon className="ml-2 h-4 w-4" />
+                  {syncFromDate ? format(syncFromDate, "dd/MM/yyyy") : "בחר תאריך"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={syncFromDate}
+                  onSelect={(d) => d && setSyncFromDate(d)}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+            <Button
+              onClick={() => syncPriority.mutate()}
+              disabled={syncPriority.isPending}
+              variant="outline"
+              className="gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${syncPriority.isPending ? "animate-spin" : ""}`} />
+              {syncPriority.isPending ? "מסנכרן..." : "סנכרן עכשיו"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
