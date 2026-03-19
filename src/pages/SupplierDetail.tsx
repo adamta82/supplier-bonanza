@@ -1595,7 +1595,7 @@ export default function SupplierDetail() {
                                         <TableCell>{item.item_description || item.item_code || "-"}</TableCell>
                                         <TableCell>{item.quantity || "-"}</TableCell>
                                         <TableCell>₪{fmtNum(item.total_with_vat || addVAT(item.total_amount || 0))}</TableCell>
-                                        <TableCell>₪{fmtNum(addVAT(item.total_amount || 0))}</TableCell>
+                                        <TableCell>₪{fmtNum(item.total_with_vat || addVAT(item.total_amount || 0))}</TableCell>
                                       </TableRow>
                                     );
                                   })}
