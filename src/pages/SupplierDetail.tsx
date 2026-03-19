@@ -1534,9 +1534,9 @@ export default function SupplierDetail() {
                       const existing = poMap.get(po);
                       if (existing) {
                         existing.items.push(r);
-                        existing.total += addVAT(r.total_amount || 0);
+                        existing.total += (r.total_with_vat || addVAT(r.total_amount || 0));
                       } else {
-                        poMap.set(po, { date: r.order_date, items: [r], total: addVAT(r.total_amount || 0) });
+                        poMap.set(po, { date: r.order_date, items: [r], total: (r.total_with_vat || addVAT(r.total_amount || 0)) });
                       }
                     });
                     let poList = Array.from(poMap.entries()).sort((a, b) =>
