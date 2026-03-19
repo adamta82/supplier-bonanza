@@ -409,6 +409,7 @@ export type Database = {
           item_code: string | null
           item_description: string | null
           order_number: string | null
+          order_status: string | null
           profit_direct: number | null
           quantity: number | null
           sale_date: string | null
@@ -416,6 +417,7 @@ export type Database = {
           supplier_id: string | null
           supplier_name: string | null
           upload_batch: string | null
+          zabilo_id: string | null
         }
         Insert: {
           brand?: string | null
@@ -428,6 +430,7 @@ export type Database = {
           item_code?: string | null
           item_description?: string | null
           order_number?: string | null
+          order_status?: string | null
           profit_direct?: number | null
           quantity?: number | null
           sale_date?: string | null
@@ -435,6 +438,7 @@ export type Database = {
           supplier_id?: string | null
           supplier_name?: string | null
           upload_batch?: string | null
+          zabilo_id?: string | null
         }
         Update: {
           brand?: string | null
@@ -447,6 +451,7 @@ export type Database = {
           item_code?: string | null
           item_description?: string | null
           order_number?: string | null
+          order_status?: string | null
           profit_direct?: number | null
           quantity?: number | null
           sale_date?: string | null
@@ -454,6 +459,7 @@ export type Database = {
           supplier_id?: string | null
           supplier_name?: string | null
           upload_batch?: string | null
+          zabilo_id?: string | null
         }
         Relationships: [
           {
