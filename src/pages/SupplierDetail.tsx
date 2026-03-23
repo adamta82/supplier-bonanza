@@ -467,12 +467,26 @@ export default function SupplierDetail() {
 
   // All data is ex-VAT, always add VAT for display
   const addVAT = (amount: number) => amount * (1 + VAT_RATE);
+  const getLineQuantity = (record: { quantity?: number | null }) => record.quantity ?? 1;
+  const getUnitDirectProfitExVat = (record: { profit_direct?: number | null; sale_price?: number | null; cost_price?: number | null }) => {
+    if (record.profit_direct !== null && record.profit_direct !== undefined) {
+      return record.profit_direct;
+    }
+
+    if (record.sale_price !== null && record.sale_price !== undefined && record.cost_price !== null && record.cost_price !== undefined) {
+      return record.sale_price / (1 + VAT_RATE) - record.cost_price;
+    }
+
+    return 0;
+  };
+  const getUnitDirectProfitWithVat = (record: { profit_direct?: number | null; sale_price?: number | null; cost_price?: number | null }) =>
+    addVAT(getUnitDirectProfitExVat(record));
 
   const totalPurchasesWithVat = filteredPurchases.reduce((s, r) => s + (r.total_with_vat || addVAT(r.total_amount || 0)), 0);
   const totalPurchasesExVat = filteredPurchases.reduce((s, r) => s + (r.total_amount || 0), 0);
   const totalPurchases = totalPurchasesWithVat;
   const totalSales = filteredSales.reduce((s, r) => s + (r.sale_price || 0) * (r.quantity || 0), 0);
-  const totalDirectProfit = filteredSales.reduce((s, r) => s + addVAT((r.profit_direct || 0) * (r.quantity || 1)), 0);
+  const totalDirectProfit = filteredSales.reduce((s, r) => s + getUnitDirectProfitWithVat(r) * getLineQuantity(r), 0);
   const totalTransactionBonus = filteredBonuses.reduce((s, r) => s + (r.bonus_value || 0), 0);
 
   // Brand breakdown
@@ -482,10 +496,10 @@ export default function SupplierDetail() {
       const brand = r.brand || "ללא מותג";
       if (!map[brand]) map[brand] = { sales: 0, cost: 0, profit: 0 };
       const saleTotal = (r.sale_price || 0) * (r.quantity || 1);
-      const costTotal = addVAT((r.cost_price || 0) * (r.quantity || 1));
+      const costTotal = addVAT((r.cost_price || 0) * getLineQuantity(r));
       map[brand].sales += saleTotal;
       map[brand].cost += costTotal;
-      map[brand].profit += addVAT((r.profit_direct || 0) * (r.quantity || 1));
+      map[brand].profit += getUnitDirectProfitWithVat(r) * getLineQuantity(r);
     });
     return Object.entries(map).map(([brand, data]) => ({
       brand,
@@ -688,7 +702,7 @@ export default function SupplierDetail() {
       const m = r.sale_date?.slice(0, 7) || "unknown";
       if (!map[m]) map[m] = { purchases: 0, sales: 0, profit: 0, final: 0 };
       map[m].sales += (r.sale_price || 0) * (r.quantity || 0);
-      map[m].profit += addVAT((r.profit_direct || 0) * (r.quantity || 1));
+      map[m].profit += getUnitDirectProfitWithVat(r) * getLineQuantity(r);
     });
     filteredBonuses.forEach((r) => {
       const m = r.transaction_date?.slice(0, 7) || "unknown";
@@ -1651,8 +1665,8 @@ export default function SupplierDetail() {
                     const soMap = new Map<string, { date: string; customer: string; zabiloId: string; items: typeof filteredSales; totalSale: number; totalProfit: number }>();
                     filteredSales.forEach((r: any) => {
                       const so = r.order_number || `_single_${r.id}`;
-                      const saleAmt = (r.sale_price || 0) * (r.quantity || 1);
-                      const profitAmt = addVAT((r.profit_direct || 0) * (r.quantity || 1));
+                      const saleAmt = (r.sale_price || 0) * getLineQuantity(r);
+                      const profitAmt = getUnitDirectProfitWithVat(r) * getLineQuantity(r);
                       const existing = soMap.get(so);
                       if (existing) {
                         existing.items.push(r);
@@ -1734,7 +1748,7 @@ export default function SupplierDetail() {
                                       <TableCell>{item.quantity || "-"}</TableCell>
                                       <TableCell>₪{fmtNum(item.sale_price || 0)}</TableCell>
                                       <TableCell>₪{fmtNum(addVAT(item.cost_price || 0))}</TableCell>
-                                      <TableCell>₪{fmtNum(addVAT(item.profit_direct || 0))}</TableCell>
+                                      <TableCell>₪{fmtNum(getUnitDirectProfitWithVat(item))}</TableCell>
                                     </TableRow>
                                   ))}
                                 </TableBody>
