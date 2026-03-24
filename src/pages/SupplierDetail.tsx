@@ -22,7 +22,7 @@ const VAT_RATE = 0.18;
 
 const bonusTypeLabels: Record<string, string> = {
   annual_target: "יעדים",
-  marketing: "שיווק",
+  marketing: "השתתפות בהוצאות פרסום",
   transaction: "עסקה",
   annual_fixed: "שנתי",
   network: "רשתי",
@@ -917,7 +917,7 @@ export default function SupplierDetail() {
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
             <Award className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-            <div className="text-xs text-muted-foreground">בונוס שיווק</div>
+            <div className="text-xs text-muted-foreground">השתתפות בהוצאות פרסום</div>
             <div className="text-sm font-bold">₪{fmtNum(bonusByTypeAndPayment.marketing.money + bonusByTypeAndPayment.marketing.goods)}</div>
             <div className="flex justify-center gap-2 mt-1 text-[10px] text-muted-foreground">
               <span>כספי: ₪{fmtNum(bonusByTypeAndPayment.marketing.money)}</span>
@@ -944,7 +944,7 @@ export default function SupplierDetail() {
             <div className="text-xs text-muted-foreground">רווח ישיר + בונוס כספי*</div>
             <div className="text-sm font-bold">₪{fmtNum(profitPlusMoneyBonus)}</div>
             <div className="text-xs text-muted-foreground">{totalSales > 0 ? `${((profitPlusMoneyBonus / totalSales) * 100).toFixed(1)}%` : "0%"}</div>
-            <div className="text-[10px] text-muted-foreground mt-1">*לא כולל בונוס שיווק</div>
+            <div className="text-[10px] text-muted-foreground mt-1">*לא כולל השתתפות בהוצאות פרסום</div>
           </CardContent>
         </Card>
         <Card className="border-primary/30 bg-primary/5">
@@ -1000,7 +1000,7 @@ export default function SupplierDetail() {
           <TabsList>
             <TabsTrigger value="annual_fixed">שנתי</TabsTrigger>
             <TabsTrigger value="annual_target">יעדים</TabsTrigger>
-            <TabsTrigger value="marketing">שיווק</TabsTrigger>
+            <TabsTrigger value="marketing">השתתפות בהוצאות פרסום</TabsTrigger>
             <TabsTrigger value="transaction">עסקה</TabsTrigger>
           </TabsList>
 
@@ -1316,7 +1316,7 @@ export default function SupplierDetail() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="annual_target">יעדים</SelectItem>
-                    <SelectItem value="marketing">שיווק</SelectItem>
+                    <SelectItem value="marketing">השתתפות בהוצאות פרסום</SelectItem>
                     <SelectItem value="annual_fixed">שנתי</SelectItem>
                   </SelectContent>
                 </Select>
