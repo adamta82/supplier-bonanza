@@ -11,6 +11,7 @@ const navItems = [
   { path: "/transactions", label: "בונוס עסקה", icon: TrendingUp },
   { path: "/upload", label: "העלאת נתונים", icon: Upload },
   { path: "/reports", label: "דוחות ורווחיות", icon: BarChart3 },
+  { path: "/historical", label: "נתונים היסטוריים", icon: History },
   { path: "/alerts", label: "התראות יעדים", icon: AlertTriangle },
   { path: "/errors", label: "שגויים", icon: CircleAlert },
   { path: "/reconciliation", label: "התאמת מסמכים", icon: FileCheck },

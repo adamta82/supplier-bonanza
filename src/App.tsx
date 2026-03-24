@@ -47,6 +47,7 @@ function ProtectedRoutes() {
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/reports" element={<Reports />} />
+        <Route path="/historical" element={<HistoricalData />} />
         <Route path="/alerts" element={<Alerts />} />
         <Route path="/errors" element={<Errors />} />
         <Route path="/reconciliation" element={<Reconciliation />} />
