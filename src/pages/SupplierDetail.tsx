@@ -22,7 +22,7 @@ const VAT_RATE = 0.18;
 
 const bonusTypeLabels: Record<string, string> = {
   annual_target: "יעדים",
-  marketing: "שיווק",
+  marketing: "השתתפות בהוצאות פרסום",
   transaction: "עסקה",
   annual_fixed: "שנתי",
   network: "רשתי",
