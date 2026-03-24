@@ -269,6 +269,59 @@ export type Database = {
         }
         Relationships: []
       }
+      historical_supplier_data: {
+        Row: {
+          cost_total: number | null
+          created_at: string
+          id: string
+          profit_amount: number | null
+          profit_margin: number | null
+          purchase_volume: number | null
+          record_count: number | null
+          sales_volume: number | null
+          supplier_id: string | null
+          supplier_name: string | null
+          supplier_number: string | null
+          year: number
+        }
+        Insert: {
+          cost_total?: number | null
+          created_at?: string
+          id?: string
+          profit_amount?: number | null
+          profit_margin?: number | null
+          purchase_volume?: number | null
+          record_count?: number | null
+          sales_volume?: number | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          supplier_number?: string | null
+          year: number
+        }
+        Update: {
+          cost_total?: number | null
+          created_at?: string
+          id?: string
+          profit_amount?: number | null
+          profit_margin?: number | null
+          purchase_volume?: number | null
+          record_count?: number | null
+          sales_volume?: number | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          supplier_number?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_supplier_data_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

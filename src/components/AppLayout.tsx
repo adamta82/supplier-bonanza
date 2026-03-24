@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Users, FileText, Upload, BarChart3, AlertTriangle, TrendingUp, CircleAlert, FileCheck, UserCog, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Upload, BarChart3, AlertTriangle, TrendingUp, CircleAlert, FileCheck, UserCog, LogOut, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ const navItems = [
   { path: "/transactions", label: "בונוס עסקה", icon: TrendingUp },
   { path: "/upload", label: "העלאת נתונים", icon: Upload },
   { path: "/reports", label: "דוחות ורווחיות", icon: BarChart3 },
+  { path: "/historical", label: "נתונים היסטוריים", icon: History },
   { path: "/alerts", label: "התראות יעדים", icon: AlertTriangle },
   { path: "/errors", label: "שגויים", icon: CircleAlert },
   { path: "/reconciliation", label: "התאמת מסמכים", icon: FileCheck },
