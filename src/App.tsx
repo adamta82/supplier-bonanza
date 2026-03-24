@@ -12,6 +12,7 @@ import Agreements from "@/pages/Agreements";
 import Transactions from "@/pages/Transactions";
 import UploadPage from "@/pages/Upload";
 import Reports from "@/pages/Reports";
+import HistoricalData from "@/pages/HistoricalData";
 import Alerts from "@/pages/Alerts";
 import Errors from "@/pages/Errors";
 import Reconciliation from "@/pages/Reconciliation";
