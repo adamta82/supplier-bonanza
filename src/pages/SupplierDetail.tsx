@@ -1000,7 +1000,7 @@ export default function SupplierDetail() {
           <TabsList>
             <TabsTrigger value="annual_fixed">שנתי</TabsTrigger>
             <TabsTrigger value="annual_target">יעדים</TabsTrigger>
-            <TabsTrigger value="marketing">שיווק</TabsTrigger>
+            <TabsTrigger value="marketing">השתתפות בהוצאות פרסום</TabsTrigger>
             <TabsTrigger value="transaction">עסקה</TabsTrigger>
           </TabsList>
 
