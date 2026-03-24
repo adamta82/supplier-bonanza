@@ -1316,7 +1316,7 @@ export default function SupplierDetail() {
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="annual_target">יעדים</SelectItem>
-                    <SelectItem value="marketing">שיווק</SelectItem>
+                    <SelectItem value="marketing">השתתפות בהוצאות פרסום</SelectItem>
                     <SelectItem value="annual_fixed">שנתי</SelectItem>
                   </SelectContent>
                 </Select>
