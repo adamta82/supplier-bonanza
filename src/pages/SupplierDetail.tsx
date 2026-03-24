@@ -917,7 +917,7 @@ export default function SupplierDetail() {
         <Card>
           <CardContent className="pt-4 pb-4 text-center">
             <Award className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
-            <div className="text-xs text-muted-foreground">בונוס שיווק</div>
+            <div className="text-xs text-muted-foreground">השתתפות בהוצאות פרסום</div>
             <div className="text-sm font-bold">₪{fmtNum(bonusByTypeAndPayment.marketing.money + bonusByTypeAndPayment.marketing.goods)}</div>
             <div className="flex justify-center gap-2 mt-1 text-[10px] text-muted-foreground">
               <span>כספי: ₪{fmtNum(bonusByTypeAndPayment.marketing.money)}</span>
