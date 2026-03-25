@@ -1298,6 +1298,9 @@ export default function SupplierDetail() {
               </Card>
             </div>
           </TabsContent>
+
+          {/* Shekel Campaign Tab */}
+          <ShekelCampaignTab supplierId={id!} />
         </Tabs>
       </div>
 
