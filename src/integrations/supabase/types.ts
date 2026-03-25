@@ -524,6 +524,89 @@ export type Database = {
           },
         ]
       }
+      shekel_campaign_exclusions: {
+        Row: {
+          campaign_setting_id: string
+          excluded_at: string
+          gift_status: string
+          id: string
+          purchase_record_id: string
+        }
+        Insert: {
+          campaign_setting_id: string
+          excluded_at?: string
+          gift_status?: string
+          id?: string
+          purchase_record_id: string
+        }
+        Update: {
+          campaign_setting_id?: string
+          excluded_at?: string
+          gift_status?: string
+          id?: string
+          purchase_record_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shekel_campaign_exclusions_campaign_setting_id_fkey"
+            columns: ["campaign_setting_id"]
+            isOneToOne: false
+            referencedRelation: "shekel_campaign_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shekel_campaign_exclusions_purchase_record_id_fkey"
+            columns: ["purchase_record_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shekel_campaign_settings: {
+        Row: {
+          campaign_name: string
+          created_at: string
+          end_date: string
+          id: string
+          is_active: boolean
+          start_date: string
+          supplier_id: string
+          threshold_amount: number
+          updated_at: string
+        }
+        Insert: {
+          campaign_name: string
+          created_at?: string
+          end_date: string
+          id?: string
+          is_active?: boolean
+          start_date: string
+          supplier_id: string
+          threshold_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          campaign_name?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          start_date?: string
+          supplier_id?: string
+          threshold_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shekel_campaign_settings_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_invoice_items: {
         Row: {
           created_at: string

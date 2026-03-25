@@ -17,6 +17,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/utils";
+import ShekelCampaignTab from "@/components/ShekelCampaignTab";
 
 const VAT_RATE = 0.18;
 
@@ -998,6 +999,7 @@ export default function SupplierDetail() {
             <TabsTrigger value="annual_target">יעדים</TabsTrigger>
             <TabsTrigger value="marketing">השתתפות בהוצאות פרסום</TabsTrigger>
             <TabsTrigger value="transaction">עסקה</TabsTrigger>
+            <TabsTrigger value="shekel">מבצע שקל</TabsTrigger>
           </TabsList>
 
           {["annual_fixed", "annual_target", "marketing"].map((tabType) => {
@@ -1297,6 +1299,9 @@ export default function SupplierDetail() {
               </Card>
             </div>
           </TabsContent>
+
+          {/* Shekel Campaign Tab */}
+          <ShekelCampaignTab supplierId={id!} />
         </Tabs>
       </div>
 
