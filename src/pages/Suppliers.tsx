@@ -119,8 +119,8 @@ export default function Suppliers() {
   };
 
   // Check if supplier has specific agreement types
-  const hasAgreementType = (supplierId: string, type: string) => {
-    return agreements?.some((a) => a.supplier_id === supplierId && a.bonus_type === type);
+  const hasAgreementType = (supplierId: string, types: string[]) => {
+    return agreements?.some((a) => a.supplier_id === supplierId && types.includes(a.bonus_type));
   };
 
 
