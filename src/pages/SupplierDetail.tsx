@@ -195,7 +195,7 @@ export default function SupplierDetail() {
         fixed_amount: agreementForm.fixed_amount ? parseFloat(agreementForm.fixed_amount) : null,
         fixed_percentage: agreementForm.fixed_percentage ? parseFloat(agreementForm.fixed_percentage) : null,
         notes: agreementForm.notes || null,
-        bonus_payment_type: agreementForm.bonus_payment_type,
+        bonus_payment_type: agreementForm.bonus_type === "annual_fixed" ? "money" : agreementForm.bonus_payment_type,
         exclusions: exclusions.length > 0 ? JSON.stringify(exclusions) : "[]",
       };
       let agreementId = agreementEditId;
