@@ -11,8 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Pencil, FileCheck, Award, CheckCircle, XCircle, Clock } from "lucide-react";
-import { formatDate } from "@/lib/formatDate";
+import { Plus, Search, Pencil, CheckCircle } from "lucide-react";
 
 type SupplierForm = {
   name: string;
