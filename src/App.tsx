@@ -13,6 +13,7 @@ import Transactions from "@/pages/Transactions";
 import UploadPage from "@/pages/Upload";
 import Reports from "@/pages/Reports";
 import HistoricalData from "@/pages/HistoricalData";
+import ShekelCampaign from "@/pages/ShekelCampaign";
 import Alerts from "@/pages/Alerts";
 import Errors from "@/pages/Errors";
 import Reconciliation from "@/pages/Reconciliation";
@@ -48,6 +49,7 @@ function ProtectedRoutes() {
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/historical" element={<HistoricalData />} />
+        <Route path="/shekel-campaign" element={<ShekelCampaign />} />
         <Route path="/alerts" element={<Alerts />} />
         <Route path="/errors" element={<Errors />} />
         <Route path="/reconciliation" element={<Reconciliation />} />
