@@ -119,8 +119,8 @@ export default function Suppliers() {
   };
 
   // Check if supplier has specific agreement types
-  const hasAgreementType = (supplierId: string, type: string) => {
-    return agreements?.some((a) => a.supplier_id === supplierId && a.bonus_type === type);
+  const hasAgreementType = (supplierId: string, types: string[]) => {
+    return agreements?.some((a) => a.supplier_id === supplierId && types.includes(a.bonus_type));
   };
 
 
@@ -221,21 +221,21 @@ export default function Suppliers() {
                       <Link to={`/suppliers/${s.id}`} className="text-primary hover:underline">{s.name}</Link>
                     </TableCell>
                     <TableCell>
-                      {hasAgreementType(s.id, "annual") ? (
+                      {hasAgreementType(s.id, ["annual_fixed"]) ? (
                         <Badge variant="default" className="gap-1"><CheckCircle className="w-3 h-3" />יש</Badge>
                       ) : (
                         <Badge variant="outline" className="gap-1 text-muted-foreground">אין</Badge>
                       )}
                     </TableCell>
                     <TableCell>
-                      {hasAgreementType(s.id, "target") ? (
+                      {hasAgreementType(s.id, ["annual_target"]) ? (
                         <Badge variant="default" className="gap-1"><CheckCircle className="w-3 h-3" />יש</Badge>
                       ) : (
                         <Badge variant="outline" className="gap-1 text-muted-foreground">אין</Badge>
                       )}
                     </TableCell>
                     <TableCell>
-                      {hasAgreementType(s.id, "marketing") ? (
+                      {hasAgreementType(s.id, ["marketing"]) ? (
                         <Badge variant="default" className="gap-1"><CheckCircle className="w-3 h-3" />יש</Badge>
                       ) : (
                         <Badge variant="outline" className="gap-1 text-muted-foreground">אין</Badge>
