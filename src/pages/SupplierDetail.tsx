@@ -195,7 +195,7 @@ export default function SupplierDetail() {
         fixed_amount: agreementForm.fixed_amount ? parseFloat(agreementForm.fixed_amount) : null,
         fixed_percentage: agreementForm.fixed_percentage ? parseFloat(agreementForm.fixed_percentage) : null,
         notes: agreementForm.notes || null,
-        bonus_payment_type: agreementForm.bonus_payment_type,
+        bonus_payment_type: agreementForm.bonus_type === "annual_fixed" ? "money" : agreementForm.bonus_payment_type,
         exclusions: exclusions.length > 0 ? JSON.stringify(exclusions) : "[]",
       };
       let agreementId = agreementEditId;
@@ -895,11 +895,7 @@ export default function SupplierDetail() {
             <Award className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
             <div className="text-xs text-muted-foreground">בונוס שנתי</div>
             <div className="text-sm font-bold">₪{fmtNum(bonusByTypeAndPayment.annual_fixed.money + bonusByTypeAndPayment.annual_fixed.goods)}</div>
-            <div className="flex justify-center gap-2 mt-1 text-[10px] text-muted-foreground">
-              <span>כספי: ₪{fmtNum(bonusByTypeAndPayment.annual_fixed.money)}</span>
-              <span>|</span>
-              <span>סחורה: ₪{fmtNum(bonusByTypeAndPayment.annual_fixed.goods)}</span>
-            </div>
+            <div className="text-[10px] text-muted-foreground mt-1">כספי</div>
           </CardContent>
         </Card>
         <Card>
@@ -1085,9 +1081,11 @@ export default function SupplierDetail() {
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <Badge variant="secondary">{bonusTypeLabels[agreement.bonus_type] || agreement.bonus_type}</Badge>
-                                <Badge variant={agreement.bonus_payment_type === "money" ? "outline" : "default"}>
-                                  {agreement.bonus_payment_type === "money" ? "כסף" : "סחורה"}
-                                </Badge>
+                                {agreement.bonus_type !== "annual_fixed" && (
+                                  <Badge variant={agreement.bonus_payment_type === "money" ? "outline" : "default"}>
+                                    {agreement.bonus_payment_type === "money" ? "כסף" : "סחורה"}
+                                  </Badge>
+                                )}
                                 {agreement.period_start && agreement.period_end && (
                                   <span className="text-xs text-muted-foreground">
                                     {formatDate(agreement.period_start)} - {formatDate(agreement.period_end)}
@@ -1321,16 +1319,18 @@ export default function SupplierDetail() {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label>אופן קבלת הבונוס</Label>
-                <Select value={agreementForm.bonus_payment_type} onValueChange={(v) => setAgreementForm({ ...agreementForm, bonus_payment_type: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="goods">סחורה</SelectItem>
-                    <SelectItem value="money">כסף</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {agreementForm.bonus_type !== "annual_fixed" && (
+                <div>
+                  <Label>אופן קבלת הבונוס</Label>
+                  <Select value={agreementForm.bonus_payment_type} onValueChange={(v) => setAgreementForm({ ...agreementForm, bonus_payment_type: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="goods">סחורה</SelectItem>
+                      <SelectItem value="money">כסף</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
