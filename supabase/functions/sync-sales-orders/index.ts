@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { lookupPreferredSuppliersByItemCodes, PRIORITY_BASE_URL } from "../_shared/priority-supplier-lookup.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,8 +7,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const PRIORITY_BASE_URL =
-  "https://bsb.netrun.co.il/odata/Priority/tabula.ini/zabilo";
 const PAGE_SIZE = 500;
 const EXCLUDED_STATUSES = [
   "איזור מרוחק",
@@ -118,6 +117,20 @@ Deno.serve(async (req) => {
       }
     });
 
+    const { data: orphanItemCodesRows } = await supabaseAdmin
+      .from("sales_records")
+      .select("item_code")
+      .is("supplier_id", null)
+      .is("supplier_name", null)
+      .not("item_code", "is", null);
+
+    const logpartSupplierCache = await lookupPreferredSuppliersByItemCodes({
+      itemCodes: [
+        ...(orphanItemCodesRows || []).map((row: any) => row.item_code as string),
+      ],
+      basicAuth,
+    });
+
     // Load purchase_records to build SO -> supplier mapping via customer_po
     // customer_po in purchase_records = the SO number of the linked sales order
     const { data: purchaseLinks } = await supabaseAdmin
@@ -217,9 +230,21 @@ Deno.serve(async (req) => {
           // If no supplier from PO link, try SUPNAME from the line item
           let suppId = supplierInfo?.id || null;
           let suppName = supplierInfo?.name || null;
+          let suppNumber = supplierInfo?.number || null;
+
           if (!suppId && item.SUPNAME) {
             suppId = supplierIdMap.get(item.SUPNAME) || null;
             suppName = supplierNameMap.get(item.SUPNAME) || item.SUPNAME;
+            suppNumber = item.SUPNAME;
+          }
+
+          if (!suppName && item.PARTNAME) {
+            const preferredSupplier = logpartSupplierCache.get(item.PARTNAME);
+            if (preferredSupplier) {
+              suppId = supplierIdMap.get(preferredSupplier.supplierNumber) || null;
+              suppName = supplierNameMap.get(preferredSupplier.supplierNumber) || preferredSupplier.supplierName;
+              suppNumber = preferredSupplier.supplierNumber;
+            }
           }
 
           // PURCHASEPRICE and QPROFIT are before VAT, add 18%
