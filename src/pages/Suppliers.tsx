@@ -123,24 +123,6 @@ export default function Suppliers() {
     return agreements?.some((a) => a.supplier_id === supplierId && a.bonus_type === type);
   };
 
-  const getAnnualBonusIcon = (status: string | null) => {
-    switch (status) {
-      case "received":
-        return <CheckCircle className="w-4 h-4 text-primary" />;
-      case "none":
-        return <XCircle className="w-4 h-4 text-muted-foreground" />;
-      default: // pending
-        return <Clock className="w-4 h-4 text-destructive" />;
-    }
-  };
-
-  const getAnnualBonusLabel = (status: string | null) => {
-    switch (status) {
-      case "received": return "התקבל";
-      case "none": return "אין";
-      default: return "ממתין";
-    }
-  };
 
   return (
     <div className="space-y-6">
