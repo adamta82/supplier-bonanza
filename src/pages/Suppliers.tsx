@@ -43,11 +43,11 @@ export default function Suppliers() {
     },
   });
 
-  // Fetch agreements to check which suppliers have them
+  // Fetch agreements to check which suppliers have them by type
   const { data: agreements } = useQuery({
     queryKey: ["all-agreements-summary"],
     queryFn: async () => {
-      const { data } = await supabase.from("bonus_agreements").select("supplier_id, is_active");
+      const { data } = await supabase.from("bonus_agreements").select("supplier_id, is_active, bonus_type");
       return data || [];
     },
   });
@@ -119,9 +119,9 @@ export default function Suppliers() {
     setIsOpen(true);
   };
 
-  // Check if supplier has agreements
-  const hasAgreements = (supplierId: string) => {
-    return agreements?.some((a) => a.supplier_id === supplierId);
+  // Check if supplier has specific agreement types
+  const hasAgreementType = (supplierId: string, type: string) => {
+    return agreements?.some((a) => a.supplier_id === supplierId && a.bonus_type === type);
   };
 
   const getAnnualBonusIcon = (status: string | null) => {
@@ -222,43 +222,42 @@ export default function Suppliers() {
             <TableHeader>
               <TableRow>
                 <TableHead>שם ספק</TableHead>
-                <TableHead>מספר ספק</TableHead>
-                <TableHead>הסכמים</TableHead>
-                <TableHead>בונוס 2025</TableHead>
-                <TableHead>תיאום כרטסת</TableHead>
+                <TableHead>בונוס שנתי</TableHead>
+                <TableHead>בונוס יעדים</TableHead>
+                <TableHead>השתתפות בפרסום</TableHead>
                 <TableHead>פעולות</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8">טוען...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center py-8">טוען...</TableCell></TableRow>
               ) : filtered?.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">אין ספקים. העלה דוח רכישות כדי להתחיל.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">אין ספקים. העלה דוח רכישות כדי להתחיל.</TableCell></TableRow>
               ) : (
                 filtered?.map((s: any) => (
                   <TableRow key={s.id}>
                     <TableCell className="font-medium">
                       <Link to={`/suppliers/${s.id}`} className="text-primary hover:underline">{s.name}</Link>
                     </TableCell>
-                    <TableCell>{s.supplier_number || "-"}</TableCell>
                     <TableCell>
-                      {hasAgreements(s.id) ? (
-                        <Badge variant="default" className="gap-1"><FileCheck className="w-3 h-3" />יש</Badge>
+                      {hasAgreementType(s.id, "annual") ? (
+                        <Badge variant="default" className="gap-1"><CheckCircle className="w-3 h-3" />יש</Badge>
                       ) : (
                         <Badge variant="outline" className="gap-1 text-muted-foreground">אין</Badge>
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        {getAnnualBonusIcon(s.annual_bonus_status)}
-                        <span className="text-xs">{getAnnualBonusLabel(s.annual_bonus_status)}</span>
-                      </div>
+                      {hasAgreementType(s.id, "target") ? (
+                        <Badge variant="default" className="gap-1"><CheckCircle className="w-3 h-3" />יש</Badge>
+                      ) : (
+                        <Badge variant="outline" className="gap-1 text-muted-foreground">אין</Badge>
+                      )}
                     </TableCell>
                     <TableCell>
-                      {s.reconciliation_date ? (
-                        <span className="text-xs">עד {formatDate(s.reconciliation_date)}</span>
+                      {hasAgreementType(s.id, "marketing") ? (
+                        <Badge variant="default" className="gap-1"><CheckCircle className="w-3 h-3" />יש</Badge>
                       ) : (
-                        <span className="text-xs text-muted-foreground">לא תואם</span>
+                        <Badge variant="outline" className="gap-1 text-muted-foreground">אין</Badge>
                       )}
                     </TableCell>
                     <TableCell>
