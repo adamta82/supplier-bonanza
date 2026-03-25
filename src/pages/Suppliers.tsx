@@ -221,21 +221,21 @@ export default function Suppliers() {
                       <Link to={`/suppliers/${s.id}`} className="text-primary hover:underline">{s.name}</Link>
                     </TableCell>
                     <TableCell>
-                      {hasAgreementType(s.id, "annual") ? (
+                      {hasAgreementType(s.id, ["annual_fixed"]) ? (
                         <Badge variant="default" className="gap-1"><CheckCircle className="w-3 h-3" />יש</Badge>
                       ) : (
                         <Badge variant="outline" className="gap-1 text-muted-foreground">אין</Badge>
                       )}
                     </TableCell>
                     <TableCell>
-                      {hasAgreementType(s.id, "target") ? (
+                      {hasAgreementType(s.id, ["annual_target"]) ? (
                         <Badge variant="default" className="gap-1"><CheckCircle className="w-3 h-3" />יש</Badge>
                       ) : (
                         <Badge variant="outline" className="gap-1 text-muted-foreground">אין</Badge>
                       )}
                     </TableCell>
                     <TableCell>
-                      {hasAgreementType(s.id, "marketing") ? (
+                      {hasAgreementType(s.id, ["marketing"]) ? (
                         <Badge variant="default" className="gap-1"><CheckCircle className="w-3 h-3" />יש</Badge>
                       ) : (
                         <Badge variant="outline" className="gap-1 text-muted-foreground">אין</Badge>
