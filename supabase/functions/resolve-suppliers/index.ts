@@ -1,13 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { lookupPreferredSuppliersByItemCodes } from "../_shared/priority-supplier-lookup.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-
-const PRIORITY_BASE_URL =
-  "https://bsb.netrun.co.il/odata/Priority/tabula.ini/zabilo";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -92,73 +90,14 @@ Deno.serve(async (req) => {
       }
     });
 
-    // Deduplicate item codes
-    const uniqueCodes = [...new Set(itemCodes)];
+    const uniqueCodes = [...new Set(itemCodes.filter(Boolean))];
     let resolved = 0;
-    let notFound = 0;
     let errors = 0;
-
-    // Process in batches of 10 to avoid overwhelming Priority
-    const BATCH_SIZE = 10;
-    // Cache: item_code -> { supplierNumber, supplierName }
-    const cache = new Map<string, { supplierNumber: string; supplierName: string } | null>();
-
-    for (let i = 0; i < uniqueCodes.length; i += BATCH_SIZE) {
-      const batch = uniqueCodes.slice(i, i + BATCH_SIZE);
-
-      // Query Priority for each item code in parallel
-      const results = await Promise.allSettled(
-        batch.map(async (code) => {
-          const encodedCode = encodeURIComponent(`'${code}'`);
-          const url = `${PRIORITY_BASE_URL}/LOGPART?$filter=PARTNAME eq ${encodedCode}&$select=PARTNAME,SUPNAME,SUPDES&$top=1`;
-
-          const response = await fetch(url, {
-            method: "GET",
-            headers: {
-              Authorization: `Basic ${basicAuth}`,
-              Accept: "application/json",
-            },
-          });
-
-          if (!response.ok) {
-            console.error(`LOGPART query failed for ${code}: ${response.status}`);
-            return { code, supplier: null, error: true };
-          }
-
-          const data = await response.json();
-          const parts = data.value || [];
-          if (parts.length === 0 || !parts[0].SUPNAME) {
-            return { code, supplier: null, error: false };
-          }
-
-          return {
-            code,
-            supplier: {
-              supplierNumber: parts[0].SUPNAME,
-              supplierName: parts[0].SUPDES || parts[0].SUPNAME,
-            },
-            error: false,
-          };
-        })
-      );
-
-      for (const result of results) {
-        if (result.status === "rejected") {
-          errors++;
-          continue;
-        }
-        const { code, supplier, error } = result.value;
-        if (error) {
-          errors++;
-          cache.set(code, null);
-        } else if (!supplier) {
-          notFound++;
-          cache.set(code, null);
-        } else {
-          cache.set(code, supplier);
-        }
-      }
-    }
+    const cache = await lookupPreferredSuppliersByItemCodes({
+      itemCodes: uniqueCodes,
+      basicAuth,
+    });
+    const notFound = [...cache.values()].filter((supplier) => !supplier).length;
 
     // Now update sales_records using the cache
     for (const [itemCode, supplierInfo] of cache.entries()) {
@@ -193,7 +132,7 @@ Deno.serve(async (req) => {
         resolved,
         not_found: notFound,
         errors,
-        total_codes: uniqueCodes.length,
+         total_codes: uniqueCodes.length,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
