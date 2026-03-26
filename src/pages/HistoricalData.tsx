@@ -1,12 +1,12 @@
 import { useState, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowUpDown, ArrowUp, ArrowDown, History, Loader2, Upload, Save } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ArrowUpDown, ArrowUp, ArrowDown, History, Loader2, Save, ChevronDown, ChevronUp, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/utils";
 import FileUploadPreview from "@/components/FileUploadPreview";
@@ -24,7 +24,10 @@ type SortDir = "asc" | "desc";
 const currentYear = new Date().getFullYear();
 const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
-const emptyFilters: Filters = { suppliers: [], statuses: [], dateFrom: "", dateTo: "" };
+const emptyFilters: Filters = {
+  purchase: { suppliers: [], statuses: [], dateFrom: "", dateTo: "" },
+  sales: { suppliers: [], statuses: [], dateFrom: "", dateTo: "" },
+};
 
 export default function HistoricalData() {
   const [selectedYear, setSelectedYear] = useState(String(currentYear - 1));
@@ -32,38 +35,47 @@ export default function HistoricalData() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [purchaseParsed, setPurchaseParsed] = useState<ParsedFile | null>(null);
   const [salesParsed, setSalesParsed] = useState<ParsedFile | null>(null);
+  const [purchaseUploadTime, setPurchaseUploadTime] = useState<Date | null>(null);
+  const [salesUploadTime, setSalesUploadTime] = useState<Date | null>(null);
+  const [uploadsOpen, setUploadsOpen] = useState(true);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const queryClient = useQueryClient();
 
-  // Collect unique values for filter dropdowns
-  const availableSuppliers = useMemo(() => {
-    const all: string[] = [];
-    if (purchaseParsed) all.push(...getUniqueValues(purchaseParsed.data, P_SUPPLIER_NAME));
-    if (salesParsed) all.push(...getUniqueValues(salesParsed.data, S_SUPPLIER));
-    return [...new Set(all)].sort((a, b) => a.localeCompare(b, "he"));
-  }, [purchaseParsed, salesParsed]);
+  const hasUploads = purchaseParsed || salesParsed;
 
-  const availableStatuses = useMemo(() => {
-    const all: string[] = [];
-    if (purchaseParsed) all.push(...getUniqueValues(purchaseParsed.data, P_STATUS));
-    if (salesParsed) all.push(...getUniqueValues(salesParsed.data, S_STATUS));
-    return [...new Set(all)].sort((a, b) => a.localeCompare(b, "he"));
-  }, [purchaseParsed, salesParsed]);
+  // Auto-collapse after both uploaded
+  const handlePurchaseUpload = (data: ParsedFile) => {
+    setPurchaseParsed(data);
+    setPurchaseUploadTime(new Date());
+    if (salesParsed) setUploadsOpen(false);
+  };
+  const handleSalesUpload = (data: ParsedFile) => {
+    setSalesParsed(data);
+    setSalesUploadTime(new Date());
+    if (purchaseParsed) setUploadsOpen(false);
+  };
+
+  const formatTime = (d: Date | null) => d ? d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : null;
+
+  // Filter dropdown options
+  const purchaseSuppliers = useMemo(() => purchaseParsed ? getUniqueValues(purchaseParsed.data, P_SUPPLIER_NAME) : [], [purchaseParsed]);
+  const purchaseStatuses = useMemo(() => purchaseParsed ? getUniqueValues(purchaseParsed.data, P_STATUS) : [], [purchaseParsed]);
+  const salesSuppliers = useMemo(() => salesParsed ? getUniqueValues(salesParsed.data, S_SUPPLIER) : [], [salesParsed]);
+  const salesStatuses = useMemo(() => salesParsed ? getUniqueValues(salesParsed.data, S_STATUS) : [], [salesParsed]);
 
   // Process and aggregate
   const aggregated = useMemo<SupplierAggregate[]>(() => {
     if (!purchaseParsed && !salesParsed) return [];
 
     const purchaseMap = purchaseParsed
-      ? processPurchases(purchaseParsed, filters)
+      ? processPurchases(purchaseParsed, filters.purchase)
       : new Map();
 
-    // Build supplier number -> name map from purchases
     const supNameMap = new Map<string, string>();
     purchaseMap.forEach((v, k) => supNameMap.set(k, v.name));
 
     const salesMap = salesParsed
-      ? processSales(salesParsed, purchaseParsed, supNameMap, filters)
+      ? processSales(salesParsed, purchaseParsed, supNameMap, filters.sales)
       : new Map();
 
     return aggregateSuppliers(purchaseMap, salesMap);
@@ -73,18 +85,13 @@ export default function HistoricalData() {
   const sortedData = useMemo(() => {
     return [...aggregated].sort((a, b) => {
       const fieldMap: Record<SortField, keyof SupplierAggregate> = {
-        name: "supplierName",
-        purchaseVolume: "purchaseVolume",
-        salesVolume: "salesVolume",
-        profitAmount: "profitAmount",
-        profitMargin: "profitMargin",
+        name: "supplierName", purchaseVolume: "purchaseVolume",
+        salesVolume: "salesVolume", profitAmount: "profitAmount", profitMargin: "profitMargin",
       };
       const key = fieldMap[sortField];
-      const aVal = a[key];
-      const bVal = b[key];
-      if (typeof aVal === "string" && typeof bVal === "string") {
+      const aVal = a[key], bVal = b[key];
+      if (typeof aVal === "string" && typeof bVal === "string")
         return sortDir === "asc" ? aVal.localeCompare(bVal, "he") : bVal.localeCompare(aVal, "he");
-      }
       return sortDir === "asc" ? (Number(aVal) || 0) - (Number(bVal) || 0) : (Number(bVal) || 0) - (Number(aVal) || 0);
     });
   }, [aggregated, sortField, sortDir]);
@@ -94,37 +101,25 @@ export default function HistoricalData() {
     const purchases = sortedData.reduce((s, r) => s + r.purchaseVolume, 0);
     const sales = sortedData.reduce((s, r) => s + r.salesVolume, 0);
     const profit = sortedData.reduce((s, r) => s + r.profitAmount, 0);
-    const margin = sales > 0 ? (profit / sales) * 100 : 0;
-    return { purchases, sales, profit, margin };
+    return { purchases, sales, profit, margin: sales > 0 ? (profit / sales) * 100 : 0 };
   }, [sortedData]);
 
   // Save to DB
   const saveMutation = useMutation({
     mutationFn: async () => {
       const year = Number(selectedYear);
-      // Delete existing year data
       await supabase.from("historical_supplier_data").delete().eq("year", year);
-
-      // Get suppliers for ID mapping
       const { data: suppliers } = await supabase.from("suppliers").select("id, supplier_number, name");
       const supIdMap = new Map<string, string>();
-      for (const s of suppliers || []) {
-        if (s.supplier_number) supIdMap.set(s.supplier_number, s.id);
-      }
+      for (const s of suppliers || []) { if (s.supplier_number) supIdMap.set(s.supplier_number, s.id); }
 
       const rows = sortedData.map((r) => ({
-        year,
-        supplier_number: r.supplierNumber,
-        supplier_name: r.supplierName,
+        year, supplier_number: r.supplierNumber, supplier_name: r.supplierName,
         supplier_id: supIdMap.get(r.supplierNumber) || null,
-        purchase_volume: r.purchaseVolume,
-        sales_volume: r.salesVolume,
-        cost_total: r.costTotal,
-        profit_amount: r.profitAmount,
-        profit_margin: r.profitMargin,
-        record_count: r.recordCount,
+        purchase_volume: r.purchaseVolume, sales_volume: r.salesVolume,
+        cost_total: r.costTotal, profit_amount: r.profitAmount,
+        profit_margin: r.profitMargin, record_count: r.recordCount,
       }));
-
       if (rows.length) {
         const { error } = await supabase.from("historical_supplier_data").insert(rows);
         if (error) throw error;
@@ -171,82 +166,88 @@ export default function HistoricalData() {
         </div>
       </div>
 
-      {/* Upload areas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <FileUploadPreview
-          title="הזמנות רכש"
-          description="העלה קובץ אקסל עם הזמנות רכש לשנה הנבחרת"
-          buttonLabel="טען נתוני רכש"
-          onUpload={(data) => setPurchaseParsed(data)}
-          isUploading={false}
-        />
-        <FileUploadPreview
-          title="הזמנות לקוח (מכירות)"
-          description="העלה קובץ אקסל עם הזמנות לקוח לשנה הנבחרת"
-          buttonLabel="טען נתוני מכירות"
-          onUpload={(data) => setSalesParsed(data)}
-          isUploading={false}
-        />
-      </div>
+      {/* Collapsible Upload Section */}
+      <Collapsible open={uploadsOpen} onOpenChange={setUploadsOpen}>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Upload className="w-5 h-5 text-primary" />
+                  <CardTitle className="text-base">העלאת קבצים</CardTitle>
+                  {hasUploads && !uploadsOpen && (
+                    <div className="flex gap-2 mr-3">
+                      {purchaseParsed && (
+                        <span className="text-xs text-muted-foreground">
+                          רכשים: {purchaseParsed.data.length} שורות ({formatTime(purchaseUploadTime)})
+                        </span>
+                      )}
+                      {salesParsed && (
+                        <span className="text-xs text-muted-foreground">
+                          | מכירות: {salesParsed.data.length} שורות ({formatTime(salesUploadTime)})
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {uploadsOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <FileUploadPreview
+                  title="הזמנות רכש"
+                  description="העלה קובץ אקסל עם הזמנות רכש לשנה הנבחרת"
+                  buttonLabel="טען נתוני רכש"
+                  onUpload={handlePurchaseUpload}
+                  isUploading={false}
+                />
+                <FileUploadPreview
+                  title="הזמנות לקוח (מכירות)"
+                  description="העלה קובץ אקסל עם הזמנות לקוח לשנה הנבחרת"
+                  buttonLabel="טען נתוני מכירות"
+                  onUpload={handleSalesUpload}
+                  isUploading={false}
+                />
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
-      {/* Status badges */}
-      {(purchaseParsed || salesParsed) && (
-        <div className="flex gap-2 text-sm">
-          {purchaseParsed && (
-            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-              רכשים: {purchaseParsed.data.length} שורות
-            </span>
-          )}
-          {salesParsed && (
-            <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
-              מכירות: {salesParsed.data.length} שורות
-            </span>
-          )}
-          {aggregated.length > 0 && (
-            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
-              {aggregated.length} ספקים
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Filters */}
-      {(purchaseParsed || salesParsed) && (
+      {/* Filters - separated purchase/sales */}
+      {hasUploads && (
         <HistoricalFilters
           filters={filters}
           onChange={setFilters}
-          availableSuppliers={availableSuppliers}
-          availableStatuses={availableStatuses}
+          purchaseSuppliers={purchaseSuppliers}
+          purchaseStatuses={purchaseStatuses}
+          salesSuppliers={salesSuppliers}
+          salesStatuses={salesStatuses}
         />
       )}
 
       {/* KPI Summary */}
       {sortedData.length > 0 && (
         <div className="grid grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-4 pb-4">
-              <p className="text-xs text-muted-foreground">סה"כ רכישות</p>
-              <p className="text-xl font-bold">₪{fmtNum(totals.purchases)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 pb-4">
-              <p className="text-xs text-muted-foreground">סה"כ מכירות</p>
-              <p className="text-xl font-bold">₪{fmtNum(totals.sales)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 pb-4">
-              <p className="text-xs text-muted-foreground">סה"כ רווח</p>
-              <p className="text-xl font-bold text-success">₪{fmtNum(totals.profit)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 pb-4">
-              <p className="text-xs text-muted-foreground">אחוז רווח כללי</p>
-              <p className="text-xl font-bold">{totals.margin.toFixed(1)}%</p>
-            </CardContent>
-          </Card>
+          <Card><CardContent className="pt-4 pb-4">
+            <p className="text-xs text-muted-foreground">סה"כ רכישות</p>
+            <p className="text-xl font-bold">₪{fmtNum(totals.purchases)}</p>
+          </CardContent></Card>
+          <Card><CardContent className="pt-4 pb-4">
+            <p className="text-xs text-muted-foreground">סה"כ מכירות</p>
+            <p className="text-xl font-bold">₪{fmtNum(totals.sales)}</p>
+          </CardContent></Card>
+          <Card><CardContent className="pt-4 pb-4">
+            <p className="text-xs text-muted-foreground">סה"כ רווח</p>
+            <p className="text-xl font-bold text-success">₪{fmtNum(totals.profit)}</p>
+          </CardContent></Card>
+          <Card><CardContent className="pt-4 pb-4">
+            <p className="text-xs text-muted-foreground">אחוז רווח כללי</p>
+            <p className="text-xl font-bold">{totals.margin.toFixed(1)}%</p>
+          </CardContent></Card>
         </div>
       )}
 

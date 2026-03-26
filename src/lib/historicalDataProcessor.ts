@@ -1,10 +1,15 @@
 import type { ParsedFile } from "./parseExcelFile";
 
-export interface HistoricalFilters {
+export interface SingleFilters {
   suppliers: string[];
   statuses: string[];
   dateFrom: string;
   dateTo: string;
+}
+
+export interface HistoricalFilters {
+  purchase: SingleFilters;
+  sales: SingleFilters;
 }
 
 export interface SupplierAggregate {
@@ -43,7 +48,7 @@ function matchesFilters(
   dateCol: string,
   statusCol: string,
   supplierCol: string,
-  filters: HistoricalFilters
+  filters: SingleFilters
 ): boolean {
   if (filters.statuses.length > 0) {
     const status = String(row[statusCol] || "").trim();
@@ -92,7 +97,7 @@ const S_SUPPLIER = "ספק מועדף";
 
 export function processPurchases(
   parsed: ParsedFile,
-  filters: HistoricalFilters
+  filters: SingleFilters
 ): Map<string, { name: string; volume: number; count: number }> {
   const map = new Map<string, { name: string; volume: number; count: number }>();
 
@@ -148,7 +153,7 @@ export function processSales(
   salesParsed: ParsedFile,
   purchaseParsed: ParsedFile | null,
   purchaseSupplierNames: Map<string, string>,
-  filters: HistoricalFilters
+  filters: SingleFilters
 ): Map<string, { name: string; salesVolume: number; costTotal: number; profitAmount: number; count: number }> {
   const soSupplierMap = buildSalesSupplierMap(
     salesParsed.data,
