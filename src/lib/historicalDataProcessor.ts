@@ -97,7 +97,7 @@ const S_SUPPLIER = "ספק מועדף";
 
 export function processPurchases(
   parsed: ParsedFile,
-  filters: HistoricalFilters
+  filters: SingleFilters
 ): Map<string, { name: string; volume: number; count: number }> {
   const map = new Map<string, { name: string; volume: number; count: number }>();
 
@@ -153,7 +153,7 @@ export function processSales(
   salesParsed: ParsedFile,
   purchaseParsed: ParsedFile | null,
   purchaseSupplierNames: Map<string, string>,
-  filters: HistoricalFilters
+  filters: SingleFilters
 ): Map<string, { name: string; salesVolume: number; costTotal: number; profitAmount: number; count: number }> {
   const soSupplierMap = buildSalesSupplierMap(
     salesParsed.data,
