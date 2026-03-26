@@ -1,10 +1,15 @@
 import type { ParsedFile } from "./parseExcelFile";
 
-export interface HistoricalFilters {
+export interface SingleFilters {
   suppliers: string[];
   statuses: string[];
   dateFrom: string;
   dateTo: string;
+}
+
+export interface HistoricalFilters {
+  purchase: SingleFilters;
+  sales: SingleFilters;
 }
 
 export interface SupplierAggregate {
