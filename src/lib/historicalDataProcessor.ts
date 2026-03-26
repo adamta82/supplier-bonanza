@@ -48,7 +48,7 @@ function matchesFilters(
   dateCol: string,
   statusCol: string,
   supplierCol: string,
-  filters: HistoricalFilters
+  filters: SingleFilters
 ): boolean {
   if (filters.statuses.length > 0) {
     const status = String(row[statusCol] || "").trim();
