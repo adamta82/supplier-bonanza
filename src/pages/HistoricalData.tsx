@@ -1,18 +1,22 @@
 import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowUpDown, ArrowUp, ArrowDown, RefreshCw, History, Loader2 } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, History, Loader2, Upload, Save } from "lucide-react";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/utils";
-import { Progress } from "@/components/ui/progress";
-
-const VAT_RATE = 0.18;
-const addVAT = (amount: number) => amount * (1 + VAT_RATE);
+import FileUploadPreview from "@/components/FileUploadPreview";
+import HistoricalFilters from "@/components/HistoricalFilters";
+import type { ParsedFile } from "@/lib/parseExcelFile";
+import {
+  processPurchases, processSales, aggregateSuppliers, getUniqueValues,
+  P_SUPPLIER_NAME, P_STATUS, S_STATUS, S_SUPPLIER,
+  type HistoricalFilters as Filters, type SupplierAggregate,
+} from "@/lib/historicalDataProcessor";
 
 type SortField = "name" | "purchaseVolume" | "salesVolume" | "profitAmount" | "profitMargin";
 type SortDir = "asc" | "desc";
@@ -20,120 +24,129 @@ type SortDir = "asc" | "desc";
 const currentYear = new Date().getFullYear();
 const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
+const emptyFilters: Filters = { suppliers: [], statuses: [], dateFrom: "", dateTo: "" };
+
 export default function HistoricalData() {
   const [selectedYear, setSelectedYear] = useState(String(currentYear - 1));
   const [sortField, setSortField] = useState<SortField>("purchaseVolume");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const [syncProgress, setSyncProgress] = useState("");
+  const [purchaseParsed, setPurchaseParsed] = useState<ParsedFile | null>(null);
+  const [salesParsed, setSalesParsed] = useState<ParsedFile | null>(null);
+  const [filters, setFilters] = useState<Filters>(emptyFilters);
   const queryClient = useQueryClient();
 
-  const { data: historicalData, isLoading } = useQuery({
-    queryKey: ["historical-data", selectedYear],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("historical_supplier_data")
-        .select("*")
-        .eq("year", Number(selectedYear));
-      if (error) throw error;
-      return data || [];
-    },
-  });
+  // Collect unique values for filter dropdowns
+  const availableSuppliers = useMemo(() => {
+    const all: string[] = [];
+    if (purchaseParsed) all.push(...getUniqueValues(purchaseParsed.data, P_SUPPLIER_NAME));
+    if (salesParsed) all.push(...getUniqueValues(salesParsed.data, S_SUPPLIER));
+    return [...new Set(all)].sort((a, b) => a.localeCompare(b, "he"));
+  }, [purchaseParsed, salesParsed]);
 
-  const syncMutation = useMutation({
+  const availableStatuses = useMemo(() => {
+    const all: string[] = [];
+    if (purchaseParsed) all.push(...getUniqueValues(purchaseParsed.data, P_STATUS));
+    if (salesParsed) all.push(...getUniqueValues(salesParsed.data, S_STATUS));
+    return [...new Set(all)].sort((a, b) => a.localeCompare(b, "he"));
+  }, [purchaseParsed, salesParsed]);
+
+  // Process and aggregate
+  const aggregated = useMemo<SupplierAggregate[]>(() => {
+    if (!purchaseParsed && !salesParsed) return [];
+
+    const purchaseMap = purchaseParsed
+      ? processPurchases(purchaseParsed, filters)
+      : new Map();
+
+    // Build supplier number -> name map from purchases
+    const supNameMap = new Map<string, string>();
+    purchaseMap.forEach((v, k) => supNameMap.set(k, v.name));
+
+    const salesMap = salesParsed
+      ? processSales(salesParsed, purchaseParsed, supNameMap, filters)
+      : new Map();
+
+    return aggregateSuppliers(purchaseMap, salesMap);
+  }, [purchaseParsed, salesParsed, filters]);
+
+  // Sort
+  const sortedData = useMemo(() => {
+    return [...aggregated].sort((a, b) => {
+      const fieldMap: Record<SortField, keyof SupplierAggregate> = {
+        name: "supplierName",
+        purchaseVolume: "purchaseVolume",
+        salesVolume: "salesVolume",
+        profitAmount: "profitAmount",
+        profitMargin: "profitMargin",
+      };
+      const key = fieldMap[sortField];
+      const aVal = a[key];
+      const bVal = b[key];
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        return sortDir === "asc" ? aVal.localeCompare(bVal, "he") : bVal.localeCompare(aVal, "he");
+      }
+      return sortDir === "asc" ? (Number(aVal) || 0) - (Number(bVal) || 0) : (Number(bVal) || 0) - (Number(aVal) || 0);
+    });
+  }, [aggregated, sortField, sortDir]);
+
+  const totals = useMemo(() => {
+    if (!sortedData.length) return { purchases: 0, sales: 0, profit: 0, margin: 0 };
+    const purchases = sortedData.reduce((s, r) => s + r.purchaseVolume, 0);
+    const sales = sortedData.reduce((s, r) => s + r.salesVolume, 0);
+    const profit = sortedData.reduce((s, r) => s + r.profitAmount, 0);
+    const margin = sales > 0 ? (profit / sales) * 100 : 0;
+    return { purchases, sales, profit, margin };
+  }, [sortedData]);
+
+  // Save to DB
+  const saveMutation = useMutation({
     mutationFn: async () => {
       const year = Number(selectedYear);
+      // Delete existing year data
+      await supabase.from("historical_supplier_data").delete().eq("year", year);
 
-      // Phase 1: Purchases
-      setSyncProgress("מסנכרן רכשים...");
-      let purchasesDone = false;
-      let skip = 0;
-      while (!purchasesDone) {
-        const { data, error } = await supabase.functions.invoke("sync-historical-data", {
-          body: { year, phase: "purchases", startSkip: skip, max_pages: 10 },
-        });
-        if (error) throw error;
-        if (data.has_more) {
-          skip = data.nextSkip;
-          setSyncProgress(`מסנכרן רכשים... (${skip} רשומות)`);
-        } else {
-          purchasesDone = true;
-          setSyncProgress(`רכשים הושלמו - ${data.suppliers_found || 0} ספקים`);
-        }
+      // Get suppliers for ID mapping
+      const { data: suppliers } = await supabase.from("suppliers").select("id, supplier_number, name");
+      const supIdMap = new Map<string, string>();
+      for (const s of suppliers || []) {
+        if (s.supplier_number) supIdMap.set(s.supplier_number, s.id);
       }
 
-      // Phase 2: Sales
-      setSyncProgress("מסנכרן מכירות...");
-      let salesDone = false;
-      skip = 0;
-      while (!salesDone) {
-        const { data, error } = await supabase.functions.invoke("sync-historical-data", {
-          body: { year, phase: "sales", startSkip: skip, max_pages: 10 },
-        });
-        if (error) throw error;
-        if (data.has_more) {
-          skip = data.nextSkip;
-          setSyncProgress(`מסנכרן מכירות... (${skip} רשומות)`);
-        } else {
-          salesDone = true;
-          setSyncProgress("");
-        }
-      }
+      const rows = sortedData.map((r) => ({
+        year,
+        supplier_number: r.supplierNumber,
+        supplier_name: r.supplierName,
+        supplier_id: supIdMap.get(r.supplierNumber) || null,
+        purchase_volume: r.purchaseVolume,
+        sales_volume: r.salesVolume,
+        cost_total: r.costTotal,
+        profit_amount: r.profitAmount,
+        profit_margin: r.profitMargin,
+        record_count: r.recordCount,
+      }));
 
-      return { year };
+      if (rows.length) {
+        const { error } = await supabase.from("historical_supplier_data").insert(rows);
+        if (error) throw error;
+      }
+      return rows.length;
     },
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["historical-data", selectedYear] });
-      toast.success(`נתוני ${result.year} סונכרנו בהצלחה`);
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["historical-data"] });
+      toast.success(`${count} רשומות נשמרו לשנת ${selectedYear}`);
     },
-    onError: (err: any) => {
-      setSyncProgress("");
-      toast.error("שגיאה בסנכרון: " + (err.message || "שגיאה לא ידועה"));
-    },
+    onError: (err: any) => toast.error("שגיאה בשמירה: " + err.message),
   });
 
   const toggleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDir(sortDir === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDir("desc");
-    }
+    if (sortField === field) setSortDir(sortDir === "asc" ? "desc" : "asc");
+    else { setSortField(field); setSortDir("desc"); }
   };
 
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field) return <ArrowUpDown className="w-3 h-3 inline mr-1 opacity-40" />;
     return sortDir === "asc" ? <ArrowUp className="w-3 h-3 inline mr-1" /> : <ArrowDown className="w-3 h-3 inline mr-1" />;
   };
-
-  const sortedData = useMemo(() => {
-    if (!historicalData) return [];
-    return [...historicalData].sort((a, b) => {
-      const fieldMap: Record<SortField, string> = {
-        name: "supplier_name",
-        purchaseVolume: "purchase_volume",
-        salesVolume: "sales_volume",
-        profitAmount: "profit_amount",
-        profitMargin: "profit_margin",
-      };
-      const key = fieldMap[sortField];
-      const aVal = (a as any)[key];
-      const bVal = (b as any)[key];
-      if (typeof aVal === "string" && typeof bVal === "string") {
-        return sortDir === "asc" ? aVal.localeCompare(bVal, "he") : bVal.localeCompare(aVal, "he");
-      }
-      return sortDir === "asc" ? (aVal || 0) - (bVal || 0) : (bVal || 0) - (aVal || 0);
-    });
-  }, [historicalData, sortField, sortDir]);
-
-  // Totals
-  const totals = useMemo(() => {
-    if (!sortedData.length) return { purchases: 0, sales: 0, profit: 0, margin: 0 };
-    const purchases = sortedData.reduce((s, r) => s + (r.purchase_volume || 0), 0);
-    const sales = sortedData.reduce((s, r) => s + (r.sales_volume || 0), 0);
-    const profit = sortedData.reduce((s, r) => s + addVAT(r.profit_amount || 0), 0);
-    const margin = sales > 0 ? (profit / sales) * 100 : 0;
-    return { purchases, sales, profit, margin };
-  }, [sortedData]);
 
   return (
     <div className="space-y-6">
@@ -144,39 +157,67 @@ export default function HistoricalData() {
         </div>
         <div className="flex items-center gap-3">
           <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {yearOptions.map((y) => (
-                <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-              ))}
+              {yearOptions.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button
-            onClick={() => syncMutation.mutate()}
-            disabled={syncMutation.isPending}
-          >
-            {syncMutation.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-            סנכרן נתוני {selectedYear}
-          </Button>
+          {sortedData.length > 0 && (
+            <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+              {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              שמור {sortedData.length} רשומות
+            </Button>
+          )}
         </div>
       </div>
 
-      {syncProgress && (
-        <Card>
-          <CardContent className="py-4">
-            <div className="flex items-center gap-3">
-              <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span className="text-sm text-muted-foreground">{syncProgress}</span>
-            </div>
-            <Progress className="mt-2" value={undefined} />
-          </CardContent>
-        </Card>
+      {/* Upload areas */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <FileUploadPreview
+          title="הזמנות רכש"
+          description="העלה קובץ אקסל עם הזמנות רכש לשנה הנבחרת"
+          buttonLabel="טען נתוני רכש"
+          onUpload={(data) => setPurchaseParsed(data)}
+          isUploading={false}
+        />
+        <FileUploadPreview
+          title="הזמנות לקוח (מכירות)"
+          description="העלה קובץ אקסל עם הזמנות לקוח לשנה הנבחרת"
+          buttonLabel="טען נתוני מכירות"
+          onUpload={(data) => setSalesParsed(data)}
+          isUploading={false}
+        />
+      </div>
+
+      {/* Status badges */}
+      {(purchaseParsed || salesParsed) && (
+        <div className="flex gap-2 text-sm">
+          {purchaseParsed && (
+            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+              רכשים: {purchaseParsed.data.length} שורות
+            </span>
+          )}
+          {salesParsed && (
+            <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
+              מכירות: {salesParsed.data.length} שורות
+            </span>
+          )}
+          {aggregated.length > 0 && (
+            <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
+              {aggregated.length} ספקים
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Filters */}
+      {(purchaseParsed || salesParsed) && (
+        <HistoricalFilters
+          filters={filters}
+          onChange={setFilters}
+          availableSuppliers={availableSuppliers}
+          availableStatuses={availableStatuses}
+        />
       )}
 
       {/* KPI Summary */}
@@ -196,7 +237,7 @@ export default function HistoricalData() {
           </Card>
           <Card>
             <CardContent className="pt-4 pb-4">
-              <p className="text-xs text-muted-foreground">סה"כ רווח ישיר</p>
+              <p className="text-xs text-muted-foreground">סה"כ רווח</p>
               <p className="text-xl font-bold text-success">₪{fmtNum(totals.profit)}</p>
             </CardContent>
           </Card>
@@ -209,73 +250,52 @@ export default function HistoricalData() {
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>נתוני {selectedYear} לפי ספק</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("name")}>
-                  <SortIcon field="name" />ספק
-                </TableHead>
-                <TableHead>מספר ספק</TableHead>
-                <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("purchaseVolume")}>
-                  <SortIcon field="purchaseVolume" />מחזור רכישות (כולל מע"מ)
-                </TableHead>
-                <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("salesVolume")}>
-                  <SortIcon field="salesVolume" />מחזור מכירות (כולל מע"מ)
-                </TableHead>
-                <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("profitAmount")}>
-                  <SortIcon field="profitAmount" />רווח ישיר
-                </TableHead>
-                <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("profitMargin")}>
-                  <SortIcon field="profitMargin" />% רווח
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+      {/* Data Table */}
+      {sortedData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>נתוני {selectedYear} לפי ספק ({sortedData.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">טוען...</TableCell>
+                  <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("name")}>
+                    <SortIcon field="name" />ספק
+                  </TableHead>
+                  <TableHead>מספר ספק</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("purchaseVolume")}>
+                    <SortIcon field="purchaseVolume" />מחזור רכישות
+                  </TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("salesVolume")}>
+                    <SortIcon field="salesVolume" />מחזור מכירות
+                  </TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("profitAmount")}>
+                    <SortIcon field="profitAmount" />רווח
+                  </TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("profitMargin")}>
+                    <SortIcon field="profitMargin" />% רווח
+                  </TableHead>
                 </TableRow>
-              ) : sortedData.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    אין נתונים לשנת {selectedYear}. לחץ "סנכרן" כדי למשוך מפריוריטי.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                sortedData.map((row) => {
-                  const profitWithVat = addVAT(row.profit_amount || 0);
-                  const margin = row.sales_volume ? (profitWithVat / row.sales_volume) * 100 : 0;
-                  return (
-                    <TableRow key={row.id}>
-                      <TableCell className="font-medium">
-                        {row.supplier_id ? (
-                          <Link to={`/suppliers/${row.supplier_id}`} className="text-primary hover:underline">
-                            {row.supplier_name}
-                          </Link>
-                        ) : (
-                          row.supplier_name
-                        )}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{row.supplier_number || "-"}</TableCell>
-                      <TableCell>₪{fmtNum(row.purchase_volume || 0)}</TableCell>
-                      <TableCell>₪{fmtNum(row.sales_volume || 0)}</TableCell>
-                      <TableCell className={profitWithVat >= 0 ? "text-success" : "text-destructive"}>
-                        ₪{fmtNum(profitWithVat)}
-                      </TableCell>
-                      <TableCell className="font-medium">{margin.toFixed(1)}%</TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {sortedData.map((row) => (
+                  <TableRow key={row.supplierNumber}>
+                    <TableCell className="font-medium">{row.supplierName}</TableCell>
+                    <TableCell className="text-muted-foreground">{row.supplierNumber}</TableCell>
+                    <TableCell>₪{fmtNum(row.purchaseVolume)}</TableCell>
+                    <TableCell>₪{fmtNum(row.salesVolume)}</TableCell>
+                    <TableCell className={row.profitAmount >= 0 ? "text-success" : "text-destructive"}>
+                      ₪{fmtNum(row.profitAmount)}
+                    </TableCell>
+                    <TableCell className="font-medium">{row.profitMargin.toFixed(1)}%</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
