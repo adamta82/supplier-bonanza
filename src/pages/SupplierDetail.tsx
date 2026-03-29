@@ -1067,9 +1067,10 @@ export default function SupplierDetail() {
                       const displayVolume = volumeWithTx;
                       const progress = nextTier ? Math.min((displayVolume / nextTier.target_value) * 100, 100) : 100;
 
-                      // Theoretical bonus: current tier % applied to bonusVolume
-                      const theoreticalBonus = currentTierIdx >= 0
-                        ? cardBonusVolume * (sortedTiers[currentTierIdx].bonus_percentage / 100)
+                      // Theoretical bonus: achieved tier % applied to bonusVolume,
+                      // or first tier % when target not yet reached
+                      const theoreticalBonus = sortedTiers.length > 0
+                        ? cardBonusVolume * (sortedTiers[currentTierIdx >= 0 ? currentTierIdx : 0].bonus_percentage / 100)
                         : 0;
                       const vatLabel = isQtyTarget ? "כמות" : (agreement.vat_included ? "כולל מע\"מ" : "לפני מע\"מ");
                       const unitPrefix = isQtyTarget ? "" : "₪";
