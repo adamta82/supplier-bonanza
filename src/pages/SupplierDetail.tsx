@@ -1519,7 +1519,7 @@ export default function SupplierDetail() {
                 <Bar dataKey="purchases" name="מחזור קניות" fill="hsl(217, 71%, 45%)" radius={[2, 2, 0, 0]} />
                 <Bar dataKey="sales" name="מחזור מכירות" fill="hsl(142, 71%, 45%)" radius={[2, 2, 0, 0]} />
                 <Bar dataKey="profit" name="רווח ישיר" fill="hsl(45, 93%, 47%)" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="final" name="רווח סופי" fill="hsl(280, 60%, 50%)" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="final" name="רווח סופי*" fill="hsl(280, 60%, 50%)" radius={[2, 2, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
