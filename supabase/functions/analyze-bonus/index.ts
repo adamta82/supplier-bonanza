@@ -11,24 +11,27 @@ serve(async (req) => {
   try {
     const { volume, target, periodStart, periodEnd, isQuantity, tiers, currentTierIdx, bonusVolumeMoney } = await req.json();
 
-    const now = new Date();
     const start = new Date(periodStart);
     const end = new Date(periodEnd);
-    const totalDays = Math.max((end.getTime() - start.getTime()) / 86400000, 1);
-    const elapsedDays = Math.max((now.getTime() - start.getTime()) / 86400000, 0);
-    const remainingDays = Math.max((end.getTime() - now.getTime()) / 86400000, 0);
-    const remainingMonths = remainingDays / 30;
+    // Use start of today for stable calculations (won't change on refresh)
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const totalDays = Math.max(Math.round((end.getTime() - start.getTime()) / 86400000), 1);
+    const elapsedDays = Math.max(Math.round((now.getTime() - start.getTime()) / 86400000), 0);
+    const remainingDays = Math.max(Math.round((end.getTime() - now.getTime()) / 86400000), 0);
+
+    const totalMonths = totalDays / 30;
     const elapsedMonths = elapsedDays / 30;
 
     const remainingToTarget = Math.max(target - volume, 0);
     const completionPct = target > 0 ? (volume / target) * 100 : 0;
-    const timePct = (elapsedDays / totalDays) * 100;
 
-    const monthlyRate = elapsedMonths > 0 ? volume / elapsedMonths : 0;
-    const requiredMonthlyRate = remainingMonths > 0 ? remainingToTarget / remainingMonths : 0;
+    // Monthly rate based on elapsed full months
+    const monthlyRate = elapsedMonths >= 1 ? volume / elapsedMonths : volume;
 
     // Projection: at current pace, how much will be achieved by end
-    const projectedTotal = monthlyRate * (totalDays / 30);
+    const projectedTotal = elapsedDays > 0 ? (volume / elapsedDays) * totalDays : volume;
     const projectedPct = target > 0 ? (projectedTotal / target) * 100 : 0;
 
     // Find next tier
@@ -46,12 +49,19 @@ serve(async (req) => {
       lines.push(`מחזור כספי: ₪${Math.round(bonusVolumeMoney).toLocaleString()}`);
     }
     lines.push(`קצב חודשי: ${fmt(monthlyRate)}`);
-    if (remainingDays > 0) {
+
+    if (remainingDays > 7) {
+      const remainingMonths = remainingDays / 30;
+      const requiredMonthlyRate = remainingMonths > 0 ? remainingToTarget / remainingMonths : 0;
       lines.push(`נדרש: ${fmt(requiredMonthlyRate)}/חודש`);
-      lines.push(`נותרו ${Math.round(remainingDays)} ימים (${remainingMonths.toFixed(1)} חודשים)`);
-      lines.push(`תחזית בקצב הנוכחי: ${fmt(projectedTotal)} (${projectedPct.toFixed(0)}%)`);
+      lines.push(`נותרו ${remainingDays} ימים (${remainingMonths.toFixed(1)} חודשים)`);
+      lines.push(`תחזית: ${fmt(projectedTotal)} (${projectedPct.toFixed(0)}%)`);
+    } else if (remainingDays > 0) {
+      lines.push(`נותרו ${remainingDays} ימים`);
+      lines.push(`תחזית: ${fmt(projectedTotal)} (${projectedPct.toFixed(0)}%)`);
     } else {
       lines.push(`התקופה הסתיימה`);
+      lines.push(`סה"כ בוצע: ${fmt(volume)} מתוך ${fmt(target)}`);
     }
 
     if (nextTier) {
