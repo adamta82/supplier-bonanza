@@ -1166,6 +1166,7 @@ export default function SupplierDetail() {
                                     currentTierIdx={currentTierIdx}
                                     supplierName={supplier?.name || ""}
                                     bonusType={agreement.bonus_type}
+                                    bonusVolumeMoney={isQtyTarget ? cardBonusVolume : undefined}
                                   />
                                 </div>
                               )}
