@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { RefreshCw, Sparkles } from "lucide-react";
+import { RefreshCw, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface BonusAIAnalysisProps {
@@ -36,16 +36,16 @@ export default function BonusAIAnalysis({
       if (error) throw error;
       return data?.analysis as string;
     },
-    staleTime: 1000 * 60 * 10, // 10 minutes
+    staleTime: 1000 * 60 * 10,
     retry: 1,
   });
 
   return (
-    <div className="bg-accent/30 rounded-lg p-3 text-xs space-y-1.5 h-full flex flex-col">
-      <div className="flex items-center justify-between">
+    <div className="bg-accent/30 rounded-lg p-3 text-xs space-y-1 h-full flex flex-col">
+      <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1 text-primary font-semibold text-[11px]">
-          <Sparkles className="w-3.5 h-3.5" />
-          ניתוח AI
+          <BarChart3 className="w-3.5 h-3.5" />
+          סיכום נתונים
         </div>
         <Button
           variant="ghost"
@@ -57,13 +57,15 @@ export default function BonusAIAnalysis({
           <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
         </Button>
       </div>
-      <div className="flex-1 text-muted-foreground leading-relaxed">
+      <div className="flex-1 text-muted-foreground leading-relaxed space-y-0.5">
         {isLoading ? (
-          <span className="animate-pulse">מנתח...</span>
+          <span className="animate-pulse">טוען...</span>
         ) : isError ? (
-          <span className="text-destructive">שגיאה בניתוח</span>
+          <span className="text-destructive">שגיאה</span>
         ) : (
-          data
+          data?.split("\n").map((line, i) => (
+            <div key={i} className="text-[11px]">{line}</div>
+          ))
         )}
       </div>
     </div>
