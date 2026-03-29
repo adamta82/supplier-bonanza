@@ -9,7 +9,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { volume, target, periodStart, periodEnd, isQuantity, tiers, currentTierIdx, bonusPercentage, supplierName, bonusType } = await req.json();
+    const { volume, target, periodStart, periodEnd, isQuantity, tiers, currentTierIdx, bonusPercentage, supplierName, bonusType, bonusVolumeMoney } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -20,27 +20,53 @@ serve(async (req) => {
     const elapsedDays = Math.max((now.getTime() - start.getTime()) / 86400000, 0);
     const remainingDays = Math.max((end.getTime() - now.getTime()) / 86400000, 0);
     const elapsedPct = Math.min((elapsedDays / totalDays) * 100, 100).toFixed(0);
-    const volumePct = target > 0 ? ((volume / target) * 100).toFixed(0) : "0";
+    const volumePct = target > 0 ? ((volume / target) * 100).toFixed(1) : "0";
+    const remainingToTarget = Math.max(target - volume, 0);
+    const dailyRate = elapsedDays > 0 ? volume / elapsedDays : 0;
+    const requiredDailyRate = remainingDays > 0 ? remainingToTarget / remainingDays : 0;
+    const monthlyRate = dailyRate * 30;
+    const requiredMonthly = requiredDailyRate * 30;
 
     const unit = isQuantity ? "יח'" : "₪";
-    const tiersInfo = tiers?.map((t: any, i: number) => 
-      `מדרגה ${i+1}: ${unit}${t.target_value.toLocaleString()} → ${t.bonus_percentage}%${i === currentTierIdx ? " (הושגה)" : ""}`
-    ).join("; ") || "";
+    const fmtVol = (v: number) => isQuantity ? Math.round(v).toLocaleString() : `₪${Math.round(v).toLocaleString()}`;
+    
+    const tiersInfo = tiers?.map((t: any, i: number) => {
+      const tierPct = target > 0 ? ((volume / t.target_value) * 100).toFixed(0) : "0";
+      return `מדרגה ${i+1}: ${fmtVol(t.target_value)} → ${t.bonus_percentage}% (ביצוע ${tierPct}%)${i === currentTierIdx ? " ✓הושגה" : ""}`;
+    }).join("; ") || "";
 
-    const prompt = `אתה אנליסט עסקי. תן ניתוח קצר (2-3 משפטים) בעברית על מצב הבונוס הזה:
+    // Determine remaining months and if Nov/Dec are included
+    const endMonth = end.getMonth(); // 0-indexed
+    const nowMonth = now.getMonth();
+    const hasStrongMonths = remainingDays > 0 && (
+      (endMonth >= 10) || // ends in Nov or Dec
+      (nowMonth <= 10 && endMonth >= 10) // Nov/Dec still ahead
+    );
+
+    const prompt = `אתה אנליסט עסקי מנוסה. תן ניתוח בעברית (3-4 משפטים) בפורמט הבא על מצב הבונוס:
+
+נתונים:
 - ספק: ${supplierName}
-- סוג בונוס: ${bonusType === "annual_target" ? "יעדים שנתיים" : bonusType === "marketing" ? "השתתפות בהוצאות פרסום" : bonusType}
-- ביצוע: ${unit}${Number(volume).toLocaleString()} מתוך יעד ${unit}${Number(target).toLocaleString()} (${volumePct}%)
-- תקופה: ${periodStart} עד ${periodEnd} (חלפו ${elapsedPct}% מהתקופה, נותרו ${Math.round(remainingDays)} ימים)
+- סוג: ${bonusType === "annual_target" ? "יעדים שנתיים" : bonusType === "marketing" ? "השתתפות בהוצאות פרסום" : bonusType}
+- ביצוע: ${fmtVol(volume)} מתוך יעד ${fmtVol(target)} (${volumePct}%)
+- נותר להשלמה: ${fmtVol(remainingToTarget)}
+${isQuantity && bonusVolumeMoney ? `- מחזור כספי: ₪${Math.round(bonusVolumeMoney).toLocaleString()}` : ""}
+- קצב חודשי נוכחי: ${fmtVol(monthlyRate)}
+- קצב חודשי נדרש להשלמת היעד: ${fmtVol(requiredMonthly)}
+- תקופה: ${periodStart} עד ${periodEnd}
+- חלפו ${elapsedPct}% מהתקופה (${Math.round(elapsedDays)} ימים), נותרו ${Math.round(remainingDays)} ימים
 - מדרגות: ${tiersInfo}
-- מדרגה נוכחית: ${currentTierIdx >= 0 ? currentTierIdx + 1 : "טרם הושגה מדרגה"}
+- מדרגה נוכחית: ${currentTierIdx >= 0 ? `מדרגה ${currentTierIdx + 1}` : "טרם הושגה מדרגה"}
+${hasStrongMonths ? "- שים לב: חודשי נובמבר-דצמבר שנותרו הם חודשים חזקים משמעותית מבחינת רכישות" : ""}
 
-התמקד ב:
-1. האם קצב הביצוע תואם את הזמן שעבר
-2. האם סביר להגיע ליעד/מדרגה הבאה
-3. המלצה קצרה אחת
+פורמט התשובה (בדיוק ככה):
+"בוצעו ${fmtVol(volume)} מתוך ${fmtVol(target)} (${volumePct}%). [ניתוח קצב - האם הקצב הנוכחי מספיק, תוך התחשבות בעונתיות]. [הערכת סיכוי להגיע למדרגה הבאה]. [המלצה אחת קצרה]."
 
-כתוב בצורה תמציתית וענייני, ללא כותרות.`;
+חשוב:
+- היה ריאליסטי אך אופטימי כשיש סיכוי סביר
+- קח בחשבון שנובמבר-דצמבר הם חודשים חזקים בענף הקמעונאי (עלייה של 30-50% ברכישות)
+- ציין סכומים ספציפיים (ביצוע, נותר, קצב)
+- אל תשתמש בכותרות או בולטים`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -51,7 +77,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-lite",
         messages: [
-          { role: "system", content: "אתה אנליסט עסקי שנותן תובנות קצרות וענייניות. תענה תמיד ב-2-3 משפטים בלבד." },
+          { role: "system", content: "אתה אנליסט עסקי מנוסה שנותן תובנות מדויקות עם נתונים. היה ריאליסטי אך אופטימי. תענה ב-3-4 משפטים ענייניים עם סכומים ספציפיים." },
           { role: "user", content: prompt },
         ],
       }),
