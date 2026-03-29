@@ -15,11 +15,12 @@ interface BonusAIAnalysisProps {
   currentTierIdx: number;
   supplierName: string;
   bonusType: string;
+  bonusVolumeMoney?: number;
 }
 
 export default function BonusAIAnalysis({
   agreementId, volume, target, periodStart, periodEnd,
-  isQuantity, tiers, currentTierIdx, supplierName, bonusType,
+  isQuantity, tiers, currentTierIdx, supplierName, bonusType, bonusVolumeMoney,
 }: BonusAIAnalysisProps) {
   const [refetchKey, setRefetchKey] = useState(0);
 
@@ -29,7 +30,7 @@ export default function BonusAIAnalysis({
       const { data, error } = await supabase.functions.invoke("analyze-bonus", {
         body: {
           volume, target, periodStart, periodEnd,
-          isQuantity, tiers, currentTierIdx, supplierName, bonusType,
+          isQuantity, tiers, currentTierIdx, supplierName, bonusType, bonusVolumeMoney,
         },
       });
       if (error) throw error;
