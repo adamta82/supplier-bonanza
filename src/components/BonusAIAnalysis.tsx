@@ -63,9 +63,17 @@ export default function BonusAIAnalysis({
         ) : isError ? (
           <span className="text-destructive">שגיאה</span>
         ) : (
-          data?.split("\n").map((line, i) => (
-            <div key={i} className="text-[11px]">{line}</div>
-          ))
+          data?.split("\n").map((line, i) => {
+            const parts = line.split(": ");
+            if (parts.length >= 2) {
+              return (
+                <div key={i} className="text-[11px]">
+                  {parts[0]}: <span className="font-bold text-foreground">{parts.slice(1).join(": ")}</span>
+                </div>
+              );
+            }
+            return <div key={i} className="text-[11px] font-bold text-foreground">{line}</div>;
+          })
         )}
       </div>
     </div>
