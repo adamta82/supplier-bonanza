@@ -291,6 +291,7 @@ export default function Reports() {
             </TableBody>
           </Table>
         </CardContent>
+        <div className="px-6 pb-4 text-xs text-muted-foreground">*רווח סופי לא כולל השתתפות בהוצאות פרסום</div>
       </Card>
     </div>
   );
