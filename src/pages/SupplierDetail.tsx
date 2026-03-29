@@ -611,10 +611,9 @@ export default function SupplierDetail() {
           break;
         }
       }
-      if (achievedTier) {
-        return bonusVolume * (achievedTier.bonus_percentage / 100);
-      }
-      return 0;
+      // Use achieved tier percentage, or first tier if target not yet reached
+      const tierToUse = achievedTier || sortedTiers[0];
+      return bonusVolume * (tierToUse.bonus_percentage / 100);
     }
 
     if (agreement.fixed_percentage) {
