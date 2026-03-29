@@ -1119,6 +1119,7 @@ export default function SupplierDetail() {
                                   {nextTier ? "התקדמות למדרגה הבאה: " : "הושגה מדרגה עליונה: "}
                                   {unitPrefix}{fmtVal(displayVolume)}{unitSuffix} / {unitPrefix}{fmtVal(nextTier ? nextTier.target_value : sortedTiers[sortedTiers.length - 1]?.target_value)}{unitSuffix}
                                   {!isQtyTarget && <span className="text-xs text-muted-foreground mr-1">({vatLabel})</span>}
+                                  {isQtyTarget && <span className="text-xs text-muted-foreground mr-2">(מחזור כספי: ₪{fmtNum(cardBonusVolume)})</span>}
                                 </div>
                                 {/* Battery-style tier indicators - horizontal */}
                                 <div className="space-y-1">
