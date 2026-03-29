@@ -1115,14 +1115,14 @@ export default function SupplierDetail() {
                               </div>
                             </div>
                             {sortedTiers.length > 0 && (
-                              <>
+                            <div className="flex gap-4">
+                              <div className="flex-1 space-y-1">
                                 <div className="text-sm">
                                   {nextTier ? "התקדמות למדרגה הבאה: " : "הושגה מדרגה עליונה: "}
                                   {unitPrefix}{fmtVal(displayVolume)}{unitSuffix} / {unitPrefix}{fmtVal(nextTier ? nextTier.target_value : sortedTiers[sortedTiers.length - 1]?.target_value)}{unitSuffix}
                                   {!isQtyTarget && <span className="text-xs text-muted-foreground mr-1">({vatLabel})</span>}
                                   {isQtyTarget && <span className="text-xs text-muted-foreground mr-2">(מחזור כספי: ₪{fmtNum(cardBonusVolume)})</span>}
                                 </div>
-                                {/* Battery-style tier indicators - horizontal */}
                                 <div className="space-y-1">
                                   {sortedTiers.map((tier: any, i: number) => {
                                     const achieved = displayVolume >= tier.target_value;
@@ -1132,7 +1132,7 @@ export default function SupplierDetail() {
                                     const fillAmount = prevAchieved ? Math.min(Math.max(displayVolume - prevTarget, 0) / tierRange * 100, 100) : 0;
                                     return (
                                       <div key={i} className="flex justify-start">
-                                        <div className="w-1/2 flex items-center gap-2">
+                                        <div className="w-full flex items-center gap-2">
                                           <div
                                             className={`relative flex-1 h-6 rounded border-2 overflow-hidden ${achieved ? "border-green-500" : "border-muted-foreground/30"}`}
                                           >
@@ -1152,7 +1152,24 @@ export default function SupplierDetail() {
                                     );
                                   })}
                                 </div>
-                              </>
+                              </div>
+                              {(agreement.bonus_type === "annual_target" || agreement.bonus_type === "marketing") && agreement.period_start && agreement.period_end && sortedTiers.length > 0 && (
+                                <div className="w-64 shrink-0">
+                                  <BonusAIAnalysis
+                                    agreementId={agreement.id}
+                                    volume={displayVolume}
+                                    target={sortedTiers[sortedTiers.length - 1]?.target_value || 0}
+                                    periodStart={agreement.period_start}
+                                    periodEnd={agreement.period_end}
+                                    isQuantity={isQtyTarget}
+                                    tiers={sortedTiers.map((t: any) => ({ target_value: t.target_value, bonus_percentage: t.bonus_percentage }))}
+                                    currentTierIdx={currentTierIdx}
+                                    supplierName={supplier?.name || ""}
+                                    bonusType={agreement.bonus_type}
+                                  />
+                                </div>
+                              )}
+                            </div>
                             )}
                             {agreement.fixed_percentage && !sortedTiers.length && (
                               <div className="text-sm">בונוס קבוע: {agreement.fixed_percentage}%</div>
