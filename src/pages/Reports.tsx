@@ -183,10 +183,14 @@ export default function Reports() {
 
     // Use proper per-agreement calculation with exclusions
     let totalBonus = 0;
+    let marketingBonus = 0;
     supplierAgreements.forEach((agreement: any) => {
       if (agreement.bonus_type === "transaction") return; // handled below
       const val = calcAgreementBonus(agreement, supplierPurchases, supplierTxBonuses);
-      if (!isNaN(val)) totalBonus += val;
+      if (!isNaN(val)) {
+        totalBonus += val;
+        if (agreement.bonus_type === "marketing") marketingBonus += val;
+      }
     });
 
     // Transaction bonuses (unlinked ones)
@@ -205,7 +209,7 @@ export default function Reports() {
       if (!isNaN(val)) totalBonus += val;
     });
 
-    const finalProfit = directProfit + totalBonus;
+    const finalProfit = directProfit + totalBonus - marketingBonus;
 
     return {
       id: supplier.id,
@@ -263,7 +267,7 @@ export default function Reports() {
                 <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("directProfit")}><SortIcon field="directProfit" />רווח ישיר</TableHead>
                 <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("directMargin")}><SortIcon field="directMargin" />% ישיר</TableHead>
                 <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("totalBonus")}><SortIcon field="totalBonus" />סה"כ בונוסים</TableHead>
-                <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("finalProfit")}><SortIcon field="finalProfit" />רווח סופי</TableHead>
+                <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("finalProfit")}><SortIcon field="finalProfit" />רווח סופי*</TableHead>
                 <TableHead className="cursor-pointer select-none" onClick={() => toggleSort("finalMargin")}><SortIcon field="finalMargin" />% סופי</TableHead>
               </TableRow>
             </TableHeader>
@@ -287,6 +291,7 @@ export default function Reports() {
             </TableBody>
           </Table>
         </CardContent>
+        <div className="px-6 pb-4 text-xs text-muted-foreground">*רווח סופי לא כולל השתתפות בהוצאות פרסום</div>
       </Card>
     </div>
   );
