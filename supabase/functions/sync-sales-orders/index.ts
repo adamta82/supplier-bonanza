@@ -251,23 +251,27 @@ Deno.serve(async (req) => {
           const costPrice = item.PURCHASEPRICE != null ? Math.round(item.PURCHASEPRICE * 100) / 100 : null;
           const profitDirect = item.QPROFIT != null ? Math.round(item.QPROFIT * 100) / 100 : null;
 
+          // Extract brand from description pattern: "category - Brand - model"
+          const descParts = (item.PDES || "").split(" - ");
+          const extractedBrand = descParts.length >= 2 ? descParts[1].trim() : null;
+
           records.push({
             order_number: soNumber,
             sale_date: order.CURDATE ? order.CURDATE.split("T")[0] : null,
             customer_name: order.CDES || null,
             zabilo_id: order.REFERENCE || null,
             order_status: order.ORDSTATUSDES || null,
-            customer_po: null, // not used for Priority sync
+            customer_po: null,
             item_code: item.PARTNAME || null,
             item_description: item.PDES || null,
             quantity: item.TQUANT ?? null,
-            sale_price: item.VPRICE ?? null, // כולל מע"מ
+            sale_price: item.VPRICE ?? null,
             cost_price: costPrice,
             profit_direct: profitDirect,
             supplier_id: suppId,
             supplier_name: suppName,
             category: item.FAMILYDES || null,
-            brand: null, // יוגדר בהמשך
+            brand: extractedBrand,
             upload_batch: batchId,
           });
         }
