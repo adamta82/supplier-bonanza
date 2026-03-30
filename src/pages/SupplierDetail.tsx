@@ -728,9 +728,12 @@ export default function SupplierDetail() {
   }, []);
 
   const getAgreementStatus = (agreement: any) => {
-    // Manual override
+    // Manual overrides
     if (agreement.bonus_status === "received") {
       return { label: "התקבל", variant: "default" as const, color: "bg-green-600 text-white" };
+    }
+    if (agreement.bonus_status === "not_achieved") {
+      return { label: "יעד לא הושג", variant: "outline" as const, color: "bg-orange-500 text-white" };
     }
     const today = new Date().toISOString().slice(0, 10);
     const periodStart = agreement.period_start;
@@ -1096,17 +1099,18 @@ export default function SupplierDetail() {
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-primary">₪{fmtNum(sortedTiers.length > 0 ? theoreticalBonus : bonusValue)}</span>
+                                <span className="text-sm font-bold text-primary">₪{fmtNum(agreement.bonus_status === "not_achieved" ? 0 : (sortedTiers.length > 0 ? theoreticalBonus : bonusValue))}</span>
                                 <Select
-                                  value={agreement.bonus_status === "received" ? "received" : "auto"}
+                                  value={agreement.bonus_status === "received" ? "received" : agreement.bonus_status === "not_achieved" ? "not_achieved" : "auto"}
                                   onValueChange={(v) => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, newStatus: v })}
                                 >
                                   <SelectTrigger className={`h-7 w-auto min-w-[100px] text-xs font-semibold border-0 ${status.color}`}>
                                     <SelectValue>{status.label}</SelectValue>
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="auto">אוטומטי ({status.label !== "התקבל" ? status.label : "פעיל"})</SelectItem>
+                                    <SelectItem value="auto">אוטומטי ({status.label !== "התקבל" && status.label !== "יעד לא הושג" ? status.label : "פעיל"})</SelectItem>
                                     <SelectItem value="received">התקבל</SelectItem>
+                                    <SelectItem value="not_achieved">יעד לא הושג</SelectItem>
                                   </SelectContent>
                                 </Select>
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditAgreement(agreement)}>
