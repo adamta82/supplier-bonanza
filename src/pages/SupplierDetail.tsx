@@ -631,6 +631,7 @@ export default function SupplierDetail() {
   const totalAllBonus = useMemo(() => {
     if (!agreements) return 0;
     return agreements.reduce((sum: number, a: any) => {
+      if (a.bonus_status === "not_achieved") return sum;
       const v = calcAgreementBonusValue(a);
       return sum + (isNaN(v) ? 0 : v);
     }, 0);
@@ -639,7 +640,7 @@ export default function SupplierDetail() {
   const totalMoneyBonus = useMemo(() => {
     if (!agreements) return 0;
     return agreements
-      .filter((a: any) => a.bonus_payment_type === "money")
+      .filter((a: any) => a.bonus_payment_type === "money" && a.bonus_status !== "not_achieved")
       .reduce((sum: number, a: any) => {
         const v = calcAgreementBonusValue(a);
         return sum + (isNaN(v) ? 0 : v);
@@ -660,6 +661,7 @@ export default function SupplierDetail() {
 
     agreements.forEach((a: any) => {
       if (a.bonus_type === "transaction") return; // handled separately
+      if (a.bonus_status === "not_achieved") return; // zero bonus
       const val = calcAgreementBonusValue(a);
       if (isNaN(val) || val === 0) return;
       const isMoney = a.bonus_payment_type === "money";
