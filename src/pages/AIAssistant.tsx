@@ -1,9 +1,12 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Bot, Send, Trash2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -18,11 +21,68 @@ const SUGGESTIONS = [
 ];
 
 export default function AIAssistant() {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const { data: suppliers } = useQuery({
+    queryKey: ["suppliers-for-links"],
+    queryFn: async () => {
+      const { data } = await supabase.from("suppliers").select("id, name");
+      return data || [];
+    },
+  });
+
+  // Build a map of supplier name → id, sorted by name length desc to match longest first
+  const supplierMap = useMemo(() => {
+    if (!suppliers) return [];
+    return suppliers
+      .filter((s) => s.name && s.name.length > 1)
+      .sort((a, b) => b.name.length - a.name.length)
+      .map((s) => ({ name: s.name, id: s.id }));
+  }, [suppliers]);
+
+  // Custom text renderer that linkifies supplier names
+  const renderTextWithSupplierLinks = useCallback(
+    (text: string) => {
+      if (!supplierMap.length) return <>{text}</>;
+      const parts: (string | JSX.Element)[] = [];
+      let remaining = text;
+      let keyIdx = 0;
+      while (remaining.length > 0) {
+        let earliest = -1;
+        let matched: (typeof supplierMap)[0] | null = null;
+        for (const s of supplierMap) {
+          const idx = remaining.indexOf(s.name);
+          if (idx !== -1 && (earliest === -1 || idx < earliest)) {
+            earliest = idx;
+            matched = s;
+          }
+        }
+        if (matched && earliest !== -1) {
+          if (earliest > 0) parts.push(remaining.slice(0, earliest));
+          parts.push(
+            <button
+              key={keyIdx++}
+              onClick={() => navigate(`/suppliers/${matched!.id}`)}
+              className="text-primary underline hover:text-primary/80 cursor-pointer font-medium"
+            >
+              {matched.name}
+            </button>
+          );
+          remaining = remaining.slice(earliest + matched.name.length);
+        } else {
+          parts.push(remaining);
+          break;
+        }
+      }
+      return <>{parts}</>;
+    },
+    [supplierMap, navigate]
+  );
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -180,7 +240,14 @@ export default function AIAssistant() {
                 >
                   {m.role === "assistant" ? (
                     <div className="prose prose-sm dark:prose-invert max-w-none [&_table]:text-xs [&_th]:px-2 [&_td]:px-2 [&_th]:py-1 [&_td]:py-1">
-                      <ReactMarkdown>{m.content}</ReactMarkdown>
+                      <ReactMarkdown
+                        components={{
+                          p: ({ children }) => <p>{typeof children === 'string' ? renderTextWithSupplierLinks(children) : children}</p>,
+                          td: ({ children }) => <td>{typeof children === 'string' ? renderTextWithSupplierLinks(children) : children}</td>,
+                          li: ({ children }) => <li>{typeof children === 'string' ? renderTextWithSupplierLinks(children) : children}</li>,
+                          strong: ({ children }) => <strong>{typeof children === 'string' ? renderTextWithSupplierLinks(children) : children}</strong>,
+                        }}
+                      >{m.content}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="whitespace-pre-wrap">{m.content}</p>
