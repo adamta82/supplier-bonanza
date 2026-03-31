@@ -152,6 +152,48 @@ ${JSON.stringify(purchases?.slice(0, 100).map((p: any) => ({ ספק: p.supplier_
 
 דוגמאות מכירות אחרונות (עד 100):
 ${JSON.stringify(sales?.slice(0, 100).map((s: any) => ({ ספק: s.supplier_name, הזמנה: s.order_number, תאריך: s.sale_date, פריט: s.item_description, לקוח: s.customer_name, מכירה: s.sale_price, עלות: s.cost_price, רווח: s.profit_direct, מותג: s.brand })), null, 2)}
+
+מבצע שקל - הגדרות קמפיינים:
+${JSON.stringify(shekelSettings?.map((sc: any) => ({ ספק: sc.suppliers?.name, שם_קמפיין: sc.campaign_name, תאריך_התחלה: sc.start_date, תאריך_סיום: sc.end_date, סף_זכאות: sc.threshold_amount, פעיל: sc.is_active })), null, 2)}
+
+מבצע שקל - החרגות וסטטוס מתנות:
+${JSON.stringify(shekelExclusions?.map((e: any) => ({ ספק: e.shekel_campaign_settings?.suppliers?.name, קמפיין: e.shekel_campaign_settings?.campaign_name, הזמנה: e.purchase_records?.order_number, פריט: e.purchase_records?.item_description, סטטוס_מתנה: e.gift_status })), null, 2)}
+
+חשבוניות ספק (סיכום - ${supplierInvoices?.length || 0} רשומות):
+${JSON.stringify(Object.entries(
+  (supplierInvoices || []).reduce((acc: Record<string, { count: number; total: number }>, inv: any) => {
+    const name = inv.supplier_name || "לא ידוע";
+    if (!acc[name]) acc[name] = { count: 0, total: 0 };
+    acc[name].count++;
+    acc[name].total += inv.total_with_vat || inv.total_payment || 0;
+    return acc;
+  }, {})
+).sort((a: any, b: any) => b[1].total - a[1].total).map(([name, d]: any) => ({ ספק: name, רשומות: d.count, סהכ: Math.round(d.total) })), null, 2)}
+
+חשבוניות מרוכזות (סיכום - ${consolidatedInvoices?.length || 0} רשומות):
+${JSON.stringify(Object.entries(
+  (consolidatedInvoices || []).reduce((acc: Record<string, { count: number; total: number }>, inv: any) => {
+    const name = inv.supplier_name || "לא ידוע";
+    if (!acc[name]) acc[name] = { count: 0, total: 0 };
+    acc[name].count++;
+    acc[name].total += inv.total_with_vat || 0;
+    return acc;
+  }, {})
+).sort((a: any, b: any) => b[1].total - a[1].total).map(([name, d]: any) => ({ ספק: name, רשומות: d.count, סהכ: Math.round(d.total) })), null, 2)}
+
+תעודות משלוח (סיכום - ${deliveryNotes?.length || 0} רשומות):
+${JSON.stringify(Object.entries(
+  (deliveryNotes || []).reduce((acc: Record<string, { count: number; total: number }>, dn: any) => {
+    const name = dn.supplier_name || "לא ידוע";
+    if (!acc[name]) acc[name] = { count: 0, total: 0 };
+    acc[name].count++;
+    acc[name].total += dn.total_price || 0;
+    return acc;
+  }, {})
+).sort((a: any, b: any) => b[1].total - a[1].total).map(([name, d]: any) => ({ ספק: name, רשומות: d.count, סהכ: Math.round(d.total) })), null, 2)}
+
+אישורי התאמות (${reconciliationApprovals?.length || 0} רשומות):
+${JSON.stringify(reconciliationApprovals?.map((r: any) => ({ סוג_מסמך: r.document_type, סוג_התאמה: r.match_type, מפתח: r.match_key, ערך_מקורי: r.original_value, ערך_מותאם: r.matched_value, הערות: r.approval_notes })), null, 2)}
 `;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
