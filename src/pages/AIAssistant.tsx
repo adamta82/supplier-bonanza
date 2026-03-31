@@ -240,7 +240,14 @@ export default function AIAssistant() {
                 >
                   {m.role === "assistant" ? (
                     <div className="prose prose-sm dark:prose-invert max-w-none [&_table]:text-xs [&_th]:px-2 [&_td]:px-2 [&_th]:py-1 [&_td]:py-1">
-                      <ReactMarkdown>{m.content}</ReactMarkdown>
+                      <ReactMarkdown
+                        components={{
+                          p: ({ children }) => <p>{typeof children === 'string' ? renderTextWithSupplierLinks(children) : children}</p>,
+                          td: ({ children }) => <td>{typeof children === 'string' ? renderTextWithSupplierLinks(children) : children}</td>,
+                          li: ({ children }) => <li>{typeof children === 'string' ? renderTextWithSupplierLinks(children) : children}</li>,
+                          strong: ({ children }) => <strong>{typeof children === 'string' ? renderTextWithSupplierLinks(children) : children}</strong>,
+                        }}
+                      >{m.content}</ReactMarkdown>
                     </div>
                   ) : (
                     <p className="whitespace-pre-wrap">{m.content}</p>
