@@ -1515,7 +1515,7 @@ export default function SupplierDetail() {
               </div>
             )}
             <div>
-              <Label>הערות</Label>
+              <Label>פרטים נוספים</Label>
               <Input value={agreementForm.notes} onChange={(e) => setAgreementForm({ ...agreementForm, notes: e.target.value })} />
             </div>
             <Button type="submit" className="w-full" disabled={saveAgreementMutation.isPending}>
