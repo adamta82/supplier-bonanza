@@ -132,6 +132,9 @@ ${JSON.stringify(Object.entries(salesBySupplier).sort((a, b) => b[1].sales - a[1
 הסכמי בונוס פעילים:
 ${JSON.stringify(agreementsSummary, null, 2)}
 
+הערות על הסכמי בונוס (כותב, תאריך, תוכן):
+${JSON.stringify(agreementNotes?.map((n: any) => ({ ספק: n.bonus_agreements?.suppliers?.name, כותב: n.author_name, תאריך: n.created_at, הערה: n.note_text })), null, 2)}
+
 בונוסי עסקאות:
 ${JSON.stringify(txBonuses?.map((t: any) => ({ ספק: (t as any).suppliers?.name, תאריך: t.transaction_date, שווי: t.bonus_value, סוג: t.bonus_payment_type, תיאור: t.description })), null, 2)}
 
