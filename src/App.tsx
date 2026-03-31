@@ -20,6 +20,7 @@ import Reconciliation from "@/pages/Reconciliation";
 import Users from "@/pages/Users";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
+import AIAssistant from "@/pages/AIAssistant";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,7 @@ function ProtectedRoutes() {
         <Route path="/errors" element={<Errors />} />
         <Route path="/reconciliation" element={<Reconciliation />} />
         <Route path="/users" element={<Users />} />
+        <Route path="/ai-assistant" element={<AIAssistant />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>
