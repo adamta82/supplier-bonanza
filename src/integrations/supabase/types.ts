@@ -763,6 +763,143 @@ export type Database = {
           },
         ]
       }
+      voucher_campaign_groups: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          group_name: string
+          id: string
+          item_codes: string[]
+          voucher_value: number
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          group_name: string
+          id?: string
+          item_codes?: string[]
+          voucher_value?: number
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          group_name?: string
+          id?: string
+          item_codes?: string[]
+          voucher_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voucher_campaign_groups_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "voucher_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voucher_campaigns: {
+        Row: {
+          campaign_name: string
+          created_at: string
+          end_date: string
+          id: string
+          is_active: boolean
+          notes: string | null
+          start_date: string
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          campaign_name: string
+          created_at?: string
+          end_date: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          start_date: string
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          campaign_name?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          start_date?: string
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voucher_campaigns_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voucher_claim_status: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          group_id: string
+          id: string
+          quantity: number
+          sales_record_id: string
+          status: string
+          updated_at: string
+          voucher_value: number
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          group_id: string
+          id?: string
+          quantity?: number
+          sales_record_id: string
+          status?: string
+          updated_at?: string
+          voucher_value?: number
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          group_id?: string
+          id?: string
+          quantity?: number
+          sales_record_id?: string
+          status?: string
+          updated_at?: string
+          voucher_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voucher_claim_status_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "voucher_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_claim_status_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "voucher_campaign_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_claim_status_sales_record_id_fkey"
+            columns: ["sales_record_id"]
+            isOneToOne: false
+            referencedRelation: "sales_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
