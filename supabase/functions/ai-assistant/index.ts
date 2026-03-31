@@ -92,6 +92,7 @@ serve(async (req) => {
       fixed_percentage: a.fixed_percentage,
       fixed_amount: a.fixed_amount,
       status: a.bonus_status,
+      details: a.notes,
     }));
 
     const systemPrompt = `אתה עוזר AI חכם של מערכת "ZABILO MARGIN" לניהול בונוסים ורווחיות ספקים.
