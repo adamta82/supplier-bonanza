@@ -1891,7 +1891,7 @@ export default function SupplierDetail() {
               <Input type="date" value={editForm.reconciliation_date} onChange={(e) => setEditForm({ ...editForm, reconciliation_date: e.target.value })} />
             </div>
             <div>
-              <Label>הערות</Label>
+              <Label>פרטים נוספים</Label>
               <Input value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} />
             </div>
             <Button type="submit" className="w-full" disabled={updateMutation.isPending}>

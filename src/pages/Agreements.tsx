@@ -342,7 +342,7 @@ export default function Agreements() {
 
               {/* Notes */}
               <div>
-                <Label>הערות</Label>
+                <Label>פרטים נוספים</Label>
                 <Input value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
               </div>
 

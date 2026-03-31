@@ -46,7 +46,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch ALL data using pagination to ensure accuracy
-    const [suppliers, agreements, purchases, sales, txBonuses, historical] = await Promise.all([
+    const [suppliers, agreements, purchases, sales, txBonuses, historical, agreementNotes] = await Promise.all([
       fetchAll(supabase, "suppliers", "id, name, supplier_number, payment_terms, shotef, obligo, notes, annual_bonus_status"),
       fetchAll(supabase, "bonus_agreements", "*, suppliers(name), bonus_tiers(*)", (q: any) => q.eq("is_active", true)),
       fetchAll(supabase, "purchase_records", "supplier_name, supplier_number, order_number, order_date, item_description, quantity, unit_price, total_amount, total_with_vat, category, item_code"),
