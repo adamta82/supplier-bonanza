@@ -69,12 +69,14 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<LoginRoute />} />
-            <Route path="/*" element={<ProtectedRoutes />} />
-          </Routes>
-        </BrowserRouter>
+        <AIChatProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<LoginRoute />} />
+              <Route path="/*" element={<ProtectedRoutes />} />
+            </Routes>
+          </BrowserRouter>
+        </AIChatProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
