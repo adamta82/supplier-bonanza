@@ -46,14 +46,20 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch ALL data using pagination to ensure accuracy
-    const [suppliers, agreements, purchases, sales, txBonuses, historical, agreementNotes] = await Promise.all([
-      fetchAll(supabase, "suppliers", "id, name, supplier_number, payment_terms, shotef, obligo, notes, annual_bonus_status"),
+    const [suppliers, agreements, purchases, sales, txBonuses, historical, agreementNotes, shekelSettings, shekelExclusions, supplierInvoices, consolidatedInvoices, deliveryNotes, reconciliationApprovals] = await Promise.all([
+      fetchAll(supabase, "suppliers", "id, name, supplier_number, payment_terms, shotef, obligo, notes, annual_bonus_status, reconciliation_date"),
       fetchAll(supabase, "bonus_agreements", "*, suppliers(name), bonus_tiers(*)", (q: any) => q.eq("is_active", true)),
-      fetchAll(supabase, "purchase_records", "supplier_name, supplier_number, order_number, order_date, item_description, quantity, unit_price, total_amount, total_with_vat, category, item_code"),
-      fetchAll(supabase, "sales_records", "supplier_name, order_number, sale_date, item_description, quantity, sale_price, cost_price, profit_direct, category, brand, customer_name"),
+      fetchAll(supabase, "purchase_records", "supplier_name, supplier_number, order_number, order_date, item_description, quantity, unit_price, total_amount, total_with_vat, category, item_code, customer_po, order_status, barcode"),
+      fetchAll(supabase, "sales_records", "supplier_name, order_number, sale_date, item_description, quantity, sale_price, cost_price, profit_direct, category, brand, customer_name, zabilo_id, order_status"),
       fetchAll(supabase, "transaction_bonuses", "*, suppliers(name)"),
       fetchAll(supabase, "historical_supplier_data", "*", undefined, { col: "year", asc: false }),
       fetchAll(supabase, "agreement_notes", "*, bonus_agreements(supplier_id, suppliers(name))"),
+      fetchAll(supabase, "shekel_campaign_settings", "*, suppliers(name)"),
+      fetchAll(supabase, "shekel_campaign_exclusions", "*, shekel_campaign_settings(supplier_id, campaign_name, suppliers(name)), purchase_records(order_number, item_description, supplier_name, unit_price, quantity)"),
+      fetchAll(supabase, "supplier_invoice_items", "supplier_name, supplier_number, invoice_number, invoice_date, item_description, quantity, unit_price, total_with_vat, total_payment, po_number, status"),
+      fetchAll(supabase, "consolidated_invoice_items", "supplier_name, supplier_number, invoice_number, invoice_date, item_description, quantity, unit_price, total_with_vat, po_number, gr_number, status"),
+      fetchAll(supabase, "delivery_note_items", "supplier_name, supplier_number, note_number, note_date, item_description, quantity, total_price, customer_name, order_number, status"),
+      fetchAll(supabase, "reconciliation_approvals", "*"),
     ]);
 
     // Build summary stats
@@ -146,6 +152,48 @@ ${JSON.stringify(purchases?.slice(0, 100).map((p: any) => ({ ספק: p.supplier_
 
 דוגמאות מכירות אחרונות (עד 100):
 ${JSON.stringify(sales?.slice(0, 100).map((s: any) => ({ ספק: s.supplier_name, הזמנה: s.order_number, תאריך: s.sale_date, פריט: s.item_description, לקוח: s.customer_name, מכירה: s.sale_price, עלות: s.cost_price, רווח: s.profit_direct, מותג: s.brand })), null, 2)}
+
+מבצע שקל - הגדרות קמפיינים:
+${JSON.stringify(shekelSettings?.map((sc: any) => ({ ספק: sc.suppliers?.name, שם_קמפיין: sc.campaign_name, תאריך_התחלה: sc.start_date, תאריך_סיום: sc.end_date, סף_זכאות: sc.threshold_amount, פעיל: sc.is_active })), null, 2)}
+
+מבצע שקל - החרגות וסטטוס מתנות:
+${JSON.stringify(shekelExclusions?.map((e: any) => ({ ספק: e.shekel_campaign_settings?.suppliers?.name, קמפיין: e.shekel_campaign_settings?.campaign_name, הזמנה: e.purchase_records?.order_number, פריט: e.purchase_records?.item_description, סטטוס_מתנה: e.gift_status })), null, 2)}
+
+חשבוניות ספק (סיכום - ${supplierInvoices?.length || 0} רשומות):
+${JSON.stringify(Object.entries(
+  (supplierInvoices || []).reduce((acc: Record<string, { count: number; total: number }>, inv: any) => {
+    const name = inv.supplier_name || "לא ידוע";
+    if (!acc[name]) acc[name] = { count: 0, total: 0 };
+    acc[name].count++;
+    acc[name].total += inv.total_with_vat || inv.total_payment || 0;
+    return acc;
+  }, {})
+).sort((a: any, b: any) => b[1].total - a[1].total).map(([name, d]: any) => ({ ספק: name, רשומות: d.count, סהכ: Math.round(d.total) })), null, 2)}
+
+חשבוניות מרוכזות (סיכום - ${consolidatedInvoices?.length || 0} רשומות):
+${JSON.stringify(Object.entries(
+  (consolidatedInvoices || []).reduce((acc: Record<string, { count: number; total: number }>, inv: any) => {
+    const name = inv.supplier_name || "לא ידוע";
+    if (!acc[name]) acc[name] = { count: 0, total: 0 };
+    acc[name].count++;
+    acc[name].total += inv.total_with_vat || 0;
+    return acc;
+  }, {})
+).sort((a: any, b: any) => b[1].total - a[1].total).map(([name, d]: any) => ({ ספק: name, רשומות: d.count, סהכ: Math.round(d.total) })), null, 2)}
+
+תעודות משלוח (סיכום - ${deliveryNotes?.length || 0} רשומות):
+${JSON.stringify(Object.entries(
+  (deliveryNotes || []).reduce((acc: Record<string, { count: number; total: number }>, dn: any) => {
+    const name = dn.supplier_name || "לא ידוע";
+    if (!acc[name]) acc[name] = { count: 0, total: 0 };
+    acc[name].count++;
+    acc[name].total += dn.total_price || 0;
+    return acc;
+  }, {})
+).sort((a: any, b: any) => b[1].total - a[1].total).map(([name, d]: any) => ({ ספק: name, רשומות: d.count, סהכ: Math.round(d.total) })), null, 2)}
+
+אישורי התאמות (${reconciliationApprovals?.length || 0} רשומות):
+${JSON.stringify(reconciliationApprovals?.map((r: any) => ({ סוג_מסמך: r.document_type, סוג_התאמה: r.match_type, מפתח: r.match_key, ערך_מקורי: r.original_value, ערך_מותאם: r.matched_value, הערות: r.approval_notes })), null, 2)}
 `;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
