@@ -46,14 +46,20 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch ALL data using pagination to ensure accuracy
-    const [suppliers, agreements, purchases, sales, txBonuses, historical, agreementNotes] = await Promise.all([
-      fetchAll(supabase, "suppliers", "id, name, supplier_number, payment_terms, shotef, obligo, notes, annual_bonus_status"),
+    const [suppliers, agreements, purchases, sales, txBonuses, historical, agreementNotes, shekelSettings, shekelExclusions, supplierInvoices, consolidatedInvoices, deliveryNotes, reconciliationApprovals] = await Promise.all([
+      fetchAll(supabase, "suppliers", "id, name, supplier_number, payment_terms, shotef, obligo, notes, annual_bonus_status, reconciliation_date"),
       fetchAll(supabase, "bonus_agreements", "*, suppliers(name), bonus_tiers(*)", (q: any) => q.eq("is_active", true)),
-      fetchAll(supabase, "purchase_records", "supplier_name, supplier_number, order_number, order_date, item_description, quantity, unit_price, total_amount, total_with_vat, category, item_code"),
-      fetchAll(supabase, "sales_records", "supplier_name, order_number, sale_date, item_description, quantity, sale_price, cost_price, profit_direct, category, brand, customer_name"),
+      fetchAll(supabase, "purchase_records", "supplier_name, supplier_number, order_number, order_date, item_description, quantity, unit_price, total_amount, total_with_vat, category, item_code, customer_po, order_status, barcode"),
+      fetchAll(supabase, "sales_records", "supplier_name, order_number, sale_date, item_description, quantity, sale_price, cost_price, profit_direct, category, brand, customer_name, zabilo_id, order_status"),
       fetchAll(supabase, "transaction_bonuses", "*, suppliers(name)"),
       fetchAll(supabase, "historical_supplier_data", "*", undefined, { col: "year", asc: false }),
       fetchAll(supabase, "agreement_notes", "*, bonus_agreements(supplier_id, suppliers(name))"),
+      fetchAll(supabase, "shekel_campaign_settings", "*, suppliers(name)"),
+      fetchAll(supabase, "shekel_campaign_exclusions", "*, shekel_campaign_settings(supplier_id, campaign_name, suppliers(name)), purchase_records(order_number, item_description, supplier_name, unit_price, quantity)"),
+      fetchAll(supabase, "supplier_invoice_items", "supplier_name, supplier_number, invoice_number, invoice_date, item_description, quantity, unit_price, total_with_vat, total_payment, po_number, status"),
+      fetchAll(supabase, "consolidated_invoice_items", "supplier_name, supplier_number, invoice_number, invoice_date, item_description, quantity, unit_price, total_with_vat, po_number, gr_number, status"),
+      fetchAll(supabase, "delivery_note_items", "supplier_name, supplier_number, note_number, note_date, item_description, quantity, total_price, customer_name, order_number, status"),
+      fetchAll(supabase, "reconciliation_approvals", "*"),
     ]);
 
     // Build summary stats
