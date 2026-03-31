@@ -1380,6 +1380,7 @@ export default function SupplierDetail() {
 
           {/* Shekel Campaign Tab */}
           <ShekelCampaignTab supplierId={id!} />
+          <VoucherCampaignTab supplierId={id!} />
         </Tabs>
       </div>
 
