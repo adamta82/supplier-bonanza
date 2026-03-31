@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil, X } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Copy } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
 import { fmtNum } from "@/lib/utils";
 
