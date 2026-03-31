@@ -21,11 +21,68 @@ const SUGGESTIONS = [
 ];
 
 export default function AIAssistant() {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const { data: suppliers } = useQuery({
+    queryKey: ["suppliers-for-links"],
+    queryFn: async () => {
+      const { data } = await supabase.from("suppliers").select("id, name");
+      return data || [];
+    },
+  });
+
+  // Build a map of supplier name → id, sorted by name length desc to match longest first
+  const supplierMap = useMemo(() => {
+    if (!suppliers) return [];
+    return suppliers
+      .filter((s) => s.name && s.name.length > 1)
+      .sort((a, b) => b.name.length - a.name.length)
+      .map((s) => ({ name: s.name, id: s.id }));
+  }, [suppliers]);
+
+  // Custom text renderer that linkifies supplier names
+  const renderTextWithSupplierLinks = useCallback(
+    (text: string) => {
+      if (!supplierMap.length) return <>{text}</>;
+      const parts: (string | JSX.Element)[] = [];
+      let remaining = text;
+      let keyIdx = 0;
+      while (remaining.length > 0) {
+        let earliest = -1;
+        let matched: (typeof supplierMap)[0] | null = null;
+        for (const s of supplierMap) {
+          const idx = remaining.indexOf(s.name);
+          if (idx !== -1 && (earliest === -1 || idx < earliest)) {
+            earliest = idx;
+            matched = s;
+          }
+        }
+        if (matched && earliest !== -1) {
+          if (earliest > 0) parts.push(remaining.slice(0, earliest));
+          parts.push(
+            <button
+              key={keyIdx++}
+              onClick={() => navigate(`/suppliers/${matched!.id}`)}
+              className="text-primary underline hover:text-primary/80 cursor-pointer font-medium"
+            >
+              {matched.name}
+            </button>
+          );
+          remaining = remaining.slice(earliest + matched.name.length);
+        } else {
+          parts.push(remaining);
+          break;
+        }
+      }
+      return <>{parts}</>;
+    },
+    [supplierMap, navigate]
+  );
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
