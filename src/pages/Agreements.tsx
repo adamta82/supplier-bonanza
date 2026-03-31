@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil, X } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Copy } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
 import { fmtNum } from "@/lib/utils";
 
@@ -424,8 +424,36 @@ export default function Agreements() {
                           ? excl.map((e: any) => `${e.mode === "include" ? "כולל" : "לא כולל"}: ${e.keyword}`).join(", ")
                           : a.series_name ? `סדרה: ${a.series_name}` : "-"}
                       </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="icon" onClick={() => {
+                      <TableCell className="flex gap-1">
+                        <Button variant="ghost" size="icon" title="שכפל" onClick={() => {
+                          setEditId(null);
+                          setForm({
+                            supplier_id: a.supplier_id,
+                            bonus_type: a.bonus_type,
+                            period_type: a.period_type || "annual",
+                            period_start: a.period_start || "",
+                            period_end: a.period_end || "",
+                            vat_included: a.vat_included || false,
+                            target_type: a.target_type || "amount",
+                            fixed_amount: a.fixed_amount?.toString() || "",
+                            fixed_percentage: a.fixed_percentage?.toString() || "",
+                            series_name: a.series_name || "",
+                            notes: a.notes || "",
+                            bonus_payment_type: a.bonus_payment_type || "goods",
+                          });
+                          setTiers(
+                            a.bonus_tiers?.length > 0
+                              ? a.bonus_tiers
+                                  .sort((x: any, y: any) => x.tier_order - y.tier_order)
+                                  .map((t: any) => ({ target_value: t.target_value.toString(), bonus_percentage: t.bonus_percentage.toString() }))
+                              : [{ target_value: "", bonus_percentage: "" }]
+                          );
+                          setExclusions(excl);
+                          setIsOpen(true);
+                        }}>
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" title="ערוך" onClick={() => {
                           setEditId(a.id);
                           setForm({
                             supplier_id: a.supplier_id,
