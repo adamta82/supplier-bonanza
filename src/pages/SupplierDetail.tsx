@@ -18,6 +18,7 @@ import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/utils";
 import ShekelCampaignTab from "@/components/ShekelCampaignTab";
+import VoucherCampaignTab from "@/components/VoucherCampaignTab";
 import BonusAIAnalysis from "@/components/BonusAIAnalysis";
 
 const VAT_RATE = 0.18;
@@ -1030,6 +1031,7 @@ export default function SupplierDetail() {
             <TabsTrigger value="marketing">השתתפות בהוצאות פרסום</TabsTrigger>
             <TabsTrigger value="transaction">עסקה</TabsTrigger>
             <TabsTrigger value="shekel">מבצע שקל</TabsTrigger>
+            <TabsTrigger value="voucher">מבצע תווים</TabsTrigger>
           </TabsList>
 
           {["annual_fixed", "annual_target", "marketing"].map((tabType) => {
@@ -1378,6 +1380,7 @@ export default function SupplierDetail() {
 
           {/* Shekel Campaign Tab */}
           <ShekelCampaignTab supplierId={id!} />
+          <VoucherCampaignTab supplierId={id!} />
         </Tabs>
       </div>
 
