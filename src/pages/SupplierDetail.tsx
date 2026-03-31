@@ -270,6 +270,31 @@ export default function SupplierDetail() {
     setAgreementDialogOpen(true);
   };
 
+  const openDuplicateAgreement = (a: any) => {
+    const excl = (() => {
+      try { return typeof a.exclusions === "string" ? JSON.parse(a.exclusions) : (a.exclusions || []); } catch { return []; }
+    })();
+    setAgreementEditId(null);
+    setAgreementForm({
+      bonus_type: a.bonus_type,
+      period_start: a.period_start || "",
+      period_end: a.period_end || "",
+      vat_included: a.vat_included || false,
+      target_type: a.target_type || "amount",
+      fixed_amount: a.fixed_amount?.toString() || "",
+      fixed_percentage: a.fixed_percentage?.toString() || "",
+      notes: a.notes || "",
+      bonus_payment_type: a.bonus_payment_type || "goods",
+    });
+    setTiers(
+      a.bonus_tiers?.length > 0
+        ? a.bonus_tiers.sort((x: any, y: any) => x.tier_order - y.tier_order).map((t: any) => ({ target_value: t.target_value.toString(), bonus_percentage: t.bonus_percentage.toString() }))
+        : [{ target_value: "", bonus_percentage: "" }]
+    );
+    setExclusions(excl);
+    setAgreementDialogOpen(true);
+  };
+
   const openAddAgreement = (bonusType: string) => {
     resetAgreementForm();
     setAgreementForm(prev => ({ ...prev, bonus_type: bonusType }));
