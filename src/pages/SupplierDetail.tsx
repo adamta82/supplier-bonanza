@@ -18,6 +18,7 @@ import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/utils";
 import ShekelCampaignTab from "@/components/ShekelCampaignTab";
+import VoucherCampaignTab from "@/components/VoucherCampaignTab";
 import BonusAIAnalysis from "@/components/BonusAIAnalysis";
 
 const VAT_RATE = 0.18;
