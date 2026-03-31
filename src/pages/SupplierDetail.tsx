@@ -1207,10 +1207,32 @@ export default function SupplierDetail() {
                             </div>
                             )}
                             {agreement.fixed_percentage && !sortedTiers.length && (
-                              <div className="text-sm">בונוס קבוע: {agreement.fixed_percentage}%</div>
+                              <div className="text-sm space-y-1">
+                                <div>בונוס קבוע: {agreement.fixed_percentage}%</div>
+                                {(() => {
+                                  const periodEnded = agreement.period_end && new Date(agreement.period_end) < new Date();
+                                  return (
+                                    <div className="text-xs text-muted-foreground">
+                                      {periodEnded ? "מחזור סופי" : "מחזור נוכחי"}: ₪{fmtNum(cardBonusVolume)}
+                                      {agreement.vat_included ? " (כולל מע\"מ)" : " (לפני מע\"מ)"}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
                             )}
                             {agreement.fixed_amount && !sortedTiers.length && (
-                              <div className="text-sm">בונוס קבוע: ₪{fmtNum(agreement.fixed_amount)}</div>
+                              <div className="text-sm space-y-1">
+                                <div>בונוס קבוע: ₪{fmtNum(agreement.fixed_amount)}</div>
+                                {(() => {
+                                  const periodEnded = agreement.period_end && new Date(agreement.period_end) < new Date();
+                                  return (
+                                    <div className="text-xs text-muted-foreground">
+                                      {periodEnded ? "מחזור סופי" : "מחזור נוכחי"}: ₪{fmtNum(cardBonusVolume)}
+                                      {agreement.vat_included ? " (כולל מע\"מ)" : " (לפני מע\"מ)"}
+                                    </div>
+                                  );
+                                })()}
+                              </div>
                             )}
                             {(() => {
                               const excl = (() => { try { return typeof agreement.exclusions === "string" ? JSON.parse(agreement.exclusions) : (agreement.exclusions || []); } catch { return []; } })();
