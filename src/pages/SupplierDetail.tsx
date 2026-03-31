@@ -1140,7 +1140,10 @@ export default function SupplierDetail() {
                                     <SelectItem value="not_achieved">יעד לא הושג</SelectItem>
                                   </SelectContent>
                                 </Select>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditAgreement(agreement)}>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" title="שכפל" onClick={() => openDuplicateAgreement(agreement)}>
+                                  <Copy className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" title="ערוך" onClick={() => openEditAgreement(agreement)}>
                                   <Pencil className="w-3.5 h-3.5" />
                                 </Button>
                               </div>
