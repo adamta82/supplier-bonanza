@@ -1031,6 +1031,7 @@ export default function SupplierDetail() {
             <TabsTrigger value="marketing">השתתפות בהוצאות פרסום</TabsTrigger>
             <TabsTrigger value="transaction">עסקה</TabsTrigger>
             <TabsTrigger value="shekel">מבצע שקל</TabsTrigger>
+            <TabsTrigger value="voucher">מבצע תווים</TabsTrigger>
           </TabsList>
 
           {["annual_fixed", "annual_target", "marketing"].map((tabType) => {
