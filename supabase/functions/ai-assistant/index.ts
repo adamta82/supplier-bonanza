@@ -46,13 +46,14 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch ALL data using pagination to ensure accuracy
-    const [suppliers, agreements, purchases, sales, txBonuses, historical] = await Promise.all([
+    const [suppliers, agreements, purchases, sales, txBonuses, historical, agreementNotes] = await Promise.all([
       fetchAll(supabase, "suppliers", "id, name, supplier_number, payment_terms, shotef, obligo, notes, annual_bonus_status"),
       fetchAll(supabase, "bonus_agreements", "*, suppliers(name), bonus_tiers(*)", (q: any) => q.eq("is_active", true)),
       fetchAll(supabase, "purchase_records", "supplier_name, supplier_number, order_number, order_date, item_description, quantity, unit_price, total_amount, total_with_vat, category, item_code"),
       fetchAll(supabase, "sales_records", "supplier_name, order_number, sale_date, item_description, quantity, sale_price, cost_price, profit_direct, category, brand, customer_name"),
       fetchAll(supabase, "transaction_bonuses", "*, suppliers(name)"),
       fetchAll(supabase, "historical_supplier_data", "*", undefined, { col: "year", asc: false }),
+      fetchAll(supabase, "agreement_notes", "*, bonus_agreements(supplier_id, suppliers(name))"),
     ]);
 
     // Build summary stats
@@ -91,6 +92,7 @@ serve(async (req) => {
       fixed_percentage: a.fixed_percentage,
       fixed_amount: a.fixed_amount,
       status: a.bonus_status,
+      details: a.notes,
     }));
 
     const systemPrompt = `אתה עוזר AI חכם של מערכת "ZABILO MARGIN" לניהול בונוסים ורווחיות ספקים.
@@ -129,6 +131,9 @@ ${JSON.stringify(Object.entries(salesBySupplier).sort((a, b) => b[1].sales - a[1
 
 הסכמי בונוס פעילים:
 ${JSON.stringify(agreementsSummary, null, 2)}
+
+הערות על הסכמי בונוס (כותב, תאריך, תוכן):
+${JSON.stringify(agreementNotes?.map((n: any) => ({ ספק: n.bonus_agreements?.suppliers?.name, כותב: n.author_name, תאריך: n.created_at, הערה: n.note_text })), null, 2)}
 
 בונוסי עסקאות:
 ${JSON.stringify(txBonuses?.map((t: any) => ({ ספק: (t as any).suppliers?.name, תאריך: t.transaction_date, שווי: t.bonus_value, סוג: t.bonus_payment_type, תיאור: t.description })), null, 2)}
