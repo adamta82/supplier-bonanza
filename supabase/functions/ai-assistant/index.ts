@@ -53,6 +53,7 @@ serve(async (req) => {
       fetchAll(supabase, "sales_records", "supplier_name, order_number, sale_date, item_description, quantity, sale_price, cost_price, profit_direct, category, brand, customer_name"),
       fetchAll(supabase, "transaction_bonuses", "*, suppliers(name)"),
       fetchAll(supabase, "historical_supplier_data", "*", undefined, { col: "year", asc: false }),
+      fetchAll(supabase, "agreement_notes", "*, bonus_agreements(supplier_id, suppliers(name))"),
     ]);
 
     // Build summary stats
