@@ -26,7 +26,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col border-l border-sidebar-border">
+      <aside className="w-64 bg-sidebar text-sidebar-foreground flex flex-col border-l border-sidebar-border sticky top-0 h-screen overflow-y-auto">
         <div className="p-6 border-b border-sidebar-border">
           <h1 className="text-xl font-bold text-sidebar-primary">
             💰 ZABILO MARGIN
