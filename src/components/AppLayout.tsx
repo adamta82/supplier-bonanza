@@ -17,6 +17,7 @@ const navItems = [
   { path: "/errors", label: "שגויים", icon: CircleAlert },
   { path: "/reconciliation", label: "התאמת מסמכים", icon: FileCheck },
   { path: "/users", label: "ניהול משתמשים", icon: UserCog },
+  { path: "/ai-assistant", label: "עוזר AI", icon: Bot },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

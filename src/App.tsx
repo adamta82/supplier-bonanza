@@ -55,6 +55,7 @@ function ProtectedRoutes() {
         <Route path="/errors" element={<Errors />} />
         <Route path="/reconciliation" element={<Reconciliation />} />
         <Route path="/users" element={<Users />} />
+        <Route path="/ai-assistant" element={<AIAssistant />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>
