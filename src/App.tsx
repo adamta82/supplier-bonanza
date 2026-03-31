@@ -20,6 +20,7 @@ import Reconciliation from "@/pages/Reconciliation";
 import Users from "@/pages/Users";
 import Login from "@/pages/Login";
 import NotFound from "@/pages/NotFound";
+import AIAssistant from "@/pages/AIAssistant";
 
 const queryClient = new QueryClient();
 
