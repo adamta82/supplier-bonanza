@@ -373,9 +373,27 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
     input.click();
   };
 
-  const getReportUrl = (path: string) => {
-    const { data } = supabase.storage.from("voucher-reports").getPublicUrl(path);
-    return data.publicUrl;
+  const downloadReport = async (path: string) => {
+    try {
+      const { data, error } = await supabase.storage.from("voucher-reports").download(path);
+      if (error || !data) throw error || new Error("No data");
+      const url = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      const ext = path.split(".").pop() || "pdf";
+      a.download = `report.${ext}`;
+      // For PDFs, open in new tab instead of downloading
+      if (ext.toLowerCase() === "pdf") {
+        window.open(url, "_blank");
+      } else {
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    } catch {
+      toast.error("שגיאה בפתיחת הדוח");
+    }
   };
 
   return (
@@ -483,14 +501,12 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
                           {uploadReportMutation.isPending ? "מעלה..." : "העלאת דוח"}
                         </Button>
                         {campaign.report_file_path && (
-                          <a
-                            href={getReportUrl(campaign.report_file_path)}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            onClick={() => downloadReport(campaign.report_file_path)}
                             className="flex items-center gap-1 text-xs text-primary hover:underline"
                           >
                             <FileText className="w-3 h-3" />צפה בדוח
-                          </a>
+                          </button>
                         )}
                       </div>
                     </div>
