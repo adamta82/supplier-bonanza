@@ -1,27 +1,39 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Pencil, ChevronDown, ChevronUp, Gift } from "lucide-react";
+import { Plus, Trash2, Pencil, ChevronDown, ChevronUp, Gift, Upload, FileText, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
+
+const statusLabels: Record<string, string> = {
+  pending: "ממתין",
+  received: "התקבל",
+  not_received: "לא התקבל",
+};
+
+const statusVariant = (s: string) => s === "received" ? "default" as const : s === "not_received" ? "destructive" as const : "outline" as const;
 
 export default function VoucherCampaignTab({ supplierId }: { supplierId: string }) {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [showCampaignDialog, setShowCampaignDialog] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<any>(null);
   const [expandedCampaign, setExpandedCampaign] = useState<string | null>(null);
   const [showGroupDialog, setShowGroupDialog] = useState<string | null>(null);
   const [editingGroup, setEditingGroup] = useState<any>(null);
+  const [showNotesDialog, setShowNotesDialog] = useState<string | null>(null);
+  const [newNoteText, setNewNoteText] = useState("");
 
   // Form state for campaign
   const [campaignName, setCampaignName] = useState("");
@@ -62,7 +74,6 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
     enabled: !!campaigns && campaigns.length > 0,
   });
 
-  // Fetch sales records for this supplier to calculate eligibility
   const { data: salesRecords } = useQuery({
     queryKey: ["voucher-sales", supplierId],
     queryFn: async () => {
@@ -84,20 +95,35 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
     },
   });
 
-  const { data: claimStatuses } = useQuery({
-    queryKey: ["voucher-claims", supplierId],
+  // Notes query
+  const { data: campaignNotesData } = useQuery({
+    queryKey: ["voucher-campaign-notes", supplierId],
     queryFn: async () => {
       const campaignIds = (campaigns || []).map((c: any) => c.id);
       if (campaignIds.length === 0) return [];
       const { data, error } = await supabase
-        .from("voucher_claim_status")
+        .from("voucher_campaign_notes")
         .select("*")
-        .in("campaign_id", campaignIds);
+        .in("campaign_id", campaignIds)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data || [];
     },
     enabled: !!campaigns && campaigns.length > 0,
   });
+
+  // Profile for author name
+  const { data: profile } = useQuery({
+    queryKey: ["my-profile"],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("display_name, username").eq("id", user.id).maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const authorName = profile?.display_name || profile?.username || user?.email?.split("@")[0] || "משתמש";
 
   // Campaign CRUD
   const saveCampaignMutation = useMutation({
@@ -143,6 +169,73 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
     onError: () => toast.error("שגיאה במחיקה"),
   });
 
+  // Campaign-level status update
+  const updateCampaignStatusMutation = useMutation({
+    mutationFn: async ({ id, claim_status, claimed_amount }: { id: string; claim_status?: string; claimed_amount?: number | null }) => {
+      const update: any = {};
+      if (claim_status !== undefined) update.claim_status = claim_status;
+      if (claimed_amount !== undefined) update.claimed_amount = claimed_amount;
+      const { error } = await supabase.from("voucher_campaigns").update(update).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["voucher-campaigns", supplierId] });
+      toast.success("סטטוס עודכן");
+    },
+    onError: () => toast.error("שגיאה בעדכון"),
+  });
+
+  // File upload mutation
+  const uploadReportMutation = useMutation({
+    mutationFn: async ({ campaignId, file }: { campaignId: string; file: File }) => {
+      const ext = file.name.split(".").pop();
+      const path = `${supplierId}/${campaignId}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("voucher-reports")
+        .upload(path, file);
+      if (uploadError) throw uploadError;
+
+      const { error } = await supabase.from("voucher_campaigns")
+        .update({ report_file_path: path })
+        .eq("id", campaignId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["voucher-campaigns", supplierId] });
+      toast.success("דוח הועלה בהצלחה");
+    },
+    onError: () => toast.error("שגיאה בהעלאת הקובץ"),
+  });
+
+  // Notes CRUD
+  const addNoteMutation = useMutation({
+    mutationFn: async ({ campaignId, text }: { campaignId: string; text: string }) => {
+      const { error } = await supabase.from("voucher_campaign_notes").insert({
+        campaign_id: campaignId,
+        author_name: authorName,
+        note_text: text,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["voucher-campaign-notes", supplierId] });
+      setNewNoteText("");
+      toast.success("הערה נוספה");
+    },
+    onError: () => toast.error("שגיאה בהוספת הערה"),
+  });
+
+  const deleteNoteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("voucher_campaign_notes").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["voucher-campaign-notes", supplierId] });
+      toast.success("הערה נמחקה");
+    },
+  });
+
   // Group CRUD
   const saveGroupMutation = useMutation({
     mutationFn: async (payload: any) => {
@@ -185,49 +278,12 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
     onError: () => toast.error("שגיאה במחיקה"),
   });
 
-  // Claim status mutation
-  const updateClaimMutation = useMutation({
-    mutationFn: async ({ salesRecordId, campaignId, groupId, quantity, voucherValue, status }: any) => {
-      // Upsert: check if exists
-      const { data: existing } = await supabase
-        .from("voucher_claim_status")
-        .select("id")
-        .eq("sales_record_id", salesRecordId)
-        .eq("campaign_id", campaignId)
-        .eq("group_id", groupId)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await supabase.from("voucher_claim_status").update({ status }).eq("id", existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("voucher_claim_status").insert({
-          sales_record_id: salesRecordId,
-          campaign_id: campaignId,
-          group_id: groupId,
-          quantity,
-          voucher_value: voucherValue,
-          status,
-        });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["voucher-claims", supplierId] });
-      toast.success("סטטוס עודכן");
-    },
-    onError: () => toast.error("שגיאה בעדכון סטטוס"),
-  });
-
   // Calculate eligibility per campaign
   const campaignSummaries = useMemo(() => {
     if (!campaigns || !salesRecords) return {};
     const result: Record<string, {
       totalVouchers: number;
       totalValue: number;
-      pendingCount: number;
-      receivedCount: number;
-      notReceivedCount: number;
       eligibleItems: any[];
     }> = {};
 
@@ -236,9 +292,6 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
       const eligibleItems: any[] = [];
       let totalVouchers = 0;
       let totalValue = 0;
-      let pendingCount = 0;
-      let receivedCount = 0;
-      let notReceivedCount = 0;
 
       for (const group of campaignGroups) {
         const codes = (group.item_codes || []).map((c: string) => c.toLowerCase());
@@ -254,14 +307,6 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
           totalVouchers += qty;
           totalValue += vValue;
 
-          const claim = (claimStatuses || []).find(
-            (cs: any) => cs.sales_record_id === sale.id && cs.campaign_id === campaign.id && cs.group_id === group.id
-          );
-          const status = claim?.status || "pending";
-          if (status === "pending") pendingCount += qty;
-          else if (status === "received") receivedCount += qty;
-          else notReceivedCount += qty;
-
           eligibleItems.push({
             saleId: sale.id,
             groupId: group.id,
@@ -274,16 +319,14 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
             quantity: qty,
             voucherValuePerUnit: Number(group.voucher_value),
             totalVoucherValue: vValue,
-            status,
-            claimId: claim?.id,
           });
         }
       }
 
-      result[campaign.id] = { totalVouchers, totalValue, pendingCount, receivedCount, notReceivedCount, eligibleItems };
+      result[campaign.id] = { totalVouchers, totalValue, eligibleItems };
     }
     return result;
-  }, [campaigns, groups, salesRecords, claimStatuses]);
+  }, [campaigns, groups, salesRecords]);
 
   const openAddCampaign = () => {
     setEditingCampaign(null);
@@ -319,6 +362,22 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
     setShowGroupDialog(g.campaign_id);
   };
 
+  const handleFileUpload = (campaignId: string) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".xlsx,.xls,.csv,.pdf,.doc,.docx";
+    input.onchange = (e: any) => {
+      const file = e.target.files?.[0];
+      if (file) uploadReportMutation.mutate({ campaignId, file });
+    };
+    input.click();
+  };
+
+  const getReportUrl = (path: string) => {
+    const { data } = supabase.storage.from("voucher-reports").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
   return (
     <TabsContent value="voucher">
       <div className="space-y-4">
@@ -336,6 +395,7 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
           const summary = campaignSummaries[campaign.id];
           const isExpanded = expandedCampaign === campaign.id;
           const campaignGroups = (groups || []).filter((g: any) => g.campaign_id === campaign.id);
+          const notes = (campaignNotesData || []).filter((n: any) => n.campaign_id === campaign.id);
 
           return (
             <Card key={campaign.id}>
@@ -351,6 +411,9 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
                         <Badge variant={campaign.is_active ? "default" : "secondary"}>
                           {campaign.is_active ? "פעיל" : "לא פעיל"}
                         </Badge>
+                        <Badge variant={statusVariant(campaign.claim_status || "pending")}>
+                          {statusLabels[campaign.claim_status || "pending"]}
+                        </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {campaign.start_date} — {campaign.end_date}
@@ -361,11 +424,16 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
                     {summary && (
                       <div className="flex gap-3 text-xs ml-4">
                         <span>תווים: <strong>{summary.totalVouchers}</strong></span>
-                        <span>שווי: <strong>₪{fmtNum(summary.totalValue)}</strong></span>
-                        <Badge variant="outline" className="text-xs">ממתין: {summary.pendingCount}</Badge>
-                        <Badge variant="default" className="text-xs">התקבל: {summary.receivedCount}</Badge>
+                        <span>שווי מחושב: <strong>₪{fmtNum(summary.totalValue)}</strong></span>
+                        {campaign.claimed_amount != null && (
+                          <span>סכום לקבל: <strong>₪{fmtNum(campaign.claimed_amount)}</strong></span>
+                        )}
                       </div>
                     )}
+                    <Button variant="ghost" size="icon" title="הערות" onClick={() => setShowNotesDialog(campaign.id)}>
+                      <MessageSquare className="w-4 h-4" />
+                      {notes.length > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-[10px] w-4 h-4 flex items-center justify-center">{notes.length}</span>}
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => openEditCampaign(campaign)}>
                       <Pencil className="w-4 h-4" />
                     </Button>
@@ -378,6 +446,54 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
                 {isExpanded && (
                   <div className="space-y-4 pt-2">
                     {campaign.notes && <p className="text-sm text-muted-foreground">{campaign.notes}</p>}
+
+                    {/* Campaign-level status & amount */}
+                    <div className="flex items-center gap-4 p-3 border rounded-md bg-muted/30">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-sm whitespace-nowrap">סטטוס מבצע:</Label>
+                        <Select
+                          value={campaign.claim_status || "pending"}
+                          onValueChange={(val) => updateCampaignStatusMutation.mutate({ id: campaign.id, claim_status: val })}
+                        >
+                          <SelectTrigger className="h-8 w-[130px] text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">ממתין</SelectItem>
+                            <SelectItem value="received">התקבל</SelectItem>
+                            <SelectItem value="not_received">לא התקבל</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-sm whitespace-nowrap">סכום לקבל (₪):</Label>
+                        <Input
+                          type="number"
+                          className="h-8 w-[120px] text-sm"
+                          defaultValue={campaign.claimed_amount ?? ""}
+                          onBlur={(e) => {
+                            const val = e.target.value ? parseFloat(e.target.value) : null;
+                            updateCampaignStatusMutation.mutate({ id: campaign.id, claimed_amount: val });
+                          }}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleFileUpload(campaign.id)} disabled={uploadReportMutation.isPending}>
+                          <Upload className="w-3 h-3 ml-1" />
+                          {uploadReportMutation.isPending ? "מעלה..." : "העלאת דוח"}
+                        </Button>
+                        {campaign.report_file_path && (
+                          <a
+                            href={getReportUrl(campaign.report_file_path)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-1 text-xs text-primary hover:underline"
+                          >
+                            <FileText className="w-3 h-3" />צפה בדוח
+                          </a>
+                        )}
+                      </div>
+                    </div>
 
                     {/* Groups section */}
                     <div className="space-y-2">
@@ -417,10 +533,10 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
                       ))}
                     </div>
 
-                    {/* Eligible items table */}
+                    {/* Eligible items table (read-only, no per-item status) */}
                     {summary && summary.eligibleItems.length > 0 && (
                       <div className="space-y-2">
-                        <h4 className="text-sm font-medium">פריטים זכאים</h4>
+                        <h4 className="text-sm font-medium">פריטים זכאים ({summary.eligibleItems.length})</h4>
                         <div className="max-h-[400px] overflow-auto">
                           <Table>
                             <TableHeader>
@@ -434,7 +550,6 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
                                 <TableHead>כמות</TableHead>
                                 <TableHead>שווי תו</TableHead>
                                 <TableHead>סה"כ</TableHead>
-                                <TableHead>סטטוס</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -449,28 +564,6 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
                                   <TableCell className="text-xs">{item.quantity}</TableCell>
                                   <TableCell className="text-xs">₪{fmtNum(item.voucherValuePerUnit)}</TableCell>
                                   <TableCell className="text-xs font-semibold">₪{fmtNum(item.totalVoucherValue)}</TableCell>
-                                  <TableCell>
-                                    <Select
-                                      value={item.status}
-                                      onValueChange={(val) => updateClaimMutation.mutate({
-                                        salesRecordId: item.saleId,
-                                        campaignId: campaign.id,
-                                        groupId: item.groupId,
-                                        quantity: item.quantity,
-                                        voucherValue: item.voucherValuePerUnit,
-                                        status: val,
-                                      })}
-                                    >
-                                      <SelectTrigger className="h-7 w-[110px] text-xs">
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="pending">ממתין</SelectItem>
-                                        <SelectItem value="received">התקבל</SelectItem>
-                                        <SelectItem value="not_received">לא התקבל</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
@@ -551,11 +644,10 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
             </div>
             <div>
               <Label>מק"טים (מופרדים בפסיק או שורה חדשה)</Label>
-              <textarea
-                className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 min-h-[80px]"
+              <Textarea
                 value={itemCodesText}
                 onChange={(e) => setItemCodesText(e.target.value)}
-                placeholder="001-1234, 001-5678&#10;002-9999"
+                placeholder={"001-1234, 001-5678\n002-9999"}
               />
             </div>
             <Button
@@ -570,6 +662,58 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
             >
               {saveGroupMutation.isPending ? "שומר..." : "שמור"}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Notes Dialog */}
+      <Dialog open={!!showNotesDialog} onOpenChange={() => setShowNotesDialog(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>הערות למבצע</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Textarea
+                value={newNoteText}
+                onChange={(e) => setNewNoteText(e.target.value)}
+                placeholder="הוסף הערה..."
+                className="min-h-[60px]"
+              />
+              <Button
+                className="self-end"
+                disabled={!newNoteText.trim() || addNoteMutation.isPending}
+                onClick={() => {
+                  if (showNotesDialog && newNoteText.trim()) {
+                    addNoteMutation.mutate({ campaignId: showNotesDialog, text: newNoteText.trim() });
+                  }
+                }}
+              >
+                {addNoteMutation.isPending ? "..." : "הוסף"}
+              </Button>
+            </div>
+
+            <div className="max-h-[300px] overflow-auto space-y-2">
+              {(campaignNotesData || [])
+                .filter((n: any) => n.campaign_id === showNotesDialog)
+                .map((note: any) => (
+                  <div key={note.id} className="border rounded-md p-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">{note.author_name}</span>
+                        <span>{new Date(note.created_at).toLocaleDateString("he-IL")} {new Date(note.created_at).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}</span>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => deleteNoteMutation.mutate(note.id)}>
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                    </div>
+                    <p className="text-sm">{note.note_text}</p>
+                  </div>
+                ))}
+              {(campaignNotesData || []).filter((n: any) => n.campaign_id === showNotesDialog).length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-4">אין הערות עדיין</p>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
