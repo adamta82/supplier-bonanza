@@ -501,14 +501,12 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
                           {uploadReportMutation.isPending ? "מעלה..." : "העלאת דוח"}
                         </Button>
                         {campaign.report_file_path && (
-                          <a
-                            href={getReportUrl(campaign.report_file_path)}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            onClick={() => downloadReport(campaign.report_file_path)}
                             className="flex items-center gap-1 text-xs text-primary hover:underline"
                           >
                             <FileText className="w-3 h-3" />צפה בדוח
-                          </a>
+                          </button>
                         )}
                       </div>
                     </div>
