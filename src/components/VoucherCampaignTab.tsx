@@ -373,9 +373,27 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
     input.click();
   };
 
-  const getReportUrl = (path: string) => {
-    const { data } = supabase.storage.from("voucher-reports").getPublicUrl(path);
-    return data.publicUrl;
+  const downloadReport = async (path: string) => {
+    try {
+      const { data, error } = await supabase.storage.from("voucher-reports").download(path);
+      if (error || !data) throw error || new Error("No data");
+      const url = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.target = "_blank";
+      const ext = path.split(".").pop() || "pdf";
+      a.download = `report.${ext}`;
+      // For PDFs, open in new tab instead of downloading
+      if (ext.toLowerCase() === "pdf") {
+        window.open(url, "_blank");
+      } else {
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    } catch {
+      toast.error("שגיאה בפתיחת הדוח");
+    }
   };
 
   return (
