@@ -378,21 +378,19 @@ export default function VoucherCampaignTab({ supplierId }: { supplierId: string 
       const { data, error } = await supabase.storage.from("voucher-reports").download(path);
       if (error || !data) throw error || new Error("No data");
       const url = URL.createObjectURL(data);
+      const ext = path.split(".").pop() || "pdf";
+      const fileName = path.split("/").pop() || `report.${ext}`;
       const a = document.createElement("a");
       a.href = url;
-      a.target = "_blank";
-      const ext = path.split(".").pop() || "pdf";
-      a.download = `report.${ext}`;
-      // For PDFs, open in new tab instead of downloading
-      if (ext.toLowerCase() === "pdf") {
-        window.open(url, "_blank");
-      } else {
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      }
-    } catch {
-      toast.error("שגיאה בפתיחת הדוח");
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success("הדוח הורד בהצלחה");
+    } catch (err) {
+      console.error("Download error:", err);
+      toast.error("שגיאה בהורדת הדוח");
     }
   };
 
