@@ -798,36 +798,77 @@ export type Database = {
           },
         ]
       }
+      voucher_campaign_notes: {
+        Row: {
+          author_name: string
+          campaign_id: string
+          created_at: string
+          id: string
+          note_text: string
+        }
+        Insert: {
+          author_name: string
+          campaign_id: string
+          created_at?: string
+          id?: string
+          note_text: string
+        }
+        Update: {
+          author_name?: string
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          note_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voucher_campaign_notes_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "voucher_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       voucher_campaigns: {
         Row: {
           campaign_name: string
+          claim_status: string
+          claimed_amount: number | null
           created_at: string
           end_date: string
           id: string
           is_active: boolean
           notes: string | null
+          report_file_path: string | null
           start_date: string
           supplier_id: string
           updated_at: string
         }
         Insert: {
           campaign_name: string
+          claim_status?: string
+          claimed_amount?: number | null
           created_at?: string
           end_date: string
           id?: string
           is_active?: boolean
           notes?: string | null
+          report_file_path?: string | null
           start_date: string
           supplier_id: string
           updated_at?: string
         }
         Update: {
           campaign_name?: string
+          claim_status?: string
+          claimed_amount?: number | null
           created_at?: string
           end_date?: string
           id?: string
           is_active?: boolean
           notes?: string | null
+          report_file_path?: string | null
           start_date?: string
           supplier_id?: string
           updated_at?: string
