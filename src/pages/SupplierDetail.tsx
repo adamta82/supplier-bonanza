@@ -654,14 +654,25 @@ export default function SupplierDetail() {
     return 0;
   };
 
+  // Filter agreements by date range overlap
+  const filteredAgreements = useMemo(() => {
+    if (!agreements) return [];
+    if (!dateRange) return agreements;
+    return agreements.filter((a: any) => {
+      // Agreement must overlap with the selected date range
+      if (a.period_end && a.period_end < dateRange.start) return false;
+      if (a.period_start && a.period_start > dateRange.end) return false;
+      return true;
+    });
+  }, [agreements, dateRange]);
+
   const totalAllBonus = useMemo(() => {
-    if (!agreements) return 0;
-    return agreements.reduce((sum: number, a: any) => {
+    return filteredAgreements.reduce((sum: number, a: any) => {
       if (a.bonus_status === "not_achieved") return sum;
       const v = calcAgreementBonusValue(a);
       return sum + (isNaN(v) ? 0 : v);
     }, 0);
-  }, [agreements, purchases, bonuses]);
+  }, [filteredAgreements, purchases, bonuses]);
 
   const totalMoneyBonus = useMemo(() => {
     if (!agreements) return 0;
