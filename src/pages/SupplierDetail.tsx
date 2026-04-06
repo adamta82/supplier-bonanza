@@ -675,14 +675,13 @@ export default function SupplierDetail() {
   }, [filteredAgreements, purchases, bonuses]);
 
   const totalMoneyBonus = useMemo(() => {
-    if (!agreements) return 0;
-    return agreements
+    return filteredAgreements
       .filter((a: any) => a.bonus_payment_type === "money" && a.bonus_status !== "not_achieved")
       .reduce((sum: number, a: any) => {
         const v = calcAgreementBonusValue(a);
         return sum + (isNaN(v) ? 0 : v);
       }, 0);
-  }, [agreements, purchases, bonuses]);
+  }, [filteredAgreements, purchases, bonuses]);
 
   const totalBonusValue = totalAllBonus;
 
