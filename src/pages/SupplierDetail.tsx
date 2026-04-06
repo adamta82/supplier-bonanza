@@ -693,9 +693,7 @@ export default function SupplierDetail() {
       marketing: { money: 0, goods: 0 },
       transaction: { money: 0, goods: 0 },
     };
-    if (!agreements) return result;
-
-    agreements.forEach((a: any) => {
+    filteredAgreements.forEach((a: any) => {
       if (a.bonus_type === "transaction") return; // handled separately
       if (a.bonus_status === "not_achieved") return; // zero bonus
       const val = calcAgreementBonusValue(a);
@@ -710,14 +708,14 @@ export default function SupplierDetail() {
       }
     });
 
-    // Transaction bonuses from transaction_bonuses table
-    (bonuses || []).forEach((b: any) => {
+    // Transaction bonuses from transaction_bonuses table (filtered by date)
+    (filteredBonuses || []).forEach((b: any) => {
       const isMoney = b.bonus_payment_type === "money";
       result.transaction[isMoney ? "money" : "goods"] += (b.bonus_value || 0);
     });
 
     return result;
-  }, [agreements, purchases, bonuses]);
+  }, [filteredAgreements, purchases, bonuses, filteredBonuses]);
 
   // רווח ישיר + בונוס כספי (לא כולל שיווק)
   const profitPlusMoneyBonus = totalDirectProfit + bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.annual_fixed.money;
