@@ -654,24 +654,34 @@ export default function SupplierDetail() {
     return 0;
   };
 
+  // Filter agreements by date range overlap
+  const filteredAgreements = useMemo(() => {
+    if (!agreements) return [];
+    if (!dateRange) return agreements;
+    return agreements.filter((a: any) => {
+      // Agreement must overlap with the selected date range
+      if (a.period_end && a.period_end < dateRange.start) return false;
+      if (a.period_start && a.period_start > dateRange.end) return false;
+      return true;
+    });
+  }, [agreements, dateRange]);
+
   const totalAllBonus = useMemo(() => {
-    if (!agreements) return 0;
-    return agreements.reduce((sum: number, a: any) => {
+    return filteredAgreements.reduce((sum: number, a: any) => {
       if (a.bonus_status === "not_achieved") return sum;
       const v = calcAgreementBonusValue(a);
       return sum + (isNaN(v) ? 0 : v);
     }, 0);
-  }, [agreements, purchases, bonuses]);
+  }, [filteredAgreements, purchases, bonuses]);
 
   const totalMoneyBonus = useMemo(() => {
-    if (!agreements) return 0;
-    return agreements
+    return filteredAgreements
       .filter((a: any) => a.bonus_payment_type === "money" && a.bonus_status !== "not_achieved")
       .reduce((sum: number, a: any) => {
         const v = calcAgreementBonusValue(a);
         return sum + (isNaN(v) ? 0 : v);
       }, 0);
-  }, [agreements, purchases, bonuses]);
+  }, [filteredAgreements, purchases, bonuses]);
 
   const totalBonusValue = totalAllBonus;
 
@@ -683,9 +693,7 @@ export default function SupplierDetail() {
       marketing: { money: 0, goods: 0 },
       transaction: { money: 0, goods: 0 },
     };
-    if (!agreements) return result;
-
-    agreements.forEach((a: any) => {
+    filteredAgreements.forEach((a: any) => {
       if (a.bonus_type === "transaction") return; // handled separately
       if (a.bonus_status === "not_achieved") return; // zero bonus
       const val = calcAgreementBonusValue(a);
@@ -700,14 +708,14 @@ export default function SupplierDetail() {
       }
     });
 
-    // Transaction bonuses from transaction_bonuses table
-    (bonuses || []).forEach((b: any) => {
+    // Transaction bonuses from transaction_bonuses table (filtered by date)
+    (filteredBonuses || []).forEach((b: any) => {
       const isMoney = b.bonus_payment_type === "money";
       result.transaction[isMoney ? "money" : "goods"] += (b.bonus_value || 0);
     });
 
     return result;
-  }, [agreements, purchases, bonuses]);
+  }, [filteredAgreements, purchases, bonuses, filteredBonuses]);
 
   // רווח ישיר + בונוס כספי (לא כולל שיווק)
   const profitPlusMoneyBonus = totalDirectProfit + bonusByTypeAndPayment.target.money + bonusByTypeAndPayment.transaction.money + bonusByTypeAndPayment.annual_fixed.money;
