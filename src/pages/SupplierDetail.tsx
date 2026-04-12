@@ -1845,6 +1845,58 @@ export default function SupplierDetail() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Agreement Notes Dialog */}
+      <Dialog open={!!showNotesDialog} onOpenChange={(open) => { if (!open) { setShowNotesDialog(null); setNewNoteText(""); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>הערות להסכם</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <Textarea
+                value={newNoteText}
+                onChange={(e) => setNewNoteText(e.target.value)}
+                placeholder="הוסף הערה..."
+                className="min-h-[60px]"
+              />
+              <Button
+                className="self-end"
+                disabled={!newNoteText.trim() || addNoteMutation.isPending}
+                onClick={() => {
+                  if (showNotesDialog && newNoteText.trim()) {
+                    addNoteMutation.mutate({ agreementId: showNotesDialog, text: newNoteText.trim() });
+                  }
+                }}
+              >
+                {addNoteMutation.isPending ? "..." : "הוסף"}
+              </Button>
+            </div>
+
+            <div className="max-h-[300px] overflow-auto space-y-2">
+              {(agreementNotes || [])
+                .filter((n: any) => n.agreement_id === showNotesDialog)
+                .map((note: any) => (
+                  <div key={note.id} className="border rounded-md p-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">{note.author_name}</span>
+                        <span>{new Date(note.created_at).toLocaleDateString("he-IL")} {new Date(note.created_at).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}</span>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => deleteNoteMutation.mutate(note.id)}>
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                    </div>
+                    <p className="text-sm">{note.note_text}</p>
+                  </div>
+                ))}
+              {(agreementNotes || []).filter((n: any) => n.agreement_id === showNotesDialog).length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-4">אין הערות עדיין</p>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
