@@ -36,6 +36,7 @@ const bonusTypeLabels: Record<string, string> = {
 type FilterMode = "all" | "month" | "quarter" | "year" | "ytd" | "last30" | "last90" | "custom";
 
 export default function SupplierDetail() {
+  const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
