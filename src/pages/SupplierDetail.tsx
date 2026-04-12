@@ -438,38 +438,34 @@ export default function SupplierDetail() {
     enabled: !!id && !!(agreements && agreements.length > 0),
   });
 
+  // Profile for author name
+  const { data: profile } = useQuery({
+    queryKey: ["my-profile"],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase.from("profiles").select("display_name, username").eq("id", user.id).maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+
+  const authorName = profile?.display_name || profile?.username || user?.email?.split("@")[0] || "משתמש";
+
   const addNoteMutation = useMutation({
-    mutationFn: async ({ agreementId, text, author }: { agreementId: string; text: string; author: string }) => {
+    mutationFn: async ({ agreementId, text }: { agreementId: string; text: string }) => {
       const { error } = await supabase.from("agreement_notes").insert({
         agreement_id: agreementId,
         note_text: text,
-        author_name: author,
+        author_name: authorName,
       });
-      if (error) throw error;
-    },
-    onSuccess: (_, vars) => {
-      queryClient.invalidateQueries({ queryKey: ["agreement-notes", id] });
-      setNoteInputs((prev) => ({ ...prev, [vars.agreementId]: { text: "", author: "" } }));
-      setOpenNoteAgreementId(null);
-      toast.success("הערה נוספה");
-    },
-    onError: () => toast.error("שגיאה בשמירת ההערה"),
-  });
-
-  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
-  const [editNoteText, setEditNoteText] = useState("");
-
-  const updateNoteMutation = useMutation({
-    mutationFn: async ({ noteId, text }: { noteId: string; text: string }) => {
-      const { error } = await supabase.from("agreement_notes").update({ note_text: text }).eq("id", noteId);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["agreement-notes", id] });
-      setEditingNoteId(null);
-      toast.success("הערה עודכנה");
+      setNewNoteText("");
+      toast.success("הערה נוספה");
     },
-    onError: () => toast.error("שגיאה בעדכון"),
+    onError: () => toast.error("שגיאה בשמירת ההערה"),
   });
 
   const deleteNoteMutation = useMutation({
