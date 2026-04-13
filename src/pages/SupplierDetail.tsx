@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { ArrowRight, TrendingUp, ShoppingCart, Award, Target, Pencil, CheckCircle, XCircle, Clock, FileText, ChevronDown, ChevronUp, Plus, Trash2, X, Copy, MessageSquare } from "lucide-react";
+import { ArrowRight, TrendingUp, ShoppingCart, Award, Target, Pencil, CheckCircle, XCircle, Clock, FileText, ChevronDown, ChevronUp, Plus, Trash2, X, Copy, MessageSquare, Upload, Eye } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { formatDate } from "@/lib/formatDate";
