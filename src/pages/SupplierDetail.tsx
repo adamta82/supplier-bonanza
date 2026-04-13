@@ -530,7 +530,7 @@ export default function SupplierDetail() {
     }
   };
 
-  
+  const filterByDate = <T extends Record<string, any>>(items: T[], dateField: string) => {
     if (!dateRange) return items;
     return items.filter((item) => {
       const d = item[dateField];
