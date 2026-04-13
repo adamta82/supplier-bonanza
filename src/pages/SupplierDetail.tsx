@@ -1207,6 +1207,20 @@ export default function SupplierDetail() {
                                   <MessageSquare className="w-3.5 h-3.5" />
                                   {(() => { const c = (agreementNotes || []).filter((n: any) => n.agreement_id === agreement.id).length; return c > 0 ? <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-[10px] w-4 h-4 flex items-center justify-center">{c}</span> : null; })()}
                                 </Button>
+                                {agreement.document_path ? (
+                                  <>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" title="צפה במסמך" onClick={() => viewDocument(agreement.document_path)}>
+                                      <Eye className="w-3.5 h-3.5 text-blue-600" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" title="מחק מסמך" onClick={() => deleteDocumentMutation.mutate({ agreementId: agreement.id, path: agreement.document_path })}>
+                                      <Trash2 className="w-3 h-3 text-destructive" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" title="העלה מסמך" onClick={() => handleUploadDocument(agreement.id)}>
+                                    <Upload className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
                                 <Button variant="ghost" size="icon" className="h-7 w-7" title="שכפל" onClick={() => openDuplicateAgreement(agreement)}>
                                   <Copy className="w-3.5 h-3.5" />
                                 </Button>
