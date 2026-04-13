@@ -93,6 +93,8 @@ export default function SupplierDetail() {
   });
   const [showNotesDialog, setShowNotesDialog] = useState<string | null>(null);
   const [newNoteText, setNewNoteText] = useState("");
+  const [docViewerUrl, setDocViewerUrl] = useState<string | null>(null);
+  const [docViewerName, setDocViewerName] = useState("");
   const dateRange = useMemo(() => {
     const now = new Date();
     if (filterMode === "month") {
