@@ -57,10 +57,22 @@ export default function Alerts() {
   });
 
   const { data: purchases } = useQuery({
-    queryKey: ["purchases-all"],
+    queryKey: ["purchases-all-paginated"],
     queryFn: async () => {
-      const { data } = await supabase.from("purchase_records").select("supplier_id, supplier_name, supplier_number, total_amount, item_description, quantity, order_date, total_with_vat");
-      return data || [];
+      const PAGE_SIZE = 1000;
+      let allData: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data } = await supabase
+          .from("purchase_records")
+          .select("supplier_id, supplier_name, supplier_number, total_amount, item_description, quantity, order_date, total_with_vat")
+          .range(from, from + PAGE_SIZE - 1);
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data);
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+      return allData;
     },
   });
 
