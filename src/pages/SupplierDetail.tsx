@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { ArrowRight, TrendingUp, ShoppingCart, Award, Target, Pencil, CheckCircle, XCircle, Clock, FileText, ChevronDown, ChevronUp, Plus, Trash2, X, Copy, MessageSquare } from "lucide-react";
+import { ArrowRight, TrendingUp, ShoppingCart, Award, Target, Pencil, CheckCircle, XCircle, Clock, FileText, ChevronDown, ChevronUp, Plus, Trash2, X, Copy, MessageSquare, Upload, Eye } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { formatDate } from "@/lib/formatDate";
@@ -93,6 +93,8 @@ export default function SupplierDetail() {
   });
   const [showNotesDialog, setShowNotesDialog] = useState<string | null>(null);
   const [newNoteText, setNewNoteText] = useState("");
+  const [docViewerUrl, setDocViewerUrl] = useState<string | null>(null);
+  const [docViewerName, setDocViewerName] = useState("");
   const dateRange = useMemo(() => {
     const now = new Date();
     if (filterMode === "month") {
@@ -479,6 +481,54 @@ export default function SupplierDetail() {
     },
     onError: () => toast.error("שגיאה במחיקה"),
   });
+
+  const uploadDocumentMutation = useMutation({
+    mutationFn: async ({ agreementId, file }: { agreementId: string; file: File }) => {
+      const ext = file.name.split(".").pop();
+      const path = `${id}/${agreementId}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from("agreement-documents").upload(path, file);
+      if (uploadError) throw uploadError;
+      const { error } = await supabase.from("bonus_agreements").update({ document_path: path } as any).eq("id", agreementId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier-agreements", id] });
+      toast.success("מסמך הועלה בהצלחה");
+    },
+    onError: () => toast.error("שגיאה בהעלאת המסמך"),
+  });
+
+  const deleteDocumentMutation = useMutation({
+    mutationFn: async ({ agreementId, path }: { agreementId: string; path: string }) => {
+      await supabase.storage.from("agreement-documents").remove([path]);
+      const { error } = await supabase.from("bonus_agreements").update({ document_path: null } as any).eq("id", agreementId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier-agreements", id] });
+      toast.success("מסמך נמחק");
+    },
+    onError: () => toast.error("שגיאה במחיקת המסמך"),
+  });
+
+  const handleUploadDocument = (agreementId: string) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) uploadDocumentMutation.mutate({ agreementId, file });
+    };
+    input.click();
+  };
+
+  const viewDocument = async (path: string) => {
+    const { data } = supabase.storage.from("agreement-documents").getPublicUrl(path);
+    if (data?.publicUrl) {
+      setDocViewerName(path.split("/").pop() || "מסמך");
+      setDocViewerUrl(data.publicUrl);
+    }
+  };
 
   const filterByDate = <T extends Record<string, any>>(items: T[], dateField: string) => {
     if (!dateRange) return items;
@@ -1157,6 +1207,20 @@ export default function SupplierDetail() {
                                   <MessageSquare className="w-3.5 h-3.5" />
                                   {(() => { const c = (agreementNotes || []).filter((n: any) => n.agreement_id === agreement.id).length; return c > 0 ? <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-[10px] w-4 h-4 flex items-center justify-center">{c}</span> : null; })()}
                                 </Button>
+                                {agreement.document_path ? (
+                                  <>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" title="צפה במסמך" onClick={() => viewDocument(agreement.document_path)}>
+                                      <Eye className="w-3.5 h-3.5 text-blue-600" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" title="מחק מסמך" onClick={() => deleteDocumentMutation.mutate({ agreementId: agreement.id, path: agreement.document_path })}>
+                                      <Trash2 className="w-3 h-3 text-destructive" />
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" title="העלה מסמך" onClick={() => handleUploadDocument(agreement.id)}>
+                                    <Upload className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
                                 <Button variant="ghost" size="icon" className="h-7 w-7" title="שכפל" onClick={() => openDuplicateAgreement(agreement)}>
                                   <Copy className="w-3.5 h-3.5" />
                                 </Button>
@@ -1898,6 +1962,25 @@ export default function SupplierDetail() {
                 <p className="text-xs text-muted-foreground text-center py-4">אין הערות עדיין</p>
               )}
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Document Viewer Dialog */}
+      <Dialog open={!!docViewerUrl} onOpenChange={(open) => { if (!open) setDocViewerUrl(null); }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-2">
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              {docViewerName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="w-full h-[75vh]">
+            {docViewerUrl && (/\.(png|jpg|jpeg|webp|gif)$/i.test(docViewerUrl) ? (
+              <img src={docViewerUrl} alt={docViewerName} className="w-full h-full object-contain" />
+            ) : (
+              <iframe src={docViewerUrl} className="w-full h-full border-0" title={docViewerName} />
+            ))}
           </div>
         </DialogContent>
       </Dialog>
