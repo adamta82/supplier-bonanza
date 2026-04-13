@@ -656,12 +656,16 @@ export default function SupplierDetail() {
   // Filter agreements by date range overlap
   const filteredAgreements = useMemo(() => {
     if (!agreements) return [];
-    if (!dateRange) return agreements;
-    return agreements.filter((a: any) => {
-      // Agreement must overlap with the selected date range
+    const filtered = !dateRange ? [...agreements] : agreements.filter((a: any) => {
       if (a.period_end && a.period_end < dateRange.start) return false;
       if (a.period_start && a.period_start > dateRange.end) return false;
       return true;
+    });
+    // Sort newest first by period_start (then by created_at as fallback)
+    return filtered.sort((a: any, b: any) => {
+      const dateA = a.period_start || a.created_at || "";
+      const dateB = b.period_start || b.created_at || "";
+      return dateB.localeCompare(dateA);
     });
   }, [agreements, dateRange]);
 
