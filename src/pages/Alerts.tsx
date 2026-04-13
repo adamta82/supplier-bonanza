@@ -59,7 +59,7 @@ export default function Alerts() {
   const { data: purchases } = useQuery({
     queryKey: ["purchases-all"],
     queryFn: async () => {
-      const { data } = await supabase.from("purchase_records").select("supplier_id, supplier_name, total_amount, item_description, quantity, order_date, total_with_vat");
+      const { data } = await supabase.from("purchase_records").select("supplier_id, supplier_name, supplier_number, total_amount, item_description, quantity, order_date, total_with_vat");
       return data || [];
     },
   });
@@ -225,9 +225,13 @@ export default function Alerts() {
         return { excluded: false, countsTowardTarget: true };
       };
 
-      // Filter purchases by agreement period
+      // Filter purchases by agreement period - match by supplier_id, supplier_number, or supplier_name
+      const supplierNumber = supplier?.supplier_number;
       const agrPurchases = (purchases || []).filter((p: any) => {
-        if (p.supplier_id !== agreement.supplier_id && p.supplier_name !== supplierName) return false;
+        const matchesSupplier = p.supplier_id === agreement.supplier_id
+          || (supplierNumber && p.supplier_number === supplierNumber)
+          || p.supplier_name === supplierName;
+        if (!matchesSupplier) return false;
         if (!p.order_date) return false;
         if (agreement.period_start && p.order_date < agreement.period_start) return false;
         if (agreement.period_end && p.order_date > agreement.period_end) return false;
