@@ -1046,7 +1046,7 @@ export default function SupplierDetail() {
           </TabsList>
 
           {["annual_fixed", "annual_target", "marketing"].map((tabType) => {
-            const tabAgreements = (agreements || []).filter((a: any) => a.bonus_type === tabType).sort((a: any, b: any) => (a.period_start || "").localeCompare(b.period_start || ""));
+            const tabAgreements = filteredAgreements.filter((a: any) => a.bonus_type === tabType);
             return (
               <TabsContent key={tabType} value={tabType}>
                 <div className="space-y-3">
