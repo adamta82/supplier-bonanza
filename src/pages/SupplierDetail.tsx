@@ -482,7 +482,55 @@ export default function SupplierDetail() {
     onError: () => toast.error("שגיאה במחיקה"),
   });
 
-  const filterByDate = <T extends Record<string, any>>(items: T[], dateField: string) => {
+  const uploadDocumentMutation = useMutation({
+    mutationFn: async ({ agreementId, file }: { agreementId: string; file: File }) => {
+      const ext = file.name.split(".").pop();
+      const path = `${id}/${agreementId}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage.from("agreement-documents").upload(path, file);
+      if (uploadError) throw uploadError;
+      const { error } = await supabase.from("bonus_agreements").update({ document_path: path } as any).eq("id", agreementId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier-agreements", id] });
+      toast.success("מסמך הועלה בהצלחה");
+    },
+    onError: () => toast.error("שגיאה בהעלאת המסמך"),
+  });
+
+  const deleteDocumentMutation = useMutation({
+    mutationFn: async ({ agreementId, path }: { agreementId: string; path: string }) => {
+      await supabase.storage.from("agreement-documents").remove([path]);
+      const { error } = await supabase.from("bonus_agreements").update({ document_path: null } as any).eq("id", agreementId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier-agreements", id] });
+      toast.success("מסמך נמחק");
+    },
+    onError: () => toast.error("שגיאה במחיקת המסמך"),
+  });
+
+  const handleUploadDocument = (agreementId: string) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) uploadDocumentMutation.mutate({ agreementId, file });
+    };
+    input.click();
+  };
+
+  const viewDocument = async (path: string) => {
+    const { data } = supabase.storage.from("agreement-documents").getPublicUrl(path);
+    if (data?.publicUrl) {
+      setDocViewerName(path.split("/").pop() || "מסמך");
+      setDocViewerUrl(data.publicUrl);
+    }
+  };
+
+  
     if (!dateRange) return items;
     return items.filter((item) => {
       const d = item[dateField];
