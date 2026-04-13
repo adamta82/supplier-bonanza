@@ -1965,6 +1965,25 @@ export default function SupplierDetail() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Document Viewer Dialog */}
+      <Dialog open={!!docViewerUrl} onOpenChange={(open) => { if (!open) setDocViewerUrl(null); }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-2">
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              {docViewerName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="w-full h-[75vh]">
+            {docViewerUrl && (/\.(png|jpg|jpeg|webp|gif)$/i.test(docViewerUrl) ? (
+              <img src={docViewerUrl} alt={docViewerName} className="w-full h-full object-contain" />
+            ) : (
+              <iframe src={docViewerUrl} className="w-full h-full border-0" title={docViewerName} />
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
