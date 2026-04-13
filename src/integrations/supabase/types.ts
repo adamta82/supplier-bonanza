@@ -55,6 +55,7 @@ export type Database = {
           category_mode: string | null
           created_at: string
           deal_amount: number | null
+          document_path: string | null
           exclusions: Json | null
           fixed_amount: number | null
           fixed_percentage: number | null
@@ -78,6 +79,7 @@ export type Database = {
           category_mode?: string | null
           created_at?: string
           deal_amount?: number | null
+          document_path?: string | null
           exclusions?: Json | null
           fixed_amount?: number | null
           fixed_percentage?: number | null
@@ -101,6 +103,7 @@ export type Database = {
           category_mode?: string | null
           created_at?: string
           deal_amount?: number | null
+          document_path?: string | null
           exclusions?: Json | null
           fixed_amount?: number | null
           fixed_percentage?: number | null
