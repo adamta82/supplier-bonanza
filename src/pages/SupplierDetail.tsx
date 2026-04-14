@@ -525,12 +525,17 @@ export default function SupplierDetail() {
   };
 
   const viewDocument = async (path: string) => {
-    const { data, error } = await supabase.storage.from("agreement-documents").createSignedUrl(path, 3600);
+    const { data } = await supabase.storage.from("agreement-documents").createSignedUrl(path, 3600);
     if (data?.signedUrl) {
-      setDocViewerName(path.split("/").pop() || "מסמך");
-      setDocViewerUrl(data.signedUrl);
+      const a = document.createElement("a");
+      a.href = data.signedUrl;
+      a.download = path.split("/").pop() || "document";
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } else {
-      toast.error("שגיאה בטעינת המסמך");
+      toast.error("שגיאה בהורדת המסמך");
     }
   };
 
