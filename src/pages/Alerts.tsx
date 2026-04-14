@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertTriangle, Clock, TrendingUp, MessageSquare, Upload, Eye, Trash2, FileText, Filter } from "lucide-react";
 import { fmtNum } from "@/lib/utils";
@@ -407,10 +408,34 @@ export default function Alerts() {
               )}
 
               {/* Notes */}
-              <Button variant="ghost" size="icon" className="h-7 w-7 relative" title="הערות" onClick={() => setShowNotesDialog(alert.id)}>
-                <MessageSquare className="w-3.5 h-3.5" />
-                {alert.noteCount > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-[10px] w-4 h-4 flex items-center justify-center">{alert.noteCount}</span>}
-              </Button>
+              <HoverCard openDelay={200} closeDelay={100}>
+                <HoverCardTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 relative" title="הערות" onClick={() => setShowNotesDialog(alert.id)}>
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    {alert.noteCount > 0 && <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full text-[10px] w-4 h-4 flex items-center justify-center">{alert.noteCount}</span>}
+                  </Button>
+                </HoverCardTrigger>
+                <HoverCardContent side="bottom" align="center" className="w-72 p-3">
+                  <p className="text-xs font-semibold mb-2">הערות</p>
+                  {(() => {
+                    const notes = (agreementNotes || []).filter((n: any) => n.agreement_id === alert.id);
+                    if (notes.length === 0) return <p className="text-xs text-muted-foreground text-center">אין הערות</p>;
+                    return (
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {notes.map((n: any) => (
+                          <div key={n.id} className="text-xs border-b border-border pb-1.5 last:border-0">
+                            <div className="flex justify-between text-muted-foreground mb-0.5">
+                              <span>{n.author_name}</span>
+                              <span>{formatDate(n.created_at)}</span>
+                            </div>
+                            <p>{n.note_text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </HoverCardContent>
+              </HoverCard>
 
               {/* Document */}
               {alert.document_path ? (
