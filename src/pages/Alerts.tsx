@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AlertTriangle, Clock, TrendingUp, MessageSquare, Upload, Eye, Trash2, FileText, Filter } from "lucide-react";
 import { fmtNum } from "@/lib/utils";
 import { formatDate } from "@/lib/formatDate";
+import PdfPreview from "@/components/PdfPreview";
 import { toast } from "sonner";
 import BonusAIAnalysis from "@/components/BonusAIAnalysis";
 

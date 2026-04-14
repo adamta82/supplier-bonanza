@@ -20,6 +20,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/utils";
+import PdfPreview from "@/components/PdfPreview";
 import ShekelCampaignTab from "@/components/ShekelCampaignTab";
 import VoucherCampaignTab from "@/components/VoucherCampaignTab";
 import BonusAIAnalysis from "@/components/BonusAIAnalysis";
