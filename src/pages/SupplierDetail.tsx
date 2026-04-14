@@ -524,10 +524,12 @@ export default function SupplierDetail() {
   };
 
   const viewDocument = async (path: string) => {
-    const { data } = supabase.storage.from("agreement-documents").getPublicUrl(path);
-    if (data?.publicUrl) {
+    const { data, error } = await supabase.storage.from("agreement-documents").createSignedUrl(path, 3600);
+    if (data?.signedUrl) {
       setDocViewerName(path.split("/").pop() || "מסמך");
-      setDocViewerUrl(data.publicUrl);
+      setDocViewerUrl(data.signedUrl);
+    } else {
+      toast.error("שגיאה בטעינת המסמך");
     }
   };
 
