@@ -1319,8 +1319,7 @@ export default function SupplierDetail() {
                                   const periodEnded = agreement.period_end && new Date(agreement.period_end) < new Date();
                                   return (
                                     <div className="text-xs text-muted-foreground">
-                                      {periodEnded ? "מחזור סופי" : "מחזור נוכחי"}: ₪{fmtNum(cardBonusVolume)}
-                                      {agreement.vat_included ? " (כולל מע\"מ)" : " (לפני מע\"מ)"}
+                                      {periodEnded ? "מחזור סופי" : "מחזור נוכחי"}: ₪{fmtNum(cardBonusVolume)} (כולל מע"מ) | ₪{fmtNum(cardBonusVolumeExVAT)} (לפני מע"מ)
                                     </div>
                                   );
                                 })()}
