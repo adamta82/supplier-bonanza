@@ -1136,6 +1136,7 @@ export default function SupplierDetail() {
                         return true;
                       });
                       let cardBonusVolume = 0;
+                      let cardBonusVolumeExVAT = 0;
                       let cardTargetWithVAT = 0;
                       let cardTargetExVAT = 0;
                       let cardTargetQty = 0;
@@ -1144,7 +1145,7 @@ export default function SupplierDetail() {
                         const wVAT = addVAT(raw);
                         const qty = p.quantity || 0;
                         const res = cardMatchExcl(p.item_description || "");
-                        if (!res.excluded) { cardBonusVolume += wVAT; cardTargetWithVAT += wVAT; cardTargetExVAT += raw; cardTargetQty += qty; }
+                        if (!res.excluded) { cardBonusVolume += wVAT; cardBonusVolumeExVAT += raw; cardTargetWithVAT += wVAT; cardTargetExVAT += raw; cardTargetQty += qty; }
                         else if (res.countsTowardTarget) { cardTargetWithVAT += wVAT; cardTargetExVAT += raw; cardTargetQty += qty; }
                       });
                       const isQtyTarget = agreement.target_type === "quantity";
@@ -1166,6 +1167,12 @@ export default function SupplierDetail() {
                       const theoreticalBonus = sortedTiers.length > 0
                         ? cardBonusVolume * (sortedTiers[currentTierIdx >= 0 ? currentTierIdx : 0].bonus_percentage / 100)
                         : 0;
+                      const theoreticalBonusExVAT = sortedTiers.length > 0
+                        ? cardBonusVolumeExVAT * (sortedTiers[currentTierIdx >= 0 ? currentTierIdx : 0].bonus_percentage / 100)
+                        : 0;
+                      const bonusValueExVAT = agreement.fixed_percentage
+                        ? cardBonusVolumeExVAT * (agreement.fixed_percentage / 100)
+                        : (agreement.fixed_amount ? agreement.fixed_amount / (1 + VAT_RATE) : 0);
                       const vatLabel = isQtyTarget ? "כמות" : (agreement.vat_included ? "כולל מע\"מ" : "לפני מע\"מ");
                       const unitPrefix = isQtyTarget ? "" : "₪";
                       const unitSuffix = isQtyTarget ? " יח'" : "";
@@ -1189,7 +1196,12 @@ export default function SupplierDetail() {
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-primary">₪{fmtNum(agreement.bonus_status === "not_achieved" ? 0 : (sortedTiers.length > 0 ? theoreticalBonus : bonusValue))}</span>
+                                <span className="text-sm font-bold text-primary">
+                                  ₪{fmtNum(agreement.bonus_status === "not_achieved" ? 0 : (sortedTiers.length > 0 ? theoreticalBonus : bonusValue))}
+                                  <span className="text-xs font-normal text-muted-foreground mr-1">
+                                    (לפני מע״מ: ₪{fmtNum(agreement.bonus_status === "not_achieved" ? 0 : (sortedTiers.length > 0 ? theoreticalBonusExVAT : bonusValueExVAT))})
+                                  </span>
+                                </span>
                                 <Select
                                   value={agreement.bonus_status === "received" ? "received" : agreement.bonus_status === "not_achieved" ? "not_achieved" : "auto"}
                                   onValueChange={(v) => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, newStatus: v })}
@@ -1294,8 +1306,7 @@ export default function SupplierDetail() {
                                   const periodEnded = agreement.period_end && new Date(agreement.period_end) < new Date();
                                   return (
                                     <div className="text-xs text-muted-foreground">
-                                      {periodEnded ? "מחזור סופי" : "מחזור נוכחי"}: ₪{fmtNum(cardBonusVolume)}
-                                      {agreement.vat_included ? " (כולל מע\"מ)" : " (לפני מע\"מ)"}
+                                      {periodEnded ? "מחזור סופי" : "מחזור נוכחי"}: ₪{fmtNum(cardBonusVolume)} (כולל מע"מ) | ₪{fmtNum(cardBonusVolumeExVAT)} (לפני מע"מ)
                                     </div>
                                   );
                                 })()}
@@ -1308,8 +1319,7 @@ export default function SupplierDetail() {
                                   const periodEnded = agreement.period_end && new Date(agreement.period_end) < new Date();
                                   return (
                                     <div className="text-xs text-muted-foreground">
-                                      {periodEnded ? "מחזור סופי" : "מחזור נוכחי"}: ₪{fmtNum(cardBonusVolume)}
-                                      {agreement.vat_included ? " (כולל מע\"מ)" : " (לפני מע\"מ)"}
+                                      {periodEnded ? "מחזור סופי" : "מחזור נוכחי"}: ₪{fmtNum(cardBonusVolume)} (כולל מע"מ) | ₪{fmtNum(cardBonusVolumeExVAT)} (לפני מע"מ)
                                     </div>
                                   );
                                 })()}
