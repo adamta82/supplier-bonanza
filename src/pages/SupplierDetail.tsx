@@ -1136,6 +1136,7 @@ export default function SupplierDetail() {
                         return true;
                       });
                       let cardBonusVolume = 0;
+                      let cardBonusVolumeExVAT = 0;
                       let cardTargetWithVAT = 0;
                       let cardTargetExVAT = 0;
                       let cardTargetQty = 0;
@@ -1144,7 +1145,7 @@ export default function SupplierDetail() {
                         const wVAT = addVAT(raw);
                         const qty = p.quantity || 0;
                         const res = cardMatchExcl(p.item_description || "");
-                        if (!res.excluded) { cardBonusVolume += wVAT; cardTargetWithVAT += wVAT; cardTargetExVAT += raw; cardTargetQty += qty; }
+                        if (!res.excluded) { cardBonusVolume += wVAT; cardBonusVolumeExVAT += raw; cardTargetWithVAT += wVAT; cardTargetExVAT += raw; cardTargetQty += qty; }
                         else if (res.countsTowardTarget) { cardTargetWithVAT += wVAT; cardTargetExVAT += raw; cardTargetQty += qty; }
                       });
                       const isQtyTarget = agreement.target_type === "quantity";
