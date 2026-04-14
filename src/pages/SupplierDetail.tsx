@@ -1196,7 +1196,12 @@ export default function SupplierDetail() {
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-primary">₪{fmtNum(agreement.bonus_status === "not_achieved" ? 0 : (sortedTiers.length > 0 ? theoreticalBonus : bonusValue))}</span>
+                                <span className="text-sm font-bold text-primary">
+                                  ₪{fmtNum(agreement.bonus_status === "not_achieved" ? 0 : (sortedTiers.length > 0 ? theoreticalBonus : bonusValue))}
+                                  <span className="text-xs font-normal text-muted-foreground mr-1">
+                                    (לפני מע״מ: ₪{fmtNum(agreement.bonus_status === "not_achieved" ? 0 : (sortedTiers.length > 0 ? theoreticalBonusExVAT : bonusValueExVAT))})
+                                  </span>
+                                </span>
                                 <Select
                                   value={agreement.bonus_status === "received" ? "received" : agreement.bonus_status === "not_achieved" ? "not_achieved" : "auto"}
                                   onValueChange={(v) => updateAgreementStatusMutation.mutate({ agreementId: agreement.id, newStatus: v })}
