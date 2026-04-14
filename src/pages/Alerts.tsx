@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertTriangle, Clock, TrendingUp, MessageSquare, Upload, Eye, Trash2, FileText, Filter } from "lucide-react";
 import { fmtNum } from "@/lib/utils";
