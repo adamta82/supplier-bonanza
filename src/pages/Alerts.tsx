@@ -683,11 +683,14 @@ export default function Alerts() {
               {docViewerName}
             </DialogTitle>
           </DialogHeader>
-          <div className="w-full h-[75vh]">
+          <div className="w-full">
             {docViewerUrl && (/\.(png|jpg|jpeg|webp|gif)$/i.test(docViewerUrl) ? (
-              <img src={docViewerUrl} alt={docViewerName} className="w-full h-full object-contain" />
+              <div className="h-[75vh]">
+                <img src={docViewerUrl} alt={docViewerName} className="w-full h-full object-contain" />
+              </div>
             ) : (
-              <iframe src={docViewerUrl} className="w-full h-full border-0" title={docViewerName} />
+              <PdfPreview fileUrl={docViewerUrl} fileName={docViewerName} />
+            ))}
             ))}
           </div>
         </DialogContent>
