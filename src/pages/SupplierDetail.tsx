@@ -20,6 +20,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/utils";
+import PdfPreview from "@/components/PdfPreview";
 import ShekelCampaignTab from "@/components/ShekelCampaignTab";
 import VoucherCampaignTab from "@/components/VoucherCampaignTab";
 import BonusAIAnalysis from "@/components/BonusAIAnalysis";
@@ -2012,11 +2013,13 @@ export default function SupplierDetail() {
               {docViewerName}
             </DialogTitle>
           </DialogHeader>
-          <div className="w-full h-[75vh]">
+          <div className="w-full">
             {docViewerUrl && (/\.(png|jpg|jpeg|webp|gif)$/i.test(docViewerUrl) ? (
-              <img src={docViewerUrl} alt={docViewerName} className="w-full h-full object-contain" />
+              <div className="h-[75vh]">
+                <img src={docViewerUrl} alt={docViewerName} className="w-full h-full object-contain" />
+              </div>
             ) : (
-              <iframe src={docViewerUrl} className="w-full h-full border-0" title={docViewerName} />
+              <PdfPreview fileUrl={docViewerUrl} fileName={docViewerName} />
             ))}
           </div>
         </DialogContent>

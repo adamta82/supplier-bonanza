@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AlertTriangle, Clock, TrendingUp, MessageSquare, Upload, Eye, Trash2, FileText, Filter } from "lucide-react";
 import { fmtNum } from "@/lib/utils";
 import { formatDate } from "@/lib/formatDate";
+import PdfPreview from "@/components/PdfPreview";
 import { toast } from "sonner";
 import BonusAIAnalysis from "@/components/BonusAIAnalysis";
 
@@ -682,11 +683,13 @@ export default function Alerts() {
               {docViewerName}
             </DialogTitle>
           </DialogHeader>
-          <div className="w-full h-[75vh]">
+          <div className="w-full">
             {docViewerUrl && (/\.(png|jpg|jpeg|webp|gif)$/i.test(docViewerUrl) ? (
-              <img src={docViewerUrl} alt={docViewerName} className="w-full h-full object-contain" />
+              <div className="h-[75vh]">
+                <img src={docViewerUrl} alt={docViewerName} className="w-full h-full object-contain" />
+              </div>
             ) : (
-              <iframe src={docViewerUrl} className="w-full h-full border-0" title={docViewerName} />
+              <PdfPreview fileUrl={docViewerUrl} fileName={docViewerName} />
             ))}
           </div>
         </DialogContent>
