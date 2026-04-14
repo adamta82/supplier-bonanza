@@ -1244,6 +1244,7 @@ export default function SupplierDetail() {
                                     })()}
                                   </HoverCardContent>
                                 </HoverCard>
+                                {agreement.document_path ? (
                                   <>
                                     <Button variant="ghost" size="icon" className="h-7 w-7" title="צפה במסמך" onClick={() => viewDocument(agreement.document_path)}>
                                       <Eye className="w-3.5 h-3.5 text-blue-600" />
