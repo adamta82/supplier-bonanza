@@ -1167,6 +1167,12 @@ export default function SupplierDetail() {
                       const theoreticalBonus = sortedTiers.length > 0
                         ? cardBonusVolume * (sortedTiers[currentTierIdx >= 0 ? currentTierIdx : 0].bonus_percentage / 100)
                         : 0;
+                      const theoreticalBonusExVAT = sortedTiers.length > 0
+                        ? cardBonusVolumeExVAT * (sortedTiers[currentTierIdx >= 0 ? currentTierIdx : 0].bonus_percentage / 100)
+                        : 0;
+                      const bonusValueExVAT = agreement.fixed_percentage
+                        ? cardBonusVolumeExVAT * (agreement.fixed_percentage / 100)
+                        : (agreement.fixed_amount ? agreement.fixed_amount / (1 + VAT_RATE) : 0);
                       const vatLabel = isQtyTarget ? "כמות" : (agreement.vat_included ? "כולל מע\"מ" : "לפני מע\"מ");
                       const unitPrefix = isQtyTarget ? "" : "₪";
                       const unitSuffix = isQtyTarget ? " יח'" : "";
