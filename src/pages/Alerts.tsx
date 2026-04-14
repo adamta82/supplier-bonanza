@@ -691,7 +691,6 @@ export default function Alerts() {
             ) : (
               <PdfPreview fileUrl={docViewerUrl} fileName={docViewerName} />
             ))}
-            ))}
           </div>
         </DialogContent>
       </Dialog>
