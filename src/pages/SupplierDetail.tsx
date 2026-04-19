@@ -732,7 +732,7 @@ export default function SupplierDetail() {
       const dateB = b.period_start || b.created_at || "";
       return dateB.localeCompare(dateA);
     });
-  }, [agreements, dateRange]);
+  }, [agreements, dateRange, filterMode]);
 
   const totalAllBonus = useMemo(() => {
     return filteredAgreements.reduce((sum: number, a: any) => {
