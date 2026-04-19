@@ -713,11 +713,17 @@ export default function SupplierDetail() {
   };
 
   // Filter agreements by date range overlap
+  // For YTD/last30/last90 we extend the end to end-of-year so future agreements within the current year are still shown
   const filteredAgreements = useMemo(() => {
     if (!agreements) return [];
-    const filtered = !dateRange ? [...agreements] : agreements.filter((a: any) => {
-      if (a.period_end && a.period_end < dateRange.start) return false;
-      if (a.period_start && a.period_start > dateRange.end) return false;
+    let overlapRange = dateRange;
+    if (dateRange && (filterMode === "ytd" || filterMode === "last30" || filterMode === "last90")) {
+      const year = new Date().getFullYear();
+      overlapRange = { start: dateRange.start, end: `${year}-12-31` };
+    }
+    const filtered = !overlapRange ? [...agreements] : agreements.filter((a: any) => {
+      if (a.period_end && a.period_end < overlapRange!.start) return false;
+      if (a.period_start && a.period_start > overlapRange!.end) return false;
       return true;
     });
     // Sort newest first by period_start (then by created_at as fallback)
@@ -726,7 +732,7 @@ export default function SupplierDetail() {
       const dateB = b.period_start || b.created_at || "";
       return dateB.localeCompare(dateA);
     });
-  }, [agreements, dateRange]);
+  }, [agreements, dateRange, filterMode]);
 
   const totalAllBonus = useMemo(() => {
     return filteredAgreements.reduce((sum: number, a: any) => {
