@@ -90,6 +90,8 @@ export default function ShekelCampaign() {
       supplierName: string;
       settingId: string;
       threshold: number;
+      doubleThreshold: number | null;
+      reportedGifts: number | null;
       startDate: string;
       endDate: string;
       totalGifts: number;
@@ -108,6 +110,8 @@ export default function ShekelCampaign() {
           supplierName: (setting as any).suppliers?.name || p.supplier_name || "",
           settingId: key,
           threshold: setting.threshold_amount,
+          doubleThreshold: setting.double_gift_threshold ?? null,
+          reportedGifts: setting.supplier_reported_gifts ?? null,
           startDate: setting.start_date,
           endDate: setting.end_date,
           totalGifts: 0,
@@ -127,7 +131,9 @@ export default function ShekelCampaign() {
         const exclusion = exclusionMap.get(excKey);
         const isExcluded = !!exclusion;
         const giftStatus = exclusion?.gift_status || "pending";
-        const giftsFromLine = qty; // each unit qualifies for a gift
+        // 2 gifts per unit if double threshold is set and met, otherwise 1
+        const giftsPerUnit = (entry.doubleThreshold !== null && unitPrice >= entry.doubleThreshold) ? 2 : 1;
+        const giftsFromLine = qty * giftsPerUnit;
 
         if (!isExcluded) {
           entry.totalGifts += giftsFromLine;
@@ -140,6 +146,7 @@ export default function ShekelCampaign() {
           ...p,
           unitPriceCalc: unitPrice,
           giftsFromLine,
+          giftsPerUnit,
           isExcluded,
           giftStatus,
           exclusionId: exclusion?.id,
