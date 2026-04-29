@@ -304,19 +304,51 @@ export default function ShekelCampaign() {
                   <TableHead>ספק</TableHead>
                   <TableHead>תקופה</TableHead>
                   <TableHead>סף (כולל מע״מ)</TableHead>
-                  <TableHead>מתנות זכאיות</TableHead>
+                  <TableHead>סף 2 מתנות</TableHead>
+                  <TableHead>מתנות לפי המערכת</TableHead>
+                  <TableHead>מספר מהספק</TableHead>
+                  <TableHead>השוואה</TableHead>
                   <TableHead>הוסרו</TableHead>
                   <TableHead>פעולות</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {supplierSummary.map((entry) => (
+                {supplierSummary.map((entry) => {
+                  const diff = entry.reportedGifts !== null ? entry.reportedGifts - entry.totalGifts : null;
+                  return (
                   <TableRow key={entry.settingId}>
                     <TableCell className="font-medium">{entry.supplierName}</TableCell>
                     <TableCell className="text-sm">{formatDate(entry.startDate)} - {formatDate(entry.endDate)}</TableCell>
                     <TableCell>₪{fmtNum(entry.threshold)}</TableCell>
+                    <TableCell className="text-sm">{entry.doubleThreshold !== null ? `₪${fmtNum(entry.doubleThreshold)}` : "-"}</TableCell>
                     <TableCell>
                       <Badge variant="default" className="text-sm">{entry.totalGifts}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        className="w-24 h-8"
+                        defaultValue={entry.reportedGifts ?? ""}
+                        placeholder="-"
+                        onBlur={(e) => {
+                          const val = e.target.value.trim();
+                          const num = val === "" ? null : parseInt(val);
+                          if (num !== entry.reportedGifts) {
+                            updateReportedMutation.mutate({ settingId: entry.settingId, reported: num });
+                          }
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {diff === null ? (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      ) : diff === 0 ? (
+                        <Badge variant="default" className="bg-green-600">תואם</Badge>
+                      ) : (
+                        <Badge variant={diff > 0 ? "secondary" : "destructive"}>
+                          {diff > 0 ? `+${diff}` : diff}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       {entry.excludedCount > 0 && (
@@ -337,7 +369,8 @@ export default function ShekelCampaign() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>
