@@ -213,6 +213,22 @@ export default function ShekelCampaign() {
     onError: () => toast.error("שגיאה בעדכון סטטוס"),
   });
 
+  // Update supplier-reported gifts count
+  const updateReportedMutation = useMutation({
+    mutationFn: async ({ settingId, reported }: { settingId: string; reported: number | null }) => {
+      const { error } = await supabase
+        .from("shekel_campaign_settings")
+        .update({ supplier_reported_gifts: reported })
+        .eq("id", settingId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shekel-settings"] });
+      toast.success("מספר הספק עודכן");
+    },
+    onError: () => toast.error("שגיאה בעדכון"),
+  });
+
   const detailItems = useMemo(() => {
     if (!detailDialog) return [];
     const entry = supplierSummary.find(s => s.settingId === detailDialog.settingId);
