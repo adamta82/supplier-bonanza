@@ -33,8 +33,8 @@ export default function ShekelCampaignTab({ supplierId }: { supplierId: string }
   const getSetting = (name: CampaignType) => (settings || []).find((s: any) => s.campaign_name === name);
 
   const saveMutation = useMutation({
-    mutationFn: async ({ campaignName, startDate, endDate, threshold, isActive }: {
-      campaignName: CampaignType; startDate: string; endDate: string; threshold: number; isActive: boolean;
+    mutationFn: async ({ campaignName, startDate, endDate, threshold, doubleThreshold, isActive }: {
+      campaignName: CampaignType; startDate: string; endDate: string; threshold: number; doubleThreshold: number | null; isActive: boolean;
     }) => {
       const existing = getSetting(campaignName);
       if (existing) {
@@ -42,6 +42,7 @@ export default function ShekelCampaignTab({ supplierId }: { supplierId: string }
           start_date: startDate,
           end_date: endDate,
           threshold_amount: threshold,
+          double_gift_threshold: doubleThreshold,
           is_active: isActive,
         }).eq("id", existing.id);
         if (error) throw error;
@@ -52,6 +53,7 @@ export default function ShekelCampaignTab({ supplierId }: { supplierId: string }
           start_date: startDate,
           end_date: endDate,
           threshold_amount: threshold,
+          double_gift_threshold: doubleThreshold,
           is_active: isActive,
         });
         if (error) throw error;
@@ -72,8 +74,8 @@ export default function ShekelCampaignTab({ supplierId }: { supplierId: string }
             key={campaign.name}
             label={campaign.label}
             setting={getSetting(campaign.name)}
-            onSave={(startDate, endDate, threshold, isActive) =>
-              saveMutation.mutate({ campaignName: campaign.name, startDate, endDate, threshold, isActive })
+            onSave={(startDate, endDate, threshold, doubleThreshold, isActive) =>
+              saveMutation.mutate({ campaignName: campaign.name, startDate, endDate, threshold, doubleThreshold, isActive })
             }
             isPending={saveMutation.isPending}
           />
@@ -86,23 +88,26 @@ export default function ShekelCampaignTab({ supplierId }: { supplierId: string }
 function CampaignCard({ label, setting, onSave, isPending }: {
   label: string;
   setting: any;
-  onSave: (startDate: string, endDate: string, threshold: number, isActive: boolean) => void;
+  onSave: (startDate: string, endDate: string, threshold: number, doubleThreshold: number | null, isActive: boolean) => void;
   isPending: boolean;
 }) {
   const [isActive, setIsActive] = useState(setting?.is_active ?? false);
   const [startDate, setStartDate] = useState(setting?.start_date || "");
   const [endDate, setEndDate] = useState(setting?.end_date || "");
   const [threshold, setThreshold] = useState(setting?.threshold_amount?.toString() || "1200");
+  const [doubleThreshold, setDoubleThreshold] = useState(setting?.double_gift_threshold?.toString() || "");
 
-  // Sync when setting loads
   useState(() => {
     if (setting) {
       setIsActive(setting.is_active);
       setStartDate(setting.start_date || "");
       setEndDate(setting.end_date || "");
       setThreshold(setting.threshold_amount?.toString() || "1200");
+      setDoubleThreshold(setting.double_gift_threshold?.toString() || "");
     }
   });
+
+  const parsedDouble = doubleThreshold.trim() === "" ? null : (parseFloat(doubleThreshold) || null);
 
   return (
     <Card>
@@ -120,7 +125,7 @@ function CampaignCard({ label, setting, onSave, isPending }: {
         </div>
         {isActive && (
           <div className="space-y-3">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label>מתאריך</Label>
                 <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
@@ -133,10 +138,19 @@ function CampaignCard({ label, setting, onSave, isPending }: {
                 <Label>סף זכאות (₪ כולל מע״מ)</Label>
                 <Input type="number" value={threshold} onChange={(e) => setThreshold(e.target.value)} />
               </div>
+              <div>
+                <Label>סף ל-2 מתנות (אופציונלי)</Label>
+                <Input
+                  type="number"
+                  value={doubleThreshold}
+                  onChange={(e) => setDoubleThreshold(e.target.value)}
+                  placeholder="ריק = רק מתנה אחת"
+                />
+              </div>
             </div>
             <Button
               size="sm"
-              onClick={() => onSave(startDate, endDate, parseFloat(threshold) || 1200, isActive)}
+              onClick={() => onSave(startDate, endDate, parseFloat(threshold) || 1200, parsedDouble, isActive)}
               disabled={isPending || !startDate || !endDate}
             >
               {isPending ? "שומר..." : "שמור"}
@@ -147,7 +161,7 @@ function CampaignCard({ label, setting, onSave, isPending }: {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => onSave(startDate || setting.start_date, endDate || setting.end_date, parseFloat(threshold) || 1200, false)}
+            onClick={() => onSave(startDate || setting.start_date, endDate || setting.end_date, parseFloat(threshold) || 1200, parsedDouble, false)}
             disabled={isPending}
           >
             ביטול השתתפות

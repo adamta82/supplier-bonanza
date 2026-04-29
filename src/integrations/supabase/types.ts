@@ -570,33 +570,39 @@ export type Database = {
         Row: {
           campaign_name: string
           created_at: string
+          double_gift_threshold: number | null
           end_date: string
           id: string
           is_active: boolean
           start_date: string
           supplier_id: string
+          supplier_reported_gifts: number | null
           threshold_amount: number
           updated_at: string
         }
         Insert: {
           campaign_name: string
           created_at?: string
+          double_gift_threshold?: number | null
           end_date: string
           id?: string
           is_active?: boolean
           start_date: string
           supplier_id: string
+          supplier_reported_gifts?: number | null
           threshold_amount?: number
           updated_at?: string
         }
         Update: {
           campaign_name?: string
           created_at?: string
+          double_gift_threshold?: number | null
           end_date?: string
           id?: string
           is_active?: boolean
           start_date?: string
           supplier_id?: string
+          supplier_reported_gifts?: number | null
           threshold_amount?: number
           updated_at?: string
         }

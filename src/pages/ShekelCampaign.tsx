@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Gift, ChevronDown, ChevronUp, X, CheckCircle, Clock } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
@@ -90,6 +91,8 @@ export default function ShekelCampaign() {
       supplierName: string;
       settingId: string;
       threshold: number;
+      doubleThreshold: number | null;
+      reportedGifts: number | null;
       startDate: string;
       endDate: string;
       totalGifts: number;
@@ -108,6 +111,8 @@ export default function ShekelCampaign() {
           supplierName: (setting as any).suppliers?.name || p.supplier_name || "",
           settingId: key,
           threshold: setting.threshold_amount,
+          doubleThreshold: setting.double_gift_threshold ?? null,
+          reportedGifts: setting.supplier_reported_gifts ?? null,
           startDate: setting.start_date,
           endDate: setting.end_date,
           totalGifts: 0,
@@ -127,7 +132,9 @@ export default function ShekelCampaign() {
         const exclusion = exclusionMap.get(excKey);
         const isExcluded = !!exclusion;
         const giftStatus = exclusion?.gift_status || "pending";
-        const giftsFromLine = qty; // each unit qualifies for a gift
+        // 2 gifts per unit if double threshold is set and met, otherwise 1
+        const giftsPerUnit = (entry.doubleThreshold !== null && unitPrice >= entry.doubleThreshold) ? 2 : 1;
+        const giftsFromLine = qty * giftsPerUnit;
 
         if (!isExcluded) {
           entry.totalGifts += giftsFromLine;
@@ -140,6 +147,7 @@ export default function ShekelCampaign() {
           ...p,
           unitPriceCalc: unitPrice,
           giftsFromLine,
+          giftsPerUnit,
           isExcluded,
           giftStatus,
           exclusionId: exclusion?.id,
@@ -204,6 +212,22 @@ export default function ShekelCampaign() {
       toast.success("סטטוס עודכן");
     },
     onError: () => toast.error("שגיאה בעדכון סטטוס"),
+  });
+
+  // Update supplier-reported gifts count
+  const updateReportedMutation = useMutation({
+    mutationFn: async ({ settingId, reported }: { settingId: string; reported: number | null }) => {
+      const { error } = await supabase
+        .from("shekel_campaign_settings")
+        .update({ supplier_reported_gifts: reported })
+        .eq("id", settingId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shekel-settings"] });
+      toast.success("מספר הספק עודכן");
+    },
+    onError: () => toast.error("שגיאה בעדכון"),
   });
 
   const detailItems = useMemo(() => {
@@ -280,19 +304,51 @@ export default function ShekelCampaign() {
                   <TableHead>ספק</TableHead>
                   <TableHead>תקופה</TableHead>
                   <TableHead>סף (כולל מע״מ)</TableHead>
-                  <TableHead>מתנות זכאיות</TableHead>
+                  <TableHead>סף 2 מתנות</TableHead>
+                  <TableHead>מתנות לפי המערכת</TableHead>
+                  <TableHead>מספר מהספק</TableHead>
+                  <TableHead>השוואה</TableHead>
                   <TableHead>הוסרו</TableHead>
                   <TableHead>פעולות</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {supplierSummary.map((entry) => (
+                {supplierSummary.map((entry) => {
+                  const diff = entry.reportedGifts !== null ? entry.reportedGifts - entry.totalGifts : null;
+                  return (
                   <TableRow key={entry.settingId}>
                     <TableCell className="font-medium">{entry.supplierName}</TableCell>
                     <TableCell className="text-sm">{formatDate(entry.startDate)} - {formatDate(entry.endDate)}</TableCell>
                     <TableCell>₪{fmtNum(entry.threshold)}</TableCell>
+                    <TableCell className="text-sm">{entry.doubleThreshold !== null ? `₪${fmtNum(entry.doubleThreshold)}` : "-"}</TableCell>
                     <TableCell>
                       <Badge variant="default" className="text-sm">{entry.totalGifts}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        className="w-24 h-8"
+                        defaultValue={entry.reportedGifts ?? ""}
+                        placeholder="-"
+                        onBlur={(e) => {
+                          const val = e.target.value.trim();
+                          const num = val === "" ? null : parseInt(val);
+                          if (num !== entry.reportedGifts) {
+                            updateReportedMutation.mutate({ settingId: entry.settingId, reported: num });
+                          }
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {diff === null ? (
+                        <span className="text-muted-foreground text-sm">-</span>
+                      ) : diff === 0 ? (
+                        <Badge variant="default" className="bg-green-600">תואם</Badge>
+                      ) : (
+                        <Badge variant={diff > 0 ? "secondary" : "destructive"}>
+                          {diff > 0 ? `+${diff}` : diff}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       {entry.excludedCount > 0 && (
@@ -313,7 +369,8 @@ export default function ShekelCampaign() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </CardContent>
