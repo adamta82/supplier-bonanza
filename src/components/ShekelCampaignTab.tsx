@@ -33,8 +33,8 @@ export default function ShekelCampaignTab({ supplierId }: { supplierId: string }
   const getSetting = (name: CampaignType) => (settings || []).find((s: any) => s.campaign_name === name);
 
   const saveMutation = useMutation({
-    mutationFn: async ({ campaignName, startDate, endDate, threshold, isActive }: {
-      campaignName: CampaignType; startDate: string; endDate: string; threshold: number; isActive: boolean;
+    mutationFn: async ({ campaignName, startDate, endDate, threshold, doubleThreshold, isActive }: {
+      campaignName: CampaignType; startDate: string; endDate: string; threshold: number; doubleThreshold: number | null; isActive: boolean;
     }) => {
       const existing = getSetting(campaignName);
       if (existing) {
@@ -42,6 +42,7 @@ export default function ShekelCampaignTab({ supplierId }: { supplierId: string }
           start_date: startDate,
           end_date: endDate,
           threshold_amount: threshold,
+          double_gift_threshold: doubleThreshold,
           is_active: isActive,
         }).eq("id", existing.id);
         if (error) throw error;
@@ -52,6 +53,7 @@ export default function ShekelCampaignTab({ supplierId }: { supplierId: string }
           start_date: startDate,
           end_date: endDate,
           threshold_amount: threshold,
+          double_gift_threshold: doubleThreshold,
           is_active: isActive,
         });
         if (error) throw error;
