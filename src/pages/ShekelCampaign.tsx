@@ -445,19 +445,25 @@ export default function ShekelCampaign() {
       <Dialog open={!!detailDialog} onOpenChange={(o) => !o && setDetailDialog(null)}>
         <DialogContent className="max-w-5xl max-h-[80vh] overflow-auto">
           <DialogHeader>
-            <DialogTitle>פריטים זכאים למתנה - {detailDialog?.supplierName}</DialogTitle>
+            <div className="flex items-center justify-between gap-4">
+              <DialogTitle>פריטים זכאים למתנה - {detailDialog?.supplierName}</DialogTitle>
+              <Button size="sm" variant="outline" onClick={exportToExcel} className="ml-8">
+                <Download className="w-4 h-4" />
+                ייצוא לאקסל
+              </Button>
+            </div>
           </DialogHeader>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>מספר הזמנה</TableHead>
-                <TableHead>תאריך</TableHead>
-                <TableHead>מק״ט</TableHead>
-                <TableHead>תיאור</TableHead>
-                <TableHead>כמות</TableHead>
-                <TableHead>מחיר ליח׳ (כולל מע״מ)</TableHead>
-                <TableHead>מתנות</TableHead>
-                <TableHead>סטטוס</TableHead>
+                <TableHead><SortHeader k="order_number" label="מספר הזמנה" /></TableHead>
+                <TableHead><SortHeader k="order_date" label="תאריך" /></TableHead>
+                <TableHead><SortHeader k="item_code" label="מק״ט" /></TableHead>
+                <TableHead><SortHeader k="item_description" label="תיאור" /></TableHead>
+                <TableHead><SortHeader k="quantity" label="כמות" /></TableHead>
+                <TableHead><SortHeader k="unitPriceCalc" label="מחיר ליח׳ (כולל מע״מ)" /></TableHead>
+                <TableHead><SortHeader k="giftsFromLine" label="מתנות" /></TableHead>
+                <TableHead><SortHeader k="giftStatus" label="סטטוס" /></TableHead>
                 <TableHead>פעולות</TableHead>
               </TableRow>
             </TableHeader>
