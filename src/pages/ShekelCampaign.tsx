@@ -8,10 +8,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Gift, ChevronDown, ChevronUp, X, CheckCircle, Clock } from "lucide-react";
+import { Gift, ChevronDown, ChevronUp, X, CheckCircle, Clock, Download, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/utils";
+import * as XLSX from "xlsx";
+
+type SortKey = "order_number" | "order_date" | "item_code" | "item_description" | "quantity" | "unitPriceCalc" | "giftsFromLine" | "giftStatus";
+type SortDir = "asc" | "desc";
 
 type CampaignType = "pesach" | "rosh_hashana";
 
