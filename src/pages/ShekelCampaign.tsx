@@ -96,6 +96,7 @@ export default function ShekelCampaign() {
       supplierId: string;
       supplierName: string;
       settingId: string;
+      groupName: string | null;
       threshold: number;
       doubleThreshold: number | null;
       reportedGifts: number | null;
