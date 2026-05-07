@@ -239,8 +239,66 @@ export default function ShekelCampaign() {
   const detailItems = useMemo(() => {
     if (!detailDialog) return [];
     const entry = supplierSummary.find(s => s.settingId === detailDialog.settingId);
-    return entry?.items || [];
-  }, [detailDialog, supplierSummary]);
+    const items = [...(entry?.items || [])];
+    items.sort((a: any, b: any) => {
+      const va = a[sortKey];
+      const vb = b[sortKey];
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      let cmp = 0;
+      if (typeof va === "number" && typeof vb === "number") cmp = va - vb;
+      else cmp = String(va).localeCompare(String(vb), "he");
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return items;
+  }, [detailDialog, supplierSummary, sortKey, sortDir]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(sortDir === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+
+  const exportToExcel = () => {
+    if (!detailDialog || detailItems.length === 0) {
+      toast.error("אין נתונים לייצוא");
+      return;
+    }
+    const statusLabels: Record<string, string> = { pending: "ממתין", received: "התקבל", not_received: "לא התקבל" };
+    const rows = detailItems.map((item: any) => ({
+      "מספר הזמנה": item.order_number || "",
+      "תאריך": item.order_date ? formatDate(item.order_date) : "",
+      "מק״ט": item.item_code || "",
+      "תיאור": item.item_description || "",
+      "כמות": item.quantity || 1,
+      "מחיר ליח׳ (כולל מע״מ)": Math.round(item.unitPriceCalc || 0),
+      "מתנות ליח׳": item.giftsPerUnit,
+      "סה״כ מתנות": item.giftsFromLine,
+      "סטטוס": item.isExcluded ? "הוסר" : (statusLabels[item.giftStatus] || item.giftStatus),
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws["!views"] = [{ RTL: true }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "פריטים");
+    const fname = `מבצע_שקל_${detailDialog.supplierName}_${new Date().toISOString().slice(0,10)}.xlsx`;
+    XLSX.writeFile(wb, fname);
+    toast.success("הקובץ יוצא בהצלחה");
+  };
+
+  const SortHeader = ({ k, label }: { k: SortKey; label: string }) => (
+    <button
+      type="button"
+      onClick={() => toggleSort(k)}
+      className="inline-flex items-center gap-1 hover:text-primary font-medium"
+    >
+      {label}
+      {sortKey === k ? (
+        sortDir === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+      ) : (
+        <ArrowUpDown className="w-3 h-3 opacity-40" />
+      )}
+    </button>
+  );
 
   return (
     <div className="space-y-6">
