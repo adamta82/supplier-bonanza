@@ -168,6 +168,79 @@ export default function ShekelCampaign() {
 
   const totalGiftsAll = supplierSummary.reduce((s, e) => s + e.totalGifts, 0);
 
+  // Group entries by group_name (entries with same group merged into single display row)
+  type DisplayRow = {
+    key: string;
+    isGroup: boolean;
+    groupName: string | null;
+    displayName: string;
+    members: typeof supplierSummary;
+    totalGifts: number;
+    excludedCount: number;
+    reportedGifts: number | null;
+    startDate: string;
+    endDate: string;
+    threshold: number;
+    doubleThreshold: number | null;
+  };
+
+  const displayRows: DisplayRow[] = useMemo(() => {
+    const groups = new Map<string, typeof supplierSummary>();
+    const singles: typeof supplierSummary = [];
+    supplierSummary.forEach((e) => {
+      if (e.groupName && e.groupName.trim() !== "") {
+        const arr = groups.get(e.groupName) || [];
+        arr.push(e);
+        groups.set(e.groupName, arr);
+      } else {
+        singles.push(e);
+      }
+    });
+    const rows: DisplayRow[] = [];
+    groups.forEach((members, gname) => {
+      const totalGifts = members.reduce((s, m) => s + m.totalGifts, 0);
+      const excludedCount = members.reduce((s, m) => s + m.excludedCount, 0);
+      const anyReported = members.some((m) => m.reportedGifts !== null);
+      const reportedGifts = anyReported
+        ? members.reduce((s, m) => s + (m.reportedGifts || 0), 0)
+        : null;
+      const startDate = members.reduce((min, m) => (!min || m.startDate < min ? m.startDate : min), "");
+      const endDate = members.reduce((max, m) => (!max || m.endDate > max ? m.endDate : max), "");
+      rows.push({
+        key: `g_${gname}`,
+        isGroup: true,
+        groupName: gname,
+        displayName: `${gname} (${members.map((m) => m.supplierName).join(" + ")})`,
+        members,
+        totalGifts,
+        excludedCount,
+        reportedGifts,
+        startDate,
+        endDate,
+        threshold: members[0].threshold,
+        doubleThreshold: members[0].doubleThreshold,
+      });
+    });
+    singles.forEach((e) => {
+      rows.push({
+        key: `s_${e.settingId}`,
+        isGroup: false,
+        groupName: null,
+        displayName: e.supplierName,
+        members: [e],
+        totalGifts: e.totalGifts,
+        excludedCount: e.excludedCount,
+        reportedGifts: e.reportedGifts,
+        startDate: e.startDate,
+        endDate: e.endDate,
+        threshold: e.threshold,
+        doubleThreshold: e.doubleThreshold,
+      });
+    });
+    return rows.sort((a, b) => b.totalGifts - a.totalGifts);
+  }, [supplierSummary]);
+
+
   // Exclude item mutation
   const excludeMutation = useMutation({
     mutationFn: async ({ settingId, purchaseId }: { settingId: string; purchaseId: string }) => {
