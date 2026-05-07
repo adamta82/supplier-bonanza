@@ -455,28 +455,42 @@ export default function ShekelCampaign() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {supplierSummary.map((entry) => {
-                  const diff = entry.reportedGifts !== null ? entry.reportedGifts - entry.totalGifts : null;
+                {displayRows.map((row) => {
+                  const diff = row.reportedGifts !== null ? row.reportedGifts - row.totalGifts : null;
+                  const primarySettingId = row.members[0].settingId;
                   return (
-                  <TableRow key={entry.settingId}>
-                    <TableCell className="font-medium">{entry.supplierName}</TableCell>
-                    <TableCell className="text-sm">{formatDate(entry.startDate)} - {formatDate(entry.endDate)}</TableCell>
-                    <TableCell>₪{fmtNum(entry.threshold)}</TableCell>
-                    <TableCell className="text-sm">{entry.doubleThreshold !== null ? `₪${fmtNum(entry.doubleThreshold)}` : "-"}</TableCell>
+                  <TableRow key={row.key}>
+                    <TableCell className="font-medium">
+                      {row.isGroup ? (
+                        <div>
+                          <Badge variant="secondary" className="mb-1 text-xs">קבוצה: {row.groupName}</Badge>
+                          <div className="text-sm">{row.members.map(m => m.supplierName).join(" + ")}</div>
+                        </div>
+                      ) : row.displayName}
+                    </TableCell>
+                    <TableCell className="text-sm">{formatDate(row.startDate)} - {formatDate(row.endDate)}</TableCell>
+                    <TableCell>₪{fmtNum(row.threshold)}</TableCell>
+                    <TableCell className="text-sm">{row.doubleThreshold !== null ? `₪${fmtNum(row.doubleThreshold)}` : "-"}</TableCell>
                     <TableCell>
-                      <Badge variant="default" className="text-sm">{entry.totalGifts}</Badge>
+                      <Badge variant="default" className="text-sm">{row.totalGifts}</Badge>
                     </TableCell>
                     <TableCell>
                       <Input
                         type="number"
                         className="w-24 h-8"
-                        defaultValue={entry.reportedGifts ?? ""}
+                        defaultValue={row.reportedGifts ?? ""}
                         placeholder="-"
                         onBlur={(e) => {
                           const val = e.target.value.trim();
                           const num = val === "" ? null : parseInt(val);
-                          if (num !== entry.reportedGifts) {
-                            updateReportedMutation.mutate({ settingId: entry.settingId, reported: num });
+                          if (num !== row.reportedGifts) {
+                            updateReportedMutation.mutate({ settingId: primarySettingId, reported: num });
+                            // Clear reported on other members so sum equals primary's value
+                            row.members.slice(1).forEach((m) => {
+                              if (m.reportedGifts !== null) {
+                                updateReportedMutation.mutate({ settingId: m.settingId, reported: null });
+                              }
+                            });
                           }
                         }}
                       />
@@ -493,8 +507,8 @@ export default function ShekelCampaign() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {entry.excludedCount > 0 && (
-                        <Badge variant="outline">{entry.excludedCount}</Badge>
+                      {row.excludedCount > 0 && (
+                        <Badge variant="outline">{row.excludedCount}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -502,9 +516,8 @@ export default function ShekelCampaign() {
                         size="sm"
                         variant="outline"
                         onClick={() => setDetailDialog({
-                          supplierId: entry.supplierId,
-                          supplierName: entry.supplierName,
-                          settingId: entry.settingId,
+                          supplierName: row.displayName,
+                          settingIds: row.members.map(m => m.settingId),
                         })}
                       >
                         צפה בפריטים
