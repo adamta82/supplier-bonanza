@@ -572,6 +572,7 @@ export type Database = {
           created_at: string
           double_gift_threshold: number | null
           end_date: string
+          group_name: string | null
           id: string
           is_active: boolean
           start_date: string
@@ -585,6 +586,7 @@ export type Database = {
           created_at?: string
           double_gift_threshold?: number | null
           end_date: string
+          group_name?: string | null
           id?: string
           is_active?: boolean
           start_date: string
@@ -598,6 +600,7 @@ export type Database = {
           created_at?: string
           double_gift_threshold?: number | null
           end_date?: string
+          group_name?: string | null
           id?: string
           is_active?: boolean
           start_date?: string
