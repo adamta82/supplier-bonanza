@@ -313,8 +313,11 @@ export default function ShekelCampaign() {
 
   const detailItems = useMemo(() => {
     if (!detailDialog) return [];
-    const entry = supplierSummary.find(s => s.settingId === detailDialog.settingId);
-    const items = [...(entry?.items || [])];
+    const items: any[] = [];
+    detailDialog.settingIds.forEach((sid) => {
+      const entry = supplierSummary.find(s => s.settingId === sid);
+      if (entry) items.push(...entry.items.map(it => ({ ...it, _supplierName: entry.supplierName })));
+    });
     items.sort((a: any, b: any) => {
       const va = a[sortKey];
       const vb = b[sortKey];
