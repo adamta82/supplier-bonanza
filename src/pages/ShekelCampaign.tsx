@@ -28,7 +28,7 @@ export default function ShekelCampaign() {
   const queryClient = useQueryClient();
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignType>("pesach");
   const [expandedSupplier, setExpandedSupplier] = useState<string | null>(null);
-  const [detailDialog, setDetailDialog] = useState<{ supplierId: string; supplierName: string; settingId: string } | null>(null);
+  const [detailDialog, setDetailDialog] = useState<{ supplierName: string; settingIds: string[] } | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("order_date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
