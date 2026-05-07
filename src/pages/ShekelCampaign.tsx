@@ -116,6 +116,7 @@ export default function ShekelCampaign() {
           supplierId: setting.supplier_id,
           supplierName: (setting as any).suppliers?.name || p.supplier_name || "",
           settingId: key,
+          groupName: setting.group_name || null,
           threshold: setting.threshold_amount,
           doubleThreshold: setting.double_gift_threshold ?? null,
           reportedGifts: setting.supplier_reported_gifts ?? null,
