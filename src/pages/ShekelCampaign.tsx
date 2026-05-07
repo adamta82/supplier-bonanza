@@ -8,10 +8,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Gift, ChevronDown, ChevronUp, X, CheckCircle, Clock } from "lucide-react";
+import { Gift, ChevronDown, ChevronUp, X, CheckCircle, Clock, Download, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/utils";
+import * as XLSX from "xlsx";
+
+type SortKey = "order_number" | "order_date" | "item_code" | "item_description" | "quantity" | "unitPriceCalc" | "giftsFromLine" | "giftStatus";
+type SortDir = "asc" | "desc";
 
 type CampaignType = "pesach" | "rosh_hashana";
 
@@ -25,6 +29,8 @@ export default function ShekelCampaign() {
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignType>("pesach");
   const [expandedSupplier, setExpandedSupplier] = useState<string | null>(null);
   const [detailDialog, setDetailDialog] = useState<{ supplierId: string; supplierName: string; settingId: string } | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("order_date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   // Load all campaign settings
   const { data: settings } = useQuery({
@@ -233,8 +239,66 @@ export default function ShekelCampaign() {
   const detailItems = useMemo(() => {
     if (!detailDialog) return [];
     const entry = supplierSummary.find(s => s.settingId === detailDialog.settingId);
-    return entry?.items || [];
-  }, [detailDialog, supplierSummary]);
+    const items = [...(entry?.items || [])];
+    items.sort((a: any, b: any) => {
+      const va = a[sortKey];
+      const vb = b[sortKey];
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      let cmp = 0;
+      if (typeof va === "number" && typeof vb === "number") cmp = va - vb;
+      else cmp = String(va).localeCompare(String(vb), "he");
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+    return items;
+  }, [detailDialog, supplierSummary, sortKey, sortDir]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(sortDir === "asc" ? "desc" : "asc");
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+
+  const exportToExcel = () => {
+    if (!detailDialog || detailItems.length === 0) {
+      toast.error("אין נתונים לייצוא");
+      return;
+    }
+    const statusLabels: Record<string, string> = { pending: "ממתין", received: "התקבל", not_received: "לא התקבל" };
+    const rows = detailItems.map((item: any) => ({
+      "מספר הזמנה": item.order_number || "",
+      "תאריך": item.order_date ? formatDate(item.order_date) : "",
+      "מק״ט": item.item_code || "",
+      "תיאור": item.item_description || "",
+      "כמות": item.quantity || 1,
+      "מחיר ליח׳ (כולל מע״מ)": Math.round(item.unitPriceCalc || 0),
+      "מתנות ליח׳": item.giftsPerUnit,
+      "סה״כ מתנות": item.giftsFromLine,
+      "סטטוס": item.isExcluded ? "הוסר" : (statusLabels[item.giftStatus] || item.giftStatus),
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws["!views"] = [{ RTL: true }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "פריטים");
+    const fname = `מבצע_שקל_${detailDialog.supplierName}_${new Date().toISOString().slice(0,10)}.xlsx`;
+    XLSX.writeFile(wb, fname);
+    toast.success("הקובץ יוצא בהצלחה");
+  };
+
+  const SortHeader = ({ k, label }: { k: SortKey; label: string }) => (
+    <button
+      type="button"
+      onClick={() => toggleSort(k)}
+      className="inline-flex items-center gap-1 hover:text-primary font-medium"
+    >
+      {label}
+      {sortKey === k ? (
+        sortDir === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+      ) : (
+        <ArrowUpDown className="w-3 h-3 opacity-40" />
+      )}
+    </button>
+  );
 
   return (
     <div className="space-y-6">
@@ -381,19 +445,25 @@ export default function ShekelCampaign() {
       <Dialog open={!!detailDialog} onOpenChange={(o) => !o && setDetailDialog(null)}>
         <DialogContent className="max-w-5xl max-h-[80vh] overflow-auto">
           <DialogHeader>
-            <DialogTitle>פריטים זכאים למתנה - {detailDialog?.supplierName}</DialogTitle>
+            <div className="flex items-center justify-between gap-4">
+              <DialogTitle>פריטים זכאים למתנה - {detailDialog?.supplierName}</DialogTitle>
+              <Button size="sm" variant="outline" onClick={exportToExcel} className="ml-8">
+                <Download className="w-4 h-4" />
+                ייצוא לאקסל
+              </Button>
+            </div>
           </DialogHeader>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>מספר הזמנה</TableHead>
-                <TableHead>תאריך</TableHead>
-                <TableHead>מק״ט</TableHead>
-                <TableHead>תיאור</TableHead>
-                <TableHead>כמות</TableHead>
-                <TableHead>מחיר ליח׳ (כולל מע״מ)</TableHead>
-                <TableHead>מתנות</TableHead>
-                <TableHead>סטטוס</TableHead>
+                <TableHead><SortHeader k="order_number" label="מספר הזמנה" /></TableHead>
+                <TableHead><SortHeader k="order_date" label="תאריך" /></TableHead>
+                <TableHead><SortHeader k="item_code" label="מק״ט" /></TableHead>
+                <TableHead><SortHeader k="item_description" label="תיאור" /></TableHead>
+                <TableHead><SortHeader k="quantity" label="כמות" /></TableHead>
+                <TableHead><SortHeader k="unitPriceCalc" label="מחיר ליח׳ (כולל מע״מ)" /></TableHead>
+                <TableHead><SortHeader k="giftsFromLine" label="מתנות" /></TableHead>
+                <TableHead><SortHeader k="giftStatus" label="סטטוס" /></TableHead>
                 <TableHead>פעולות</TableHead>
               </TableRow>
             </TableHeader>
