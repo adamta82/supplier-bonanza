@@ -1643,7 +1643,7 @@ export default function SupplierDetail() {
       {monthlyData.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>ביצועים {filterMode === "all" ? "חודשיים" : "לפי תקופה"}</CardTitle>
+            <CardTitle>ביצועים {filterMode === "all" ? "חודשיים" : "לפי תקופה"} <span className="text-xs font-normal text-muted-foreground mr-1">(כולל מע׳מ)</span></CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={280}>
