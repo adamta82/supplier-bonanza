@@ -33,8 +33,8 @@ export default function ShekelCampaignTab({ supplierId }: { supplierId: string }
   const getSetting = (name: CampaignType) => (settings || []).find((s: any) => s.campaign_name === name);
 
   const saveMutation = useMutation({
-    mutationFn: async ({ campaignName, startDate, endDate, threshold, doubleThreshold, isActive }: {
-      campaignName: CampaignType; startDate: string; endDate: string; threshold: number; doubleThreshold: number | null; isActive: boolean;
+    mutationFn: async ({ campaignName, startDate, endDate, threshold, doubleThreshold, groupName, isActive }: {
+      campaignName: CampaignType; startDate: string; endDate: string; threshold: number; doubleThreshold: number | null; groupName: string | null; isActive: boolean;
     }) => {
       const existing = getSetting(campaignName);
       if (existing) {
@@ -43,6 +43,7 @@ export default function ShekelCampaignTab({ supplierId }: { supplierId: string }
           end_date: endDate,
           threshold_amount: threshold,
           double_gift_threshold: doubleThreshold,
+          group_name: groupName,
           is_active: isActive,
         }).eq("id", existing.id);
         if (error) throw error;
@@ -54,6 +55,7 @@ export default function ShekelCampaignTab({ supplierId }: { supplierId: string }
           end_date: endDate,
           threshold_amount: threshold,
           double_gift_threshold: doubleThreshold,
+          group_name: groupName,
           is_active: isActive,
         });
         if (error) throw error;
@@ -61,6 +63,7 @@ export default function ShekelCampaignTab({ supplierId }: { supplierId: string }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["shekel-settings", supplierId] });
+      queryClient.invalidateQueries({ queryKey: ["shekel-settings"] });
       toast.success("הגדרות מבצע שקל נשמרו");
     },
     onError: () => toast.error("שגיאה בשמירת הגדרות"),
