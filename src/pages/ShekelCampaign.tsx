@@ -28,7 +28,7 @@ export default function ShekelCampaign() {
   const queryClient = useQueryClient();
   const [selectedCampaign, setSelectedCampaign] = useState<CampaignType>("pesach");
   const [expandedSupplier, setExpandedSupplier] = useState<string | null>(null);
-  const [detailDialog, setDetailDialog] = useState<{ supplierId: string; supplierName: string; settingId: string } | null>(null);
+  const [detailDialog, setDetailDialog] = useState<{ supplierName: string; settingIds: string[] } | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("order_date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -96,6 +96,7 @@ export default function ShekelCampaign() {
       supplierId: string;
       supplierName: string;
       settingId: string;
+      groupName: string | null;
       threshold: number;
       doubleThreshold: number | null;
       reportedGifts: number | null;
@@ -116,6 +117,7 @@ export default function ShekelCampaign() {
           supplierId: setting.supplier_id,
           supplierName: (setting as any).suppliers?.name || p.supplier_name || "",
           settingId: key,
+          groupName: setting.group_name || null,
           threshold: setting.threshold_amount,
           doubleThreshold: setting.double_gift_threshold ?? null,
           reportedGifts: setting.supplier_reported_gifts ?? null,
@@ -165,6 +167,79 @@ export default function ShekelCampaign() {
   }, [purchases, activeSettings, exclusionMap]);
 
   const totalGiftsAll = supplierSummary.reduce((s, e) => s + e.totalGifts, 0);
+
+  // Group entries by group_name (entries with same group merged into single display row)
+  type DisplayRow = {
+    key: string;
+    isGroup: boolean;
+    groupName: string | null;
+    displayName: string;
+    members: typeof supplierSummary;
+    totalGifts: number;
+    excludedCount: number;
+    reportedGifts: number | null;
+    startDate: string;
+    endDate: string;
+    threshold: number;
+    doubleThreshold: number | null;
+  };
+
+  const displayRows: DisplayRow[] = useMemo(() => {
+    const groups = new Map<string, typeof supplierSummary>();
+    const singles: typeof supplierSummary = [];
+    supplierSummary.forEach((e) => {
+      if (e.groupName && e.groupName.trim() !== "") {
+        const arr = groups.get(e.groupName) || [];
+        arr.push(e);
+        groups.set(e.groupName, arr);
+      } else {
+        singles.push(e);
+      }
+    });
+    const rows: DisplayRow[] = [];
+    groups.forEach((members, gname) => {
+      const totalGifts = members.reduce((s, m) => s + m.totalGifts, 0);
+      const excludedCount = members.reduce((s, m) => s + m.excludedCount, 0);
+      const anyReported = members.some((m) => m.reportedGifts !== null);
+      const reportedGifts = anyReported
+        ? members.reduce((s, m) => s + (m.reportedGifts || 0), 0)
+        : null;
+      const startDate = members.reduce((min, m) => (!min || m.startDate < min ? m.startDate : min), "");
+      const endDate = members.reduce((max, m) => (!max || m.endDate > max ? m.endDate : max), "");
+      rows.push({
+        key: `g_${gname}`,
+        isGroup: true,
+        groupName: gname,
+        displayName: `${gname} (${members.map((m) => m.supplierName).join(" + ")})`,
+        members,
+        totalGifts,
+        excludedCount,
+        reportedGifts,
+        startDate,
+        endDate,
+        threshold: members[0].threshold,
+        doubleThreshold: members[0].doubleThreshold,
+      });
+    });
+    singles.forEach((e) => {
+      rows.push({
+        key: `s_${e.settingId}`,
+        isGroup: false,
+        groupName: null,
+        displayName: e.supplierName,
+        members: [e],
+        totalGifts: e.totalGifts,
+        excludedCount: e.excludedCount,
+        reportedGifts: e.reportedGifts,
+        startDate: e.startDate,
+        endDate: e.endDate,
+        threshold: e.threshold,
+        doubleThreshold: e.doubleThreshold,
+      });
+    });
+    return rows.sort((a, b) => b.totalGifts - a.totalGifts);
+  }, [supplierSummary]);
+
 
   // Exclude item mutation
   const excludeMutation = useMutation({
@@ -238,8 +313,11 @@ export default function ShekelCampaign() {
 
   const detailItems = useMemo(() => {
     if (!detailDialog) return [];
-    const entry = supplierSummary.find(s => s.settingId === detailDialog.settingId);
-    const items = [...(entry?.items || [])];
+    const items: any[] = [];
+    detailDialog.settingIds.forEach((sid) => {
+      const entry = supplierSummary.find(s => s.settingId === sid);
+      if (entry) items.push(...entry.items.map(it => ({ ...it, _supplierName: entry.supplierName })));
+    });
     items.sort((a: any, b: any) => {
       const va = a[sortKey];
       const vb = b[sortKey];
@@ -377,28 +455,42 @@ export default function ShekelCampaign() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {supplierSummary.map((entry) => {
-                  const diff = entry.reportedGifts !== null ? entry.reportedGifts - entry.totalGifts : null;
+                {displayRows.map((row) => {
+                  const diff = row.reportedGifts !== null ? row.reportedGifts - row.totalGifts : null;
+                  const primarySettingId = row.members[0].settingId;
                   return (
-                  <TableRow key={entry.settingId}>
-                    <TableCell className="font-medium">{entry.supplierName}</TableCell>
-                    <TableCell className="text-sm">{formatDate(entry.startDate)} - {formatDate(entry.endDate)}</TableCell>
-                    <TableCell>₪{fmtNum(entry.threshold)}</TableCell>
-                    <TableCell className="text-sm">{entry.doubleThreshold !== null ? `₪${fmtNum(entry.doubleThreshold)}` : "-"}</TableCell>
+                  <TableRow key={row.key}>
+                    <TableCell className="font-medium">
+                      {row.isGroup ? (
+                        <div>
+                          <Badge variant="secondary" className="mb-1 text-xs">קבוצה: {row.groupName}</Badge>
+                          <div className="text-sm">{row.members.map(m => m.supplierName).join(" + ")}</div>
+                        </div>
+                      ) : row.displayName}
+                    </TableCell>
+                    <TableCell className="text-sm">{formatDate(row.startDate)} - {formatDate(row.endDate)}</TableCell>
+                    <TableCell>₪{fmtNum(row.threshold)}</TableCell>
+                    <TableCell className="text-sm">{row.doubleThreshold !== null ? `₪${fmtNum(row.doubleThreshold)}` : "-"}</TableCell>
                     <TableCell>
-                      <Badge variant="default" className="text-sm">{entry.totalGifts}</Badge>
+                      <Badge variant="default" className="text-sm">{row.totalGifts}</Badge>
                     </TableCell>
                     <TableCell>
                       <Input
                         type="number"
                         className="w-24 h-8"
-                        defaultValue={entry.reportedGifts ?? ""}
+                        defaultValue={row.reportedGifts ?? ""}
                         placeholder="-"
                         onBlur={(e) => {
                           const val = e.target.value.trim();
                           const num = val === "" ? null : parseInt(val);
-                          if (num !== entry.reportedGifts) {
-                            updateReportedMutation.mutate({ settingId: entry.settingId, reported: num });
+                          if (num !== row.reportedGifts) {
+                            updateReportedMutation.mutate({ settingId: primarySettingId, reported: num });
+                            // Clear reported on other members so sum equals primary's value
+                            row.members.slice(1).forEach((m) => {
+                              if (m.reportedGifts !== null) {
+                                updateReportedMutation.mutate({ settingId: m.settingId, reported: null });
+                              }
+                            });
                           }
                         }}
                       />
@@ -415,8 +507,8 @@ export default function ShekelCampaign() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {entry.excludedCount > 0 && (
-                        <Badge variant="outline">{entry.excludedCount}</Badge>
+                      {row.excludedCount > 0 && (
+                        <Badge variant="outline">{row.excludedCount}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -424,9 +516,8 @@ export default function ShekelCampaign() {
                         size="sm"
                         variant="outline"
                         onClick={() => setDetailDialog({
-                          supplierId: entry.supplierId,
-                          supplierName: entry.supplierName,
-                          settingId: entry.settingId,
+                          supplierName: row.displayName,
+                          settingIds: row.members.map(m => m.settingId),
                         })}
                       >
                         צפה בפריטים
