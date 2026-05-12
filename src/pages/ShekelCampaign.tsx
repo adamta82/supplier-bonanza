@@ -406,15 +406,21 @@ export default function ShekelCampaign() {
           </h1>
           <p className="text-muted-foreground text-sm mt-1">מעקב זכאות למתנות מספקים</p>
         </div>
-        <Select value={selectedCampaign} onValueChange={(v) => setSelectedCampaign(v as CampaignType)}>
-          <SelectTrigger className="w-[220px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="pesach">מבצע שקל פסח</SelectItem>
-            <SelectItem value="rosh_hashana">מבצע שקל ראש השנה</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setGroupsDialogOpen(true)}>
+            <Users className="w-4 h-4" />
+            ניהול ריכוזי ספקים
+          </Button>
+          <Select value={selectedCampaign} onValueChange={(v) => setSelectedCampaign(v as CampaignType)}>
+            <SelectTrigger className="w-[220px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pesach">מבצע שקל פסח</SelectItem>
+              <SelectItem value="rosh_hashana">מבצע שקל ראש השנה</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Summary card */}
