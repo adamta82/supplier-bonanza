@@ -31,6 +31,7 @@ export default function ShekelCampaign() {
   const [detailDialog, setDetailDialog] = useState<{ supplierName: string; settingIds: string[] } | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("order_date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [groupsDialogOpen, setGroupsDialogOpen] = useState(false);
 
   // Load all campaign settings
   const { data: settings } = useQuery({
@@ -43,6 +44,20 @@ export default function ShekelCampaign() {
       return data || [];
     },
   });
+
+  const { data: groups } = useQuery({
+    queryKey: ["shekel-groups"],
+    queryFn: async () => {
+      const { data } = await supabase.from("shekel_campaign_groups").select("*").order("name");
+      return data || [];
+    },
+  });
+
+  const groupNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    (groups || []).forEach((g: any) => m.set(g.id, g.name));
+    return m;
+  }, [groups]);
 
   // Load all purchase records for active campaigns
   const activeSettings = useMemo(() => 
