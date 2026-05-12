@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Gift, ChevronDown, ChevronUp, X, CheckCircle, Clock, Download, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Gift, ChevronDown, ChevronUp, X, CheckCircle, Clock, Download, ArrowUpDown, ArrowUp, ArrowDown, Users, Plus, Trash2, Pencil } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/utils";
@@ -31,6 +31,7 @@ export default function ShekelCampaign() {
   const [detailDialog, setDetailDialog] = useState<{ supplierName: string; settingIds: string[] } | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("order_date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [groupsDialogOpen, setGroupsDialogOpen] = useState(false);
 
   // Load all campaign settings
   const { data: settings } = useQuery({
@@ -43,6 +44,20 @@ export default function ShekelCampaign() {
       return data || [];
     },
   });
+
+  const { data: groups } = useQuery({
+    queryKey: ["shekel-groups"],
+    queryFn: async () => {
+      const { data } = await supabase.from("shekel_campaign_groups").select("*").order("name");
+      return data || [];
+    },
+  });
+
+  const groupNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    (groups || []).forEach((g: any) => m.set(g.id, g.name));
+    return m;
+  }, [groups]);
 
   // Load all purchase records for active campaigns
   const activeSettings = useMemo(() => 
@@ -96,6 +111,7 @@ export default function ShekelCampaign() {
       supplierId: string;
       supplierName: string;
       settingId: string;
+      groupId: string | null;
       groupName: string | null;
       threshold: number;
       doubleThreshold: number | null;
@@ -113,11 +129,13 @@ export default function ShekelCampaign() {
       if (!map.has(key)) {
         const setting = activeSettings.find((s: any) => s.id === key);
         if (!setting) return;
+        const gid = (setting as any).group_id || null;
         map.set(key, {
           supplierId: setting.supplier_id,
           supplierName: (setting as any).suppliers?.name || p.supplier_name || "",
           settingId: key,
-          groupName: setting.group_name || null,
+          groupId: gid,
+          groupName: gid ? (groupNameById.get(gid) || null) : (setting.group_name || null),
           threshold: setting.threshold_amount,
           doubleThreshold: setting.double_gift_threshold ?? null,
           reportedGifts: setting.supplier_reported_gifts ?? null,
@@ -164,7 +182,7 @@ export default function ShekelCampaign() {
     });
 
     return Array.from(map.values()).sort((a, b) => b.totalGifts - a.totalGifts);
-  }, [purchases, activeSettings, exclusionMap]);
+  }, [purchases, activeSettings, exclusionMap, groupNameById]);
 
   const totalGiftsAll = supplierSummary.reduce((s, e) => s + e.totalGifts, 0);
 
@@ -388,15 +406,21 @@ export default function ShekelCampaign() {
           </h1>
           <p className="text-muted-foreground text-sm mt-1">מעקב זכאות למתנות מספקים</p>
         </div>
-        <Select value={selectedCampaign} onValueChange={(v) => setSelectedCampaign(v as CampaignType)}>
-          <SelectTrigger className="w-[220px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="pesach">מבצע שקל פסח</SelectItem>
-            <SelectItem value="rosh_hashana">מבצע שקל ראש השנה</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setGroupsDialogOpen(true)}>
+            <Users className="w-4 h-4" />
+            ניהול ריכוזי ספקים
+          </Button>
+          <Select value={selectedCampaign} onValueChange={(v) => setSelectedCampaign(v as CampaignType)}>
+            <SelectTrigger className="w-[220px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pesach">מבצע שקל פסח</SelectItem>
+              <SelectItem value="rosh_hashana">מבצע שקל ראש השנה</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Summary card */}
@@ -628,6 +652,148 @@ export default function ShekelCampaign() {
           </Table>
         </DialogContent>
       </Dialog>
+
+      <ManageGroupsDialog
+        open={groupsDialogOpen}
+        onOpenChange={setGroupsDialogOpen}
+        groups={groups || []}
+        settings={settings || []}
+      />
+    </div>
+  );
+}
+
+function ManageGroupsDialog({ open, onOpenChange, groups, settings }: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  groups: any[];
+  settings: any[];
+}) {
+  const queryClient = useQueryClient();
+  const [newName, setNewName] = useState("");
+
+  const usageById = useMemo(() => {
+    const m = new Map<string, number>();
+    settings.forEach((s: any) => {
+      if (s.group_id) m.set(s.group_id, (m.get(s.group_id) || 0) + 1);
+    });
+    return m;
+  }, [settings]);
+
+  const createMut = useMutation({
+    mutationFn: async (name: string) => {
+      const { error } = await supabase.from("shekel_campaign_groups").insert({ name });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shekel-groups"] });
+      setNewName("");
+      toast.success("ריכוז נוצר");
+    },
+    onError: (e: any) => toast.error(e.message?.includes("duplicate") ? "שם כבר קיים" : "שגיאה"),
+  });
+
+  const renameMut = useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const { error } = await supabase.from("shekel_campaign_groups").update({ name }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shekel-groups"] });
+      toast.success("שם הריכוז עודכן");
+    },
+    onError: () => toast.error("שגיאה בעדכון"),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("shekel_campaign_groups").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shekel-groups"] });
+      queryClient.invalidateQueries({ queryKey: ["shekel-settings"] });
+      toast.success("ריכוז נמחק");
+    },
+    onError: () => toast.error("שגיאה במחיקה"),
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>ניהול ריכוזי ספקים</DialogTitle>
+        </DialogHeader>
+
+        <div className="flex gap-2">
+          <Input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="שם ריכוז חדש (לדוגמא: אלקטרה)"
+            onKeyDown={(e) => e.key === "Enter" && newName.trim() && createMut.mutate(newName.trim())}
+          />
+          <Button onClick={() => newName.trim() && createMut.mutate(newName.trim())} disabled={!newName.trim() || createMut.isPending}>
+            <Plus className="w-4 h-4" /> צור
+          </Button>
+        </div>
+
+        <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+          {groups.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">אין ריכוזים מוגדרים</p>
+          )}
+          {groups.map((g: any) => (
+            <GroupRow
+              key={g.id}
+              group={g}
+              usage={usageById.get(g.id) || 0}
+              onRename={(name) => renameMut.mutate({ id: g.id, name })}
+              onDelete={() => {
+                if (confirm(`למחוק את הריכוז "${g.name}"? ספקים המשויכים לא יימחקו, רק יבוטל השיוך.`)) {
+                  deleteMut.mutate(g.id);
+                }
+              }}
+            />
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function GroupRow({ group, usage, onRename, onDelete }: {
+  group: any;
+  usage: number;
+  onRename: (name: string) => void;
+  onDelete: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(group.name);
+
+  return (
+    <div className="flex items-center gap-2 p-2 border rounded-md">
+      {editing ? (
+        <Input value={name} onChange={(e) => setName(e.target.value)} className="h-8" autoFocus />
+      ) : (
+        <div className="flex-1">
+          <div className="font-medium">{group.name}</div>
+          <div className="text-xs text-muted-foreground">{usage} ספקים משויכים</div>
+        </div>
+      )}
+      {editing ? (
+        <>
+          <Button size="sm" onClick={() => { if (name.trim() && name !== group.name) onRename(name.trim()); setEditing(false); }}>שמור</Button>
+          <Button size="sm" variant="ghost" onClick={() => { setName(group.name); setEditing(false); }}>בטל</Button>
+        </>
+      ) : (
+        <>
+          <Button size="icon" variant="ghost" onClick={() => setEditing(true)}>
+            <Pencil className="w-4 h-4" />
+          </Button>
+          <Button size="icon" variant="ghost" className="text-destructive" onClick={onDelete}>
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </>
+      )}
     </div>
   );
 }

@@ -566,12 +566,31 @@ export type Database = {
           },
         ]
       }
+      shekel_campaign_groups: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       shekel_campaign_settings: {
         Row: {
           campaign_name: string
           created_at: string
           double_gift_threshold: number | null
           end_date: string
+          group_id: string | null
           group_name: string | null
           id: string
           is_active: boolean
@@ -586,6 +605,7 @@ export type Database = {
           created_at?: string
           double_gift_threshold?: number | null
           end_date: string
+          group_id?: string | null
           group_name?: string | null
           id?: string
           is_active?: boolean
@@ -600,6 +620,7 @@ export type Database = {
           created_at?: string
           double_gift_threshold?: number | null
           end_date?: string
+          group_id?: string | null
           group_name?: string | null
           id?: string
           is_active?: boolean
@@ -610,6 +631,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "shekel_campaign_settings_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "shekel_campaign_groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "shekel_campaign_settings_supplier_id_fkey"
             columns: ["supplier_id"]
