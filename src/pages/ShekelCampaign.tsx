@@ -182,7 +182,7 @@ export default function ShekelCampaign() {
     });
 
     return Array.from(map.values()).sort((a, b) => b.totalGifts - a.totalGifts);
-  }, [purchases, activeSettings, exclusionMap]);
+  }, [purchases, activeSettings, exclusionMap, groupNameById]);
 
   const totalGiftsAll = supplierSummary.reduce((s, e) => s + e.totalGifts, 0);
 
