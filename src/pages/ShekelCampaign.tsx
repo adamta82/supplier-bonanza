@@ -111,6 +111,7 @@ export default function ShekelCampaign() {
       supplierId: string;
       supplierName: string;
       settingId: string;
+      groupId: string | null;
       groupName: string | null;
       threshold: number;
       doubleThreshold: number | null;
@@ -128,11 +129,13 @@ export default function ShekelCampaign() {
       if (!map.has(key)) {
         const setting = activeSettings.find((s: any) => s.id === key);
         if (!setting) return;
+        const gid = (setting as any).group_id || null;
         map.set(key, {
           supplierId: setting.supplier_id,
           supplierName: (setting as any).suppliers?.name || p.supplier_name || "",
           settingId: key,
-          groupName: setting.group_name || null,
+          groupId: gid,
+          groupName: gid ? (groupNameById.get(gid) || null) : (setting.group_name || null),
           threshold: setting.threshold_amount,
           doubleThreshold: setting.double_gift_threshold ?? null,
           reportedGifts: setting.supplier_reported_gifts ?? null,
