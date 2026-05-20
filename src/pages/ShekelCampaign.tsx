@@ -297,30 +297,6 @@ export default function ShekelCampaign() {
     onError: () => toast.error("שגיאה בשחזור הפריט"),
   });
 
-  // Update gift status
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ settingId, purchaseId, status }: { settingId: string; purchaseId: string; status: string }) => {
-      // Upsert exclusion with status
-      const existing = exclusionMap.get(`${settingId}_${purchaseId}`);
-      if (existing) {
-        const { error } = await supabase.from("shekel_campaign_exclusions").update({ gift_status: status }).eq("id", existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("shekel_campaign_exclusions").insert({
-          campaign_setting_id: settingId,
-          purchase_record_id: purchaseId,
-          gift_status: status,
-        });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shekel-exclusions"] });
-      toast.success("סטטוס עודכן");
-    },
-    onError: () => toast.error("שגיאה בעדכון סטטוס"),
-  });
-
   // Update supplier-reported gifts count
   const updateReportedMutation = useMutation({
     mutationFn: async ({ settingId, reported }: { settingId: string; reported: number | null }) => {
