@@ -642,6 +642,7 @@ export default function ShekelCampaign() {
                     <Badge variant={item.isExcluded ? "outline" : "default"}>{item.giftsFromLine}</Badge>
                   </TableCell>
                   <TableCell>
+                  </TableCell>
                   <TableCell>
                     {!item.isExcluded ? (
                       <Button
