@@ -116,6 +116,7 @@ export default function ShekelCampaign() {
       threshold: number;
       doubleThreshold: number | null;
       reportedGifts: number | null;
+      discrepancyApproved: boolean;
       startDate: string;
       endDate: string;
       totalGifts: number;
