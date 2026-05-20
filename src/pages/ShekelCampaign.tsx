@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Gift, ChevronDown, ChevronUp, X, CheckCircle, Clock, Download, ArrowUpDown, ArrowUp, ArrowDown, Users, Plus, Trash2, Pencil, Check, RotateCcw } from "lucide-react";
+import { Gift, ChevronDown, ChevronUp, X, Download, ArrowUpDown, ArrowUp, ArrowDown, Users, Plus, Trash2, Pencil, Check, RotateCcw } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/utils";
