@@ -544,15 +544,39 @@ export default function ShekelCampaign() {
                       />
                     </TableCell>
                     <TableCell>
-                      {diff === null ? (
-                        <span className="text-muted-foreground text-sm">-</span>
-                      ) : diff === 0 ? (
-                        <Badge variant="default" className="bg-green-600">תואם</Badge>
-                      ) : (
-                        <Badge variant={diff > 0 ? "secondary" : "destructive"}>
-                          {diff > 0 ? `+${diff}` : diff}
-                        </Badge>
-                      )}
+                      <div className="flex flex-col items-start gap-1">
+                        {diff === null ? (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        ) : diff === 0 ? (
+                          <Badge variant="default" className="bg-green-600">תואם</Badge>
+                        ) : row.discrepancyApproved ? (
+                          <Badge variant="default" className="bg-green-600">
+                            <Check className="w-3 h-3 ml-1" />
+                            אושר ({diff > 0 ? `+${diff}` : diff})
+                          </Badge>
+                        ) : (
+                          <Badge variant={diff > 0 ? "secondary" : "destructive"}>
+                            {diff > 0 ? `+${diff}` : diff}
+                          </Badge>
+                        )}
+                        {diff !== null && diff !== 0 && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => approveDiscrepancyMutation.mutate({
+                              settingIds: row.members.map(m => m.settingId),
+                              approved: !row.discrepancyApproved,
+                            })}
+                          >
+                            {row.discrepancyApproved ? (
+                              <><RotateCcw className="w-3 h-3 ml-1" />בטל אישור</>
+                            ) : (
+                              <><Check className="w-3 h-3 ml-1" />סמן כתקין</>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {row.excludedCount > 0 && (
