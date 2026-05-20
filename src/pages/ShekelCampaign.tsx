@@ -140,6 +140,7 @@ export default function ShekelCampaign() {
           threshold: setting.threshold_amount,
           doubleThreshold: setting.double_gift_threshold ?? null,
           reportedGifts: setting.supplier_reported_gifts ?? null,
+          discrepancyApproved: !!(setting as any).discrepancy_approved,
           startDate: setting.start_date,
           endDate: setting.end_date,
           totalGifts: 0,
