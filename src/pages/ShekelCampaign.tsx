@@ -626,7 +626,6 @@ export default function ShekelCampaign() {
                 <TableHead><SortHeader k="quantity" label="כמות" /></TableHead>
                 <TableHead><SortHeader k="unitPriceCalc" label="מחיר ליח׳ (כולל מע״מ)" /></TableHead>
                 <TableHead><SortHeader k="giftsFromLine" label="מתנות" /></TableHead>
-                <TableHead><SortHeader k="giftStatus" label="סטטוס" /></TableHead>
                 <TableHead>פעולות</TableHead>
               </TableRow>
             </TableHeader>
