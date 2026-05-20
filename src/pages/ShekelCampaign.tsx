@@ -642,26 +642,6 @@ export default function ShekelCampaign() {
                     <Badge variant={item.isExcluded ? "outline" : "default"}>{item.giftsFromLine}</Badge>
                   </TableCell>
                   <TableCell>
-                    {!item.isExcluded && (
-                      <Select
-                        value={item.giftStatus}
-                        onValueChange={(v) => updateStatusMutation.mutate({
-                          settingId: item._setting_id,
-                          purchaseId: item.id,
-                          status: v,
-                        })}
-                      >
-                        <SelectTrigger className="w-[100px] h-7 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">ממתין</SelectItem>
-                          <SelectItem value="received">התקבל</SelectItem>
-                          <SelectItem value="not_received">לא התקבל</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </TableCell>
                   <TableCell>
                     {!item.isExcluded ? (
                       <Button
