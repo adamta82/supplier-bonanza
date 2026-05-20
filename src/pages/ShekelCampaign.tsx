@@ -202,6 +202,8 @@ export default function ShekelCampaign() {
     endDate: string;
     threshold: number;
     doubleThreshold: number | null;
+    discrepancyApproved: boolean;
+    primarySettingId: string;
   };
 
   const displayRows: DisplayRow[] = useMemo(() => {
