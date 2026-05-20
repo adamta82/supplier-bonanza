@@ -241,6 +241,8 @@ export default function ShekelCampaign() {
         endDate,
         threshold: members[0].threshold,
         doubleThreshold: members[0].doubleThreshold,
+        discrepancyApproved: members.some((m) => m.discrepancyApproved),
+        primarySettingId: members[0].settingId,
       });
     });
     singles.forEach((e) => {
