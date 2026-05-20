@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Gift, ChevronDown, ChevronUp, X, CheckCircle, Clock, Download, ArrowUpDown, ArrowUp, ArrowDown, Users, Plus, Trash2, Pencil, Check, RotateCcw } from "lucide-react";
+import { Gift, ChevronDown, ChevronUp, X, Download, ArrowUpDown, ArrowUp, ArrowDown, Users, Plus, Trash2, Pencil, Check, RotateCcw } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/utils";
@@ -295,30 +295,6 @@ export default function ShekelCampaign() {
       toast.success("הפריט שוחזר לזכאות");
     },
     onError: () => toast.error("שגיאה בשחזור הפריט"),
-  });
-
-  // Update gift status
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ settingId, purchaseId, status }: { settingId: string; purchaseId: string; status: string }) => {
-      // Upsert exclusion with status
-      const existing = exclusionMap.get(`${settingId}_${purchaseId}`);
-      if (existing) {
-        const { error } = await supabase.from("shekel_campaign_exclusions").update({ gift_status: status }).eq("id", existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("shekel_campaign_exclusions").insert({
-          campaign_setting_id: settingId,
-          purchase_record_id: purchaseId,
-          gift_status: status,
-        });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["shekel-exclusions"] });
-      toast.success("סטטוס עודכן");
-    },
-    onError: () => toast.error("שגיאה בעדכון סטטוס"),
   });
 
   // Update supplier-reported gifts count
@@ -626,7 +602,6 @@ export default function ShekelCampaign() {
                 <TableHead><SortHeader k="quantity" label="כמות" /></TableHead>
                 <TableHead><SortHeader k="unitPriceCalc" label="מחיר ליח׳ (כולל מע״מ)" /></TableHead>
                 <TableHead><SortHeader k="giftsFromLine" label="מתנות" /></TableHead>
-                <TableHead><SortHeader k="giftStatus" label="סטטוס" /></TableHead>
                 <TableHead>פעולות</TableHead>
               </TableRow>
             </TableHeader>
@@ -643,25 +618,6 @@ export default function ShekelCampaign() {
                     <Badge variant={item.isExcluded ? "outline" : "default"}>{item.giftsFromLine}</Badge>
                   </TableCell>
                   <TableCell>
-                    {!item.isExcluded && (
-                      <Select
-                        value={item.giftStatus}
-                        onValueChange={(v) => updateStatusMutation.mutate({
-                          settingId: item._setting_id,
-                          purchaseId: item.id,
-                          status: v,
-                        })}
-                      >
-                        <SelectTrigger className="w-[100px] h-7 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">ממתין</SelectItem>
-                          <SelectItem value="received">התקבל</SelectItem>
-                          <SelectItem value="not_received">לא התקבל</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
                   </TableCell>
                   <TableCell>
                     {!item.isExcluded ? (
@@ -691,7 +647,7 @@ export default function ShekelCampaign() {
               ))}
               {detailItems.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     אין פריטים זכאיים למתנה
                   </TableCell>
                 </TableRow>
