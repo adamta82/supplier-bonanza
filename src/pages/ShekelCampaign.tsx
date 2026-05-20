@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Gift, ChevronDown, ChevronUp, X, CheckCircle, Clock, Download, ArrowUpDown, ArrowUp, ArrowDown, Users, Plus, Trash2, Pencil } from "lucide-react";
+import { Gift, ChevronDown, ChevronUp, X, CheckCircle, Clock, Download, ArrowUpDown, ArrowUp, ArrowDown, Users, Plus, Trash2, Pencil, Check, RotateCcw } from "lucide-react";
 import { formatDate } from "@/lib/formatDate";
 import { toast } from "sonner";
 import { fmtNum } from "@/lib/utils";
@@ -116,6 +116,7 @@ export default function ShekelCampaign() {
       threshold: number;
       doubleThreshold: number | null;
       reportedGifts: number | null;
+      discrepancyApproved: boolean;
       startDate: string;
       endDate: string;
       totalGifts: number;
@@ -139,6 +140,7 @@ export default function ShekelCampaign() {
           threshold: setting.threshold_amount,
           doubleThreshold: setting.double_gift_threshold ?? null,
           reportedGifts: setting.supplier_reported_gifts ?? null,
+          discrepancyApproved: !!(setting as any).discrepancy_approved,
           startDate: setting.start_date,
           endDate: setting.end_date,
           totalGifts: 0,
@@ -200,6 +202,8 @@ export default function ShekelCampaign() {
     endDate: string;
     threshold: number;
     doubleThreshold: number | null;
+    discrepancyApproved: boolean;
+    primarySettingId: string;
   };
 
   const displayRows: DisplayRow[] = useMemo(() => {
@@ -237,6 +241,8 @@ export default function ShekelCampaign() {
         endDate,
         threshold: members[0].threshold,
         doubleThreshold: members[0].doubleThreshold,
+        discrepancyApproved: members.some((m) => m.discrepancyApproved),
+        primarySettingId: members[0].settingId,
       });
     });
     singles.forEach((e) => {
@@ -253,6 +259,8 @@ export default function ShekelCampaign() {
         endDate: e.endDate,
         threshold: e.threshold,
         doubleThreshold: e.doubleThreshold,
+        discrepancyApproved: e.discrepancyApproved,
+        primarySettingId: e.settingId,
       });
     });
     return rows.sort((a, b) => b.totalGifts - a.totalGifts);
@@ -328,6 +336,22 @@ export default function ShekelCampaign() {
     },
     onError: () => toast.error("שגיאה בעדכון"),
   });
+  // Approve/unapprove discrepancy
+  const approveDiscrepancyMutation = useMutation({
+    mutationFn: async ({ settingIds, approved }: { settingIds: string[]; approved: boolean }) => {
+      const { error } = await supabase
+        .from("shekel_campaign_settings")
+        .update({ discrepancy_approved: approved })
+        .in("id", settingIds);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["shekel-settings"] });
+      toast.success(vars.approved ? "הסכום אושר כתקין" : "בוטל אישור הסכום");
+    },
+    onError: () => toast.error("שגיאה בעדכון"),
+  });
+
 
   const detailItems = useMemo(() => {
     if (!detailDialog) return [];
@@ -520,15 +544,39 @@ export default function ShekelCampaign() {
                       />
                     </TableCell>
                     <TableCell>
-                      {diff === null ? (
-                        <span className="text-muted-foreground text-sm">-</span>
-                      ) : diff === 0 ? (
-                        <Badge variant="default" className="bg-green-600">תואם</Badge>
-                      ) : (
-                        <Badge variant={diff > 0 ? "secondary" : "destructive"}>
-                          {diff > 0 ? `+${diff}` : diff}
-                        </Badge>
-                      )}
+                      <div className="flex flex-col items-start gap-1">
+                        {diff === null ? (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        ) : diff === 0 ? (
+                          <Badge variant="default" className="bg-green-600">תואם</Badge>
+                        ) : row.discrepancyApproved ? (
+                          <Badge variant="default" className="bg-green-600">
+                            <Check className="w-3 h-3 ml-1" />
+                            אושר ({diff > 0 ? `+${diff}` : diff})
+                          </Badge>
+                        ) : (
+                          <Badge variant={diff > 0 ? "secondary" : "destructive"}>
+                            {diff > 0 ? `+${diff}` : diff}
+                          </Badge>
+                        )}
+                        {diff !== null && diff !== 0 && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => approveDiscrepancyMutation.mutate({
+                              settingIds: row.members.map(m => m.settingId),
+                              approved: !row.discrepancyApproved,
+                            })}
+                          >
+                            {row.discrepancyApproved ? (
+                              <><RotateCcw className="w-3 h-3 ml-1" />בטל אישור</>
+                            ) : (
+                              <><Check className="w-3 h-3 ml-1" />סמן כתקין</>
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {row.excludedCount > 0 && (
