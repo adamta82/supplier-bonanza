@@ -336,6 +336,22 @@ export default function ShekelCampaign() {
     },
     onError: () => toast.error("שגיאה בעדכון"),
   });
+  // Approve/unapprove discrepancy
+  const approveDiscrepancyMutation = useMutation({
+    mutationFn: async ({ settingIds, approved }: { settingIds: string[]; approved: boolean }) => {
+      const { error } = await supabase
+        .from("shekel_campaign_settings")
+        .update({ discrepancy_approved: approved })
+        .in("id", settingIds);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["shekel-settings"] });
+      toast.success(vars.approved ? "הסכום אושר כתקין" : "בוטל אישור הסכום");
+    },
+    onError: () => toast.error("שגיאה בעדכון"),
+  });
+
 
   const detailItems = useMemo(() => {
     if (!detailDialog) return [];
