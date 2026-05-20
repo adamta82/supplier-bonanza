@@ -588,7 +588,7 @@ export default function ShekelCampaign() {
                   <TableCell className="text-sm">{item.order_number}</TableCell>
                   <TableCell className="text-sm">{item.order_date ? formatDate(item.order_date) : "-"}</TableCell>
                   <TableCell className="text-sm">{item.item_code || "-"}</TableCell>
-                  <TableCell className="text-sm max-w-[200px] truncate">{item.item_description || "-"}</TableCell>
+                  <TableCell className="text-sm max-w-[200px] whitespace-normal break-words">{item.item_description || "-"}</TableCell>
                   <TableCell>{item.quantity || 1}</TableCell>
                   <TableCell>₪{fmtNum(item.unitPriceCalc)}</TableCell>
                   <TableCell>
