@@ -259,6 +259,8 @@ export default function ShekelCampaign() {
         endDate: e.endDate,
         threshold: e.threshold,
         doubleThreshold: e.doubleThreshold,
+        discrepancyApproved: e.discrepancyApproved,
+        primarySettingId: e.settingId,
       });
     });
     return rows.sort((a, b) => b.totalGifts - a.totalGifts);
