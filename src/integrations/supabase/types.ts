@@ -588,6 +588,7 @@ export type Database = {
         Row: {
           campaign_name: string
           created_at: string
+          discrepancy_approved: boolean
           double_gift_threshold: number | null
           end_date: string
           group_id: string | null
@@ -603,6 +604,7 @@ export type Database = {
         Insert: {
           campaign_name: string
           created_at?: string
+          discrepancy_approved?: boolean
           double_gift_threshold?: number | null
           end_date: string
           group_id?: string | null
@@ -618,6 +620,7 @@ export type Database = {
         Update: {
           campaign_name?: string
           created_at?: string
+          discrepancy_approved?: boolean
           double_gift_threshold?: number | null
           end_date?: string
           group_id?: string | null
