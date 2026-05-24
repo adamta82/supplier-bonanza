@@ -1434,7 +1434,7 @@ export default function SupplierDetail() {
                                     .update({ is_received: !b.is_received })
                                     .eq("id", b.id);
                                   if (error) {
-                                    toast({ title: "שגיאה", description: error.message, variant: "destructive" });
+                                    toast.error("שגיאה: " + error.message);
                                   } else {
                                     queryClient.invalidateQueries({ queryKey: ["transaction-bonuses"] });
                                   }
