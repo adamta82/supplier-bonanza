@@ -758,6 +758,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_received: boolean
           items_detail: string | null
           supplier_id: string
           total_value: number
@@ -771,6 +772,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_received?: boolean
           items_detail?: string | null
           supplier_id: string
           total_value: number
@@ -784,6 +786,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_received?: boolean
           items_detail?: string | null
           supplier_id?: string
           total_value?: number
