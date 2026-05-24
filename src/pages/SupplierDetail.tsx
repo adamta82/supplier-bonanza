@@ -1406,13 +1406,14 @@ export default function SupplierDetail() {
                         <TableHead>סכום עסקה</TableHead>
                         <TableHead>ערך בונוס</TableHead>
                         <TableHead>אופן קבלה</TableHead>
+                        <TableHead>התקבל</TableHead>
                         <TableHead>פעולות</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredBonuses.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">אין בונוסי עסקה</TableCell>
+                          <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">אין בונוסי עסקה</TableCell>
                         </TableRow>
                       ) : (
                         filteredBonuses.map((b: any) => (
@@ -1422,6 +1423,26 @@ export default function SupplierDetail() {
                             <TableCell>₪{fmtNum(b.total_value)}</TableCell>
                             <TableCell className="font-semibold text-primary">₪{fmtNum(b.bonus_value)}</TableCell>
                             <TableCell>{b.bonus_payment_type === "money" ? "כסף" : "סחורה"}</TableCell>
+                            <TableCell>
+                              <Button
+                                variant={b.is_received ? "default" : "outline"}
+                                size="sm"
+                                className="h-7"
+                                onClick={async () => {
+                                  const { error } = await supabase
+                                    .from("transaction_bonuses")
+                                    .update({ is_received: !b.is_received })
+                                    .eq("id", b.id);
+                                  if (error) {
+                                    toast({ title: "שגיאה", description: error.message, variant: "destructive" });
+                                  } else {
+                                    queryClient.invalidateQueries({ queryKey: ["transaction-bonuses"] });
+                                  }
+                                }}
+                              >
+                                {b.is_received ? "✓ התקבל" : "לא התקבל"}
+                              </Button>
+                            </TableCell>
                             <TableCell>
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditTx(b)}>
                                 <Pencil className="w-3.5 h-3.5" />
