@@ -1,0 +1,1 @@
+ALTER TABLE public.transaction_bonuses ADD COLUMN IF NOT EXISTS is_received boolean NOT NULL DEFAULT false;
