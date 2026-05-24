@@ -1436,7 +1436,7 @@ export default function SupplierDetail() {
                                   if (error) {
                                     toast.error("שגיאה: " + error.message);
                                   } else {
-                                    queryClient.invalidateQueries({ queryKey: ["transaction-bonuses"] });
+                                    queryClient.invalidateQueries({ queryKey: ["supplier-bonuses", id] });
                                   }
                                 }}
                               >
